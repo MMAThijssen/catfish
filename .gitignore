@@ -1,8 +1,10 @@
 # ignore compiled code
-**.pyc
+**/*.pyc
+/networks/__pycache__/
 
 # ignore test.py
-**test.py
+test.py
+/networks/test.py
 
 # ignore unused.py
 unused.py
