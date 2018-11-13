@@ -16,7 +16,7 @@ import tensorflow as tf
 class RNN(object):
 #    def __init__(self):
     #~ def __init__(self, batch_size, layer_size, n_layers, 
-                   #~ optimizer_choice, n_epochs, learning_rate, keep_prob, n_train):
+                   #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
     def __init__(self, model_id, **kwargs):
 
         tf.set_random_seed(16)
@@ -24,7 +24,6 @@ class RNN(object):
         # adjustable parameters
         self.batch_size = kwargs["batch_size"]
 #        self.max_seq_length = kwargs["max_seq_length"]
-        self.n_epochs = kwargs["n_epochs"]
         self.optimizer_choice = kwargs["optimizer_choice"]
         self.learning_rate = kwargs["learning_rate"]
         self.layer_size = kwargs["layer_size"]        
@@ -33,14 +32,13 @@ class RNN(object):
         self.keep_prob_test = 1.0               # no dropout wanted in testing
                 
         # set parameters
-        self.model_id = model_id                                        # for pbt
-        self.name_scope = tf.get_default_graph().get_name_scope()       # for pbt
+        self.model_id = model_id                                                # for pbt
+        #~ self.name_scope = tf.get_default_graph().get_name_scope()       # for pbt
         
         self.n_inputs = 1        
         self.n_outputs = 1
         self.window = 35
         self.max_seq_length = 5250  
-        self.n_epochs = 5
         
         self.loss_history = []
         self.layer_sizes = [self.layer_size,] * self.n_layers
@@ -50,7 +48,6 @@ class RNN(object):
         self.extra = False
         self.save = True
         self.cell_type = "GRU"
-        self.n_train = kwargs["n_train"]        # REMOVE later
         
         self.model_type = "bi" + self.cell_type + "-RNN-full"
         self.save_info()
@@ -104,11 +101,21 @@ class RNN(object):
     
     def set_model_path(self):
         cur_dir = "/mnt/nexenta/thijs030/networks"                      # change to take abs path - good for now
-        model_path = cur_dir + "/" + self.model_type
+        model_path = cur_dir + "/" + self.model_type + "_" + str(self.model_id)
+        check_for_dir = True
         
         if not os.path.isdir(model_path):
             os.mkdir(model_path)
-        print("\nSaving to ", model_path, "\n")
+        
+        #~ number = 0
+        #~ while check_for_dir:
+            #~ if os.path.isdir(model_path):
+                #~ number += 1
+                #~ model_path = model_path.rsplit("_")[0] + "_" + str(number)
+            #~ else:
+                #~ os.mkdir(model_path)
+                #~ check_for_dir = False
+        print("\nSaving network checkpoints to", model_path, "\n")
         
         return model_path    
         
@@ -131,11 +138,11 @@ class RNN(object):
             #~ all_summs = tf.summary.merge_all()
             
             
-    def set_nbatches(self, training_type):
+    def set_nbatches(self, n_train, training_type="trainingreads"):
         if training_type == "squiggles":
             n_batches = self.max_seq_length // self.batch_size // self.window      
         if training_type == "trainingreads":
-            n_batches = self.n_train // self.batch_size
+            n_batches = n_train // self.batch_size
         
         return n_batches
         
@@ -190,7 +197,7 @@ class RNN(object):
         
             
     
-    def train_network(self, train_x, train_y, training_type):
+    def train_network(self, train_x, train_y, n_epochs):
         with tf.Session() as sess:
             # initialize model variables:
             sess.run(tf.global_variables_initializer())
@@ -198,7 +205,7 @@ class RNN(object):
             
             # feed training data:
             step = 0
-            n_batches = self.set_nbatches(training_type)
+            n_batches = self.set_nbatches(len(train_x))
             
             if self.save:
                 saver = self.set_saver()
@@ -206,7 +213,7 @@ class RNN(object):
                 self.saver.save(sess, self.model_path + "/checkpoints/meta", write_meta_graph=True)
                 print("\nSaved meta graph\n")
             
-            for epoch in range(1, self.n_epochs + 1):
+            for epoch in range(1, n_epochs + 1):
                 epoch_loss = 0
                 epoch_acc = 0          
                 #~ random.shuffle(list_batches)                                # is it bad that the full reads are not sequentially fed?
@@ -252,8 +259,8 @@ class RNN(object):
             #~ pred_vals = np.concatenate(pred_vals).ravel().astype(int)       
         
             pred_vals, confidences = self.predict(sess, test_x)
-#            pred_list = [pred_vals, confidences]
-            #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions")
+#            pred_list = [pred_vals, confidences]       # limit to one squiggle: [:5250]
+            #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions_{}".format(self.model_id))
 
             # get testing accuracy:
             feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -267,12 +274,15 @@ class RNN(object):
             hp_true = np.count_nonzero(test_labels == 1)
             test_precision, test_recall = metrics.precision_recall(test_labels, pred_vals)
             test_f1 = metrics.weighted_f1(test_precision, test_recall, hp_true, hp + nonhp)
+            tpr, fpr, roc_auc = metrics.calculate_auc(test_labels, confidences)
+            metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
             print("Predicted percentage HPs in test set: {:.2%}".format(hp / (nonhp + hp)))
             print("Test precision: {:.2%}\nTest recall: {:.2%}".format(test_precision, test_recall))
             print("Test weighted F1 measure: {0:.4f}".format(float(test_f1)))
+            print("AUC: {0:.4f}".format(roc_auc))
             
             #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
-                                    #~ ["homopolymer", "confidence", "truth"], "Comparison")
+                                    #~ ["homopolymer", "confidence", "truth"], "Comparison_{}".format(self.model_id))
             
     
     #TODO: if sequence is smaller than needed. Add nonsense values that can be cut later ("dead" value 0?)
@@ -290,11 +300,11 @@ class RNN(object):
         
     
     def save_info(self):
-        print("Saving information to file: ", self.model_type + ".txt")
+        #~ print("Saving information to file: ", self.model_type + ".txt")
         #~ with open(self.model_type + ".txt", "w") as dest:
         print("Model type: {}".format(self.model_type))
-        print("Batch size: {}\nNumber of epochs: {}\nOptimizer: {}\nLearning rate: {}".format(
-                  self.batch_size, self.n_epochs, self.optimizer_choice, self.learning_rate))
+        print("Batch size: {}\nOptimizer: {}\nLearning rate: {}".format(
+                  self.batch_size, self.optimizer_choice, self.learning_rate))
         print("Layer size RNN: {}\nNumber of layers RNN: {}\nKeep probability: {}".format(
                   self.layer_size, self.n_layers, self.keep_prob))
               
