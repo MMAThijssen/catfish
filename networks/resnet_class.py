@@ -64,15 +64,15 @@ class ResNetRNN(RNN):
             return rb_output
         
         
-    def set_model_path(self):
-        cur_dir = "/mnt/nexenta/thijs030/networks"                      # change to take abs path - good for now
-        model_path = cur_dir + "/" + self.model_type
+    #~ def set_model_path(self):
+        #~ cur_dir = "/mnt/nexenta/thijs030/networks"                      # change to take abs path - good for now
+        #~ model_path = cur_dir + "/" + self.model_type
         
-        if not os.path.isdir(model_path):
-            os.mkdir(model_path)
-        print("\nSaving to ", model_path, "\n")
+        #~ if not os.path.isdir(model_path):
+            #~ os.mkdir(model_path)
+        #~ print("\nSaving to ", model_path, "\n")
         
-        return model_path  
+        #~ return model_path  
     
     
     def save_info(self):
