@@ -4,10 +4,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import sklearn.metrics
+import sklearn.metrics as sklmet
 from sys import argv
 
-def confusion_matrix(true_labels, predicted_labels):
+def precision_recall(true_labels, predicted_labels):
     """
     Returns precision and recall
     """
@@ -55,25 +55,37 @@ def confusion_matrix(true_labels, predicted_labels):
     return precision, recall
     
 
-def calculate_auc(true_labels, predicted_labels, pos_label=1):
+def calculate_auc(true_labels, predicted_scores, pos_label=1):
+    """
+    Calculates the area under the receiver operator curve
+    
+    Args:
+        true_labels -- list of ints (0 - neg, 1 - pos)
+        predicted_scores -- list of floats, confidence of predictions
+        pos_label -- int (0 or 1)
+        
+    Returns: TPR, NPR, AUC
+    """
     # tpr is recall 
-    tpr, fpr, thresholds = sklearn.metrics.roc_curve(y_true=true_labels, 
-                                                     y_score=predicted_labels,
+    tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
+                                                     y_score=predicted_scores,
                                                      pos_label=pos_label)
-    roc_auc = sklearn.metrics.auc(true_labels, predicted_labels)
+    roc_auc = sklmet.auc(fpr, tpr)
     print("AUC: ", roc_auc)
     return tpr, fpr, roc_auc
 
-def draw_roc(tpr, fpr, roc_auc):
+
+def draw_roc(tpr, fpr, roc_auc, title):
     plt.title("Receiver Operator Characteristic")
-    plt.plt(fpr, tpr, "b", label="AUC = {:.2f}".format(roc_auc))
+    plt.plot(fpr, tpr, "b", label="AUC = {:.2f}".format(roc_auc))
     plt.legend(loc="lower right")
     plt.plot([0, 1], [0, 1],'r--')
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
-    plt.show()
+    plt.savefig("{}.png".format(title), bbox_inches="tight")
+    #~ plt.show()
     
 
 def weighted_f1(precision, recall, n, N):
