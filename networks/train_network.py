@@ -25,38 +25,39 @@ layer_size_res = 32
 depth = 3
 
 ## for training ##
-#~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/examples2w34/"
-#~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/test3/"
+db_dir = "/mnt/nexenta/thijs030/data/trainingDB/examples2w34/"
+db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/test3/"
 #~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/training4000w34/"
 #~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/val857w34/"
-db_dir = "/mnt/nexenta/thijs030/data/trainingDB/train57192w34/"
+#~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/train57192w34/"
 #~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/test3/"
 
 
-training_nr = 30000000 // window * window
-test_nr = 5250
+training_nr = 3000 
+test_nr = 1000 // window * window
 
 print("Number of training reads: {}\nNumber of test reads: {}".format(
         training_nr, test_nr))
 
-#~ network = RNN(batch_size=batch_size, max_seq_length=max_seq_length, layer_size=layer_size, 
-                #~ n_layers=n_layers, optimizer_choice=optimizer_choice, n_epochs=n_epochs, 
-                #~ learning_rate=learning_rate, keep_prob=keep_prob, n_train=training_nr)
+model_id = 0
+
+network = RNN(model_id, batch_size=batch_size, layer_size=layer_size, 
+                n_layers=n_layers, optimizer_choice=optimizer_choice,  
+                learning_rate=learning_rate, keep_prob=keep_prob)
                
-network = ResNetRNN(batch_size=batch_size, max_seq_length=max_seq_length, layer_size=layer_size, 
-                n_layers=n_layers, optimizer_choice=optimizer_choice, n_epochs=n_epochs, 
-                learning_rate=learning_rate, keep_prob=keep_prob, n_train=training_nr,
-                n_layers_res=depth, layer_size_res=layer_size_res)
+#~ network = ResNetRNN(model_id, batch_size=batch_size, layer_size=layer_size, 
+                #~ n_layers=n_layers, optimizer_choice=optimizer_choice, 
+                #~ learning_rate=learning_rate, keep_prob=keep_prob, 
+                #~ n_layers_res=depth, layer_size_res=layer_size_res)
                
 training_type = "trainingreads"
 test_type = "squiggles"
 
-train_x, train_y = train.retrieve_set(db_dir, training_nr, training_type=training_type)
-#~ print(train_x[0])
-#~ test_x, test_y = train.retrieve_set(db_dir_ts, test_nr, training_type=test_type)
+#~ train_x, train_y = train.retrieve_set(db_dir, training_nr, training_type=training_type)
+test_x, test_y = train.retrieve_set(db_dir_ts, test_nr, training_type=test_type)
 
-network.train_network(train_x, train_y, training_type=training_type)
-#~ network.test_network(test_x, test_y)                # eg. "/mnt/nexenta/thijs030/networks/GRUtestclass/checkpoints-100"
+#~ network.train_network(train_x, train_y, n_epochs)
+network.test_network(test_x, test_y)                # eg. "/mnt/nexenta/thijs030/networks/GRUtestclass/checkpoints-100"
 
 #~ print("\n\n\n\nWindows for testing now:")
 #~ test_nr = 2 * 6336390
