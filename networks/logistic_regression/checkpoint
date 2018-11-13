@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-1560"
+all_model_checkpoint_paths: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-10001530"
+all_model_checkpoint_paths: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-10001540"
+all_model_checkpoint_paths: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-10001550"
+all_model_checkpoint_paths: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-10001560"
+all_model_checkpoint_paths: "/home/thijs030/thesis/scripts/networks/logistic_regression/checkpoints-1560"
