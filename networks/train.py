@@ -5,11 +5,9 @@ import reader
 from sys import argv
 import tensorflow as tf
 
-tf.set_random_seed(16)
+#~ tf.set_random_seed(16)
 
 def reshape_input(data, window, n_inputs):
-    #~ data = np.concatenate(data)     
-    #~ data = data.reshape(-1, window, n_inputs)
     data = np.reshape(data, (-1, window, n_inputs))  
     return data      
     
@@ -35,13 +33,17 @@ def retrieve_set(db_dir, training_nr, training_type, balanced="train"):
     
     if training_type == "squiggles":
         # 2. Train on squiggles:
+        valid_reads = 0
         data = []
         labels = []
         for squig in squiggles:
             data_sq, labels_sq = reader.load_npz(squig)
-
-            data.append(data_sq[: training_nr])
-            labels.append(labels_sq[: training_nr]) 
+            
+            if len(data_sq) >= training_nr:
+                data.append(data_sq[: training_nr])
+                labels.append(labels_sq[: training_nr]) 
+                valid_reads += 1
+        print("Squiggles selected: ", valid_reads)
     
     set_x = reshape_input(data, window, n_inputs)
     set_y = reshape_input(labels, window, n_outputs)

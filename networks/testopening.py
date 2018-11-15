@@ -30,19 +30,20 @@ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/training4000w34/"
 db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/val857w34/"
 
 
-training_nr = 2 * 30131712 // window * window
+training_nr = 2 * 30131712          # // window * window    - shouldn't matter because all windows are 35
 test_nr = 5250
 
-print("Number of training reads: {}\nNumber of test reads: {}".format(
-        training_nr, test_nr))
+print("Number of training reads: {}".format(training_nr))
 
-#~ network = RNN(batch_size=batch_size, max_seq_length=max_seq_length, layer_size=layer_size, 
-                #~ n_layers=n_layers, optimizer_choice=optimizer_choice, n_epochs=n_epochs, 
-                #~ learning_rate=learning_rate, keep_prob=keep_prob, n_train=training_nr)
+model_id = 0
+
+#~ network = RNN(model_id, batch_size=batch_size, layer_size=layer_size, 
+                #~ n_layers=n_layers, optimizer_choice=optimizer_choice,  
+                #~ learning_rate=learning_rate, keep_prob=keep_prob)
                
-network = ResNetRNN(batch_size=batch_size, max_seq_length=max_seq_length, layer_size=layer_size, 
-                n_layers=n_layers, optimizer_choice=optimizer_choice, n_epochs=n_epochs, 
-                learning_rate=learning_rate, keep_prob=keep_prob, n_train=training_nr,
+network = ResNetRNN(model_id, batch_size=batch_size, layer_size=layer_size, 
+                n_layers=n_layers, optimizer_choice=optimizer_choice, 
+                learning_rate=learning_rate, keep_prob=keep_prob, 
                 n_layers_res=depth, layer_size_res=layer_size_res)
                
 

@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
-import random
-import numpy as np
 
-def explore():
-    hps = ["learning_rate", "optimizer_choice", "layer_size", "n_layers", "batch_size", "keep_prob"]
-    random_hps = generate_random_hyperparameters()
-#    hp_int = random.choice(range(len(random_hps)))
-    return list(zip(hps, random_hps))
+import numpy as np
 
 def generate_random_hyperparameters():
     """
@@ -37,7 +31,13 @@ def generate_random_hyperparameters():
     dropout = round(np.random.uniform(dropout_min, dropout_max), 1)
     
     return learning_rate, optimizer, layer_size, n_layers, batch_size, dropout
-  
-exp = explore()
-print(type(exp[1]))
-print(exp)
+
+
+print(len(list(set([(0.1, 'RMSProp', 64, 4, 32, 0.6), (0.001, 'RMSProp', 32, 4, 32, 0.7), (0.1, 'RMSProp', 64, 4, 32, 0.2), (0.001, 'RMSProp', 16, 2, 32, 0.7), (0.001, 'RMSProp', 128, 4, 64, 0.1), (0.001, 'Adam', 128, 4, 32, 0.2), (0.0001, 'RMSProp', 128, 4, 64, 0.0), (0.01, 'RMSProp', 128, 3, 64, 0.7), (0.001, 'Adam', 32, 1, 64, 0.3), (0.1, 'Adam', 64, 2, 64, 0.8), (0.001, 'RMSProp', 64, 3, 32, 0.6), (0.01, 'Adam', 128, 1, 32, 0.7), (0.1, 'RMSProp', 32, 1, 64, 0.3), (0.1, 'RMSProp', 128, 3, 64, 0.1), (0.0001, 'Adam', 128, 3, 32, 0.6), (0.1, 'RMSProp', 16, 1, 64, 0.6), (0.001, 'RMSProp', 256, 4, 64, 0.7), (0.001, 'Adam', 128, 1, 64, 0.6), (0.0001, 'RMSProp', 16, 2, 32, 0.1), (0.1, 'RMSProp', 64, 1, 32, 0.4), (0.01, 'Adam', 256, 4, 32, 0.5), (0.1, 'RMSProp', 16, 3, 64, 0.2), (0.0001, 'Adam', 64, 1, 32, 0.6), (0.1, 'Adam', 256, 3, 32, 0.7), (0.1, 'RMSProp', 16, 4, 32, 0.6), (0.001, 'RMSProp', 32, 2, 32, 0.2), (0.001, 'Adam', 256, 4, 64, 0.1), (0.01, 'Adam', 64, 2, 64, 0.7), (0.1, 'Adam', 256, 3, 32, 0.5), (0.1, 'Adam', 256, 3, 32, 0.5)]))))
+
+
+#hp_list = [] 
+#for i in range(30):
+#    hp_list.append(generate_random_hyperparameters())
+#print(list(set(hp_list)))
+#print(len(list(set(hp_list))))

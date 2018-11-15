@@ -34,14 +34,8 @@ def precision_recall(true_labels, predicted_labels):
                 true_neg += 1
             else:
                 false_neg += 1
-    print("TP: {}\tFP: {}\tTN: {}\tFN: {}".format(true_pos, false_pos, true_neg, false_neg))
-    #~ return true_pos, false_pos, true_neg, false_neg
+    #~ print("TP: {}\tFP: {}\tTN: {}\tFN: {}".format(true_pos, false_pos, true_neg, false_neg))
 
-
-#~ def false_positive_rate(false_pos, true_neg):
-    #~ return false_pos / (false_pos + true_neg)
-
-#~ def precision_recall(true_pos, false_pos, false_neg):
     try:
         precision = true_pos / (true_pos + false_pos)
     except ZeroDivisionError:
@@ -71,7 +65,6 @@ def calculate_auc(true_labels, predicted_scores, pos_label=1):
                                                      y_score=predicted_scores,
                                                      pos_label=pos_label)
     roc_auc = sklmet.auc(fpr, tpr)
-    print("AUC: ", roc_auc)
     return tpr, fpr, roc_auc
 
 
@@ -186,13 +179,15 @@ def plot_settings(measure):
                 labelbottom=True, left=False, right=False, labelleft=True)
     
     return tableau20
+
     
 def plot_networks_on_metric(network_list, metric):
     colours = plot_settings(measure)
 
     for i in range(len(network_list)):
         network = file_list[i].split("_")[0]
-        plt.plot(range(1, len(network_list[i]) + 1), network_list[i],lw=2.5, color=colours[i], label=network)
+        network_list[i].insert(0, 0)    # prepend starting at 0
+        plt.plot(range(0, len(network_list[i]) + 1), network_list[i],lw=2.5, color=colours[i], label=network)
     plt.title(measure, loc="center")
     plt.legend(loc="lower right")
     plt.savefig("{}.png".format(measure), bbox_inches="tight")

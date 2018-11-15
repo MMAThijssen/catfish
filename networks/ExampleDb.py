@@ -2,7 +2,7 @@ import ZODB, ZODB.FileStorage, BTrees.IOBTree
 from os.path import isfile
 import random
 
-random.seed(23)
+#~ random.seed(23)
 
 class ExampleDb(object):
     """
@@ -50,7 +50,6 @@ class ExampleDb(object):
         ps = random.sample(range(self.nb_pos), nb_pos)       
         ns = random.sample(range(self.nb_neg), nb_neg)
 
-
         with self._db.transaction() as conn:
             examples_pos = [conn.root.pos[n] for n in ps]   # conn.root.pos[n] is tuple(arrays, labels)         
             examples_neg = [conn.root.neg[n] for n in ns]
@@ -66,9 +65,8 @@ class ExampleDb(object):
             neg = y.count(0)
             pos_count += pos
             neg_count += neg
-        t_count = pos_count + neg_count
-        print("True percentage HPs: {:.2%}".format(pos_count/t_count))             
-        return x_out, y_out
+           
+        return x_out, y_out, pos_count, neg_count
 
     def pack_db(self):
         self._db.pack()

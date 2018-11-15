@@ -1,5 +1,23 @@
 #   temp unused
 
+#~ BACKUP
+                #~ sess.run([m.optimizer for m in models],
+                            #~ feed_dict=[{m.x: train_x[batch * m.batch_size : (batch + 1) * m.batch_size], 
+                             #~ m.y: train_y[batch * m.batch_size: (batch + 1) * m.batch_size], 
+                            #~ m.p_dropout: m.keep_prob} for m in models])
+                #~ batch_loss = sess.run({m: m.loss for m in models}, 
+                            #~ feed_dict=[{m.x: train_x[batch * self.batch_size : (batch + 1) * m.batch_size], 
+                             #~ m.y: train_y[batch * m.batch_size: (batch + 1) * m.batch_size], 
+                             #~ m.p_dropout: m.keep_prob} for m in models])
+                #~ batch_acc = sess.run({m: m.accuracy for m in models}, 
+                            #~ feed_dict=[{m.x: train_x[batch * m.batch_size : (batch + 1) * m.batch_size], 
+                             #~ m.y: train_y[batch * m.batch_size: (batch + 1) * m.batch_size], 
+                             #~ m.p_dropout: m.keep_prob} for m in models])
+                #~ epoch_loss = {m: batch_loss[m] + epoch_loss[m] for m in epoch_loss.keys()}
+                #~ epoch_acc = {m: batch_acc[m] + epoch_loss[m] for m in epoch_acc.keys()}
+                
+                # got type error: must be dict, feed_dict
+
 # from MetaFlow
 def save(self):
     # This function is usually common to all your models, Here is an example:

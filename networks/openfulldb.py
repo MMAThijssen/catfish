@@ -11,10 +11,10 @@ n_outputs = 1
 n_classes = 1
 n_inputs = 1
 learning_rate = 0.01
-n_epochs = 10
+n_epochs = 1
 loss_history = []
 n_layers = 2
-layer_size = 128
+layer_size = 64
 keep_prob = 0.8     
 optimizer_choice = "Adam"
 
@@ -25,15 +25,15 @@ layer_size_res = 16
 depth = 1
 
 ## for training ##
-db_dir = "/mnt/nexenta/thijs030/data/trainingDB/examples2w34/"
+#~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/examples2w34/"
 #~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/test3/"
 #~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/training4000w34/"
 #~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/val857w34/"
-#~ db_dir = "/mnt/nexenta/thijs030/data/trainingDB/train57192w34/"
+db_dir = "/mnt/nexenta/thijs030/data/trainingDB/train57192w34/"
 #~ db_dir_ts = "/mnt/nexenta/thijs030/data/trainingDB/test3/"
 
 
-training_nr = 10000
+training_nr = 850000000
 test_nr = 5250 
 
 print("Number of training reads: {}".format(training_nr))

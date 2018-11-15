@@ -4,10 +4,10 @@ from resnet_class import ResNetRNN
 from rnn_class import RNN
 from sys import argv
 import tensorflow as tf
-import train
+from train_validate import train, validate
 
 
-def generate_random_hyperparameters():
+def generate_random_hyperparameters(network_type):
     """
     Returns: learning_rate, optimizer, layer_size, n_layers, batch_size, dropout
     """
@@ -20,12 +20,17 @@ def generate_random_hyperparameters():
     layer_size_list = [16, 32, 64, 128, 256]
 
     n_layers_min = 1
-    n_layers_max = 5
+    n_layers_max = 6        # randint is exclusive
 
     batch_size_list = [64, 128, 256]
 
     dropout_min = 0.2
     dropout_max = 0.8
+    
+    n_layers_res_min = 1             # 6, 12, 18, 34 / 3
+    n_layers_res_max = 12
+    
+    size_layers_res_list = [16, 32, 64, 128, 256]
     
     # pick random hyperparameter:
     learning_rate = 10 ** np.random.randint(learning_rate_min, learning_rate_max)
@@ -35,42 +40,55 @@ def generate_random_hyperparameters():
     batch_size = np.random.choice(batch_size_list)
     dropout = round(np.random.uniform(dropout_min, dropout_max), 1)
     
+    if network_type == "ResNetRNN":
+        n_layers_res = np.random.randint(n_layers_res_min, n_layers_res_max)
+        size_layers_res = np.random.choice(size_layers_res_list)
+        
+        return learning_rate, optimizer, layer_size, n_layers, batch_size, dropout, n_layers_res, size_layers_res
+    
     return learning_rate, optimizer, layer_size, n_layers, batch_size, dropout
 
 
-def create_model(model_id):                        # werkt
+def create_model(model_id, network_type):                        # werkt
     with tf.variable_scope(None, 'model'):
-        lr, opt, l_size, n_layers, batch_size, dropout = generate_random_hyperparameters()
-            #~ return ResNetRNN(**kwargs)       # change model to desired model
-        return RNN(model_id, learning_rate=lr, optimizer_choice=opt, n_layers=n_layers,
-                    layer_size=l_size, batch_size=batch_size, keep_prob=dropout)        
+        if network_type == "RNN":
+            lr, opt, l_size, n_layers, batch_size, dropout = generate_random_hyperparameters(network_type)
+            return RNN(model_id, learning_rate=lr, optimizer_choice=opt, n_layers=n_layers,
+                    layer_size=l_size, batch_size=batch_size, keep_prob=dropout) 
+        elif network_type == "ResNetRNN":
+            lr, opt, l_size, n_layers, batch_size, dropout, 
+            n_lay_res, size_lay_res = generate_random_hyperparameters(network_type)
+            return ResNetRNN(model_id, learning_rate=lr, optimizer_choice=opt, n_layers=n_layers,
+                    layer_size=l_size, batch_size=batch_size, keep_prob=dropout, 
+                    n_layers_res=n_lay_res, layer_size_res=size_lay_res)             
+       
                     
 
 if __name__ == "__main__":
-    #1. Create multiple models
-    window = 35 
-    if not len(argv) == 7:
-        raise ValueError("The following arguments should be provided:\n\t-number of models\n" +
-                         "\t-trainingdb\n\t-nr trainingreads\n\t-nr epochs\n\t-valdb\n\t-nr validationreads")
+    #0. Get input
+    if not len(argv) == 8:
+        raise ValueError("The following arguments should be provided in this order:\n" + 
+                         "\t-network type\n\t-number of models\n\t-path to training db" +
+                         "\n\t-number of training reads\n\t-number of epochs" + 
+                         "\n\t-path to validation db\n\t-max length of validation reads")
     
-    POPULATION_SIZE = int(argv[1])
-    models = [create_model(i) for i in range(POPULATION_SIZE)]
+    network_type = argv[1]
+    POPULATION_SIZE = int(argv[2])
+    db_dir_train = argv[3]
+    training_nr = int(argv[4])
+    n_epochs = int(argv[5])
+    db_dir_val = argv[6]
+    max_seq_length = int(argv[7])                   
     
-    #2. Train models
-    db_dir = argv[2]
-    training_nr = int(argv[3])
-    print("Training on : {} windows".format(training_nr))
-    n_epochs = int(argv[4])
-    train_x, train_y = train.retrieve_set(db_dir, training_nr, "trainingreads")
+    # 1. Create models
+    models = [create_model(i, network_type) for i in range(POPULATION_SIZE)]
+    
+    # 2. Train models
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        m.train_network(train_x, train_y, n_epochs)
+        train(m, db_dir_train, training_nr, n_epochs)
     
-    #3. Assess performance on validation set (squiggles)
-    db_dir_val = argv[5]
-    val_nr = int(argv[6])                   # // window * window
-    print("Validating on: {} squiggles".format(val_nr))
-    val_x, val_y = train.retrieve_set(db_dir_val, val_nr, "squiggles")
+    #3. Assess performance on validation set
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        m.test_network(val_x, val_y)
+        validate(m, db_dir_val, max_seq_length)

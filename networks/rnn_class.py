@@ -19,7 +19,7 @@ class RNN(object):
                    #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
     def __init__(self, model_id, **kwargs):
 
-        tf.set_random_seed(16)
+        #~ tf.set_random_seed(16)
         
         # adjustable parameters
         self.batch_size = kwargs["batch_size"]
@@ -41,16 +41,16 @@ class RNN(object):
         self.max_seq_length = 5250  
         
         self.loss_history = []
-        self.layer_sizes = [self.layer_size,] * self.n_layers
-        self.saving_step = 100
-        # self.session = None
+        self.layer_sizes = [self.layer_size,] * self.n_layers       # does this work when extended or shortened? maybe move to the network layer
+        self.saving_step = 10000
         
         self.extra = False
-        self.save = True
+        #~ self.save = True
         self.cell_type = "GRU"
         
-        self.model_type = "bi" + self.cell_type + "-RNN-full"
+        self.model_type = "bi" + self.cell_type + "-RNN"
         self.save_info()
+        self.sess = tf.Session()            # is this right and change everywhere
 
         # build network and additionals
         #~ self.build_network(self.rnn_layer())
@@ -60,9 +60,10 @@ class RNN(object):
         self.loss = self.compute_loss()
         self.accuracy = self.compute_accuracy()
         self.optimizer = self.optimizer_choice
-        if self.save:
-            self.model_path = self.set_model_path()
-            self.saver = self.set_saver()
+        self.model_path = self.set_model_path()
+        self.saver = self.set_saver()
+        self.summary = self.activate_tensorboard()
+        self.initialize_network()
 
               
     @property
@@ -104,17 +105,18 @@ class RNN(object):
         model_path = cur_dir + "/" + self.model_type + "_" + str(self.model_id)
         check_for_dir = True
         
-        if not os.path.isdir(model_path):
-            os.mkdir(model_path)
+        #~ if not os.path.isdir(model_path):
+            #~ os.mkdir(model_path)
         
-        #~ number = 0
-        #~ while check_for_dir:
-            #~ if os.path.isdir(model_path):
-                #~ number += 1
-                #~ model_path = model_path.rsplit("_")[0] + "_" + str(number)
-            #~ else:
-                #~ os.mkdir(model_path)
-                #~ check_for_dir = False
+        number = 0
+        while check_for_dir:
+            if os.path.isdir(model_path):
+                number += 1
+                model_path = model_path.rsplit("_")[0] + "_" + str(number)
+            else:
+                os.mkdir(model_path)
+                check_for_dir = False
+                
         print("\nSaving network checkpoints to", model_path, "\n")
         
         return model_path    
@@ -123,19 +125,23 @@ class RNN(object):
     def set_saver(self):  
         with tf.name_scope("saver"):
             saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
-                
-        return saver
-                
-        #~ with tf.name_scope("TensorBoard"):            
-            #~ print("\nCurrent directory: {}\nUse 'tensorboard --logdir=[cur_dir]'\n".format(cur_dir))
-            
-            #~ writer = tf.summary.FileWriter(model_path + "/tensorboard")
-            #~ writer.add_graph(tf.get_default_graph())
-            
-            #~ loss_summ = tf.summary.scalar("loss", loss)
-            #~ acc_summ = tf.summary.scalar("accuracy", accuracy)
         
-            #~ all_summs = tf.summary.merge_all()
+        return saver
+        
+        
+    def activate_tensorboard(self):
+        with tf.name_scope("TensorBoard"):            
+            print("\nCurrent directory: {}\nUse 'tensorboard --logdir=[cur_dir]'\n".format(self.model_path))
+            
+            self.writer = tf.summary.FileWriter(self.model_path + "/tensorboard")
+            self.writer.add_graph(tf.get_default_graph())
+            
+            loss_summ = tf.summary.scalar("loss", self.loss)
+            acc_summ = tf.summary.scalar("accuracy", self.accuracy)
+        
+            all_summs = tf.summary.merge_all()
+            
+            return all_summs
             
             
     def set_nbatches(self, n_train, training_type="trainingreads"):
@@ -195,106 +201,71 @@ class RNN(object):
             
         return final_output
         
+    
+    def initialize_network(self):
+        self.sess.run(tf.global_variables_initializer())
+        print("\nNot yet initialized: ", self.sess.run(tf.report_uninitialized_variables()), "\n")
+        
+        self.saver.save(self.sess, self.model_path + "/checkpoints/meta", write_meta_graph=True)
+        print("\nSaved meta graph\n")
             
     
-    def train_network(self, train_x, train_y, n_epochs):
-        with tf.Session() as sess:
-            # initialize model variables:
-            sess.run(tf.global_variables_initializer())
-            print("\nNot yet initialized: ", sess.run(tf.report_uninitialized_variables()), "\n")
-            
-            # feed training data:
-            step = 0
-            n_batches = self.set_nbatches(len(train_x))
-            
-            if self.save:
-                saver = self.set_saver()
-                
-                self.saver.save(sess, self.model_path + "/checkpoints/meta", write_meta_graph=True)
-                print("\nSaved meta graph\n")
-            
-            for epoch in range(1, n_epochs + 1):
-                epoch_loss = 0
-                epoch_acc = 0          
-                #~ random.shuffle(list_batches)                                # is it bad that the full reads are not sequentially fed?
-                for batch in range(n_batches):
-                    feed_dict = {self.x: train_x[batch * self.batch_size : (batch + 1) * self.batch_size], 
-                                 self.y: train_y[batch * self.batch_size: (batch + 1) * self.batch_size], 
-                                 self.p_dropout: self.keep_prob}
+    def train_network(self, train_x, train_y, step):        
+        feed_dict = {self.x: train_x, 
+                     self.y: train_y, 
+                     self.p_dropout: self.keep_prob}
 
-                    batch_loss, _, batch_acc = sess.run([self.loss, self.optimizer, self.accuracy], feed_dict=feed_dict)
-                    epoch_loss += batch_loss
-                    epoch_acc += batch_acc      
-                    
-                    if self.save and step % self.saving_step == 0:      
-                        saver.save(sess, self.model_path + "/checkpoints", global_step=step, write_meta_graph=False)            
-                    
-                    step += 1
-                    
-                self.loss_history.append(epoch_loss)
-                
-                #~ dest = open(self.model_type + ".txt", "a")
-                print("Epoch {}\t\tLoss: {:.4f}\t\tAccuracy: {:.2%}".format(epoch, epoch_loss / n_batches, epoch_acc / n_batches))
-                #~ dest.close()
+        _, summary = self.sess.run([self.optimizer, self.summary], feed_dict=feed_dict)
 
-            if self.save:
-                saver.save(sess, self.model_path + "/checkpoints", global_step=step)
-                print("\nSaved final checkpoint\n")
+        self.writer.add_summary(summary, step)  
+        
+        # removed step += 1
 
 
     def test_network(self, test_x, test_y, ckpnt="latest"):
-        with tf.Session() as sess:
-            # initialize model variables:
-            sess.run(tf.global_variables_initializer())
-            #~ saver = tf.train.import_meta_graph(meta_file)
-            saver = self.set_saver()
-            if ckpnt == "latest":
-                saver.restore(sess, tf.train.latest_checkpoint(self.model_path))
-            else:
-                saver.restore(sess, ckpnt)
-            print("Model {} restored".format(os.path.basename(self.model_path)))
-                    
-            #~ # get predicted values:
-            #~ pred_vals = sess.run(tf.round(self.predictions), feed_dict=feed_dict_test)                 
-            #~ pred_vals = np.concatenate(pred_vals).ravel().astype(int)       
-        
-            pred_vals, confidences = self.predict(sess, test_x)
+        # restore model:
+        self.sess.run(tf.global_variables_initializer())
+        if ckpnt == "latest":
+            self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_path))
+        else:
+            self.saver.restore(self.sess, ckpnt)
+        print("Model {} restored\n".format(os.path.basename(self.model_path)))
+                      
+        # get predicted values:
+        pred_vals, confidences = self.predict(test_x)
 #            pred_list = [pred_vals, confidences]       # limit to one squiggle: [:5250]
-            #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions_{}".format(self.model_id))
+        #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions_{}".format(self.model_id))
 
-            # get testing accuracy:
-            feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
-            test_acc = sess.run(self.accuracy, feed_dict=feed_dict_test)
-            print("\nTest accuracy: {:.2%}".format(test_acc))
-                    
-            # output performance:
-            test_labels = test_y.reshape(-1)
-            nonhp = np.count_nonzero(pred_vals == 0)
-            hp = np.count_nonzero(pred_vals == 1)
-            hp_true = np.count_nonzero(test_labels == 1)
-            test_precision, test_recall = metrics.precision_recall(test_labels, pred_vals)
-            test_f1 = metrics.weighted_f1(test_precision, test_recall, hp_true, hp + nonhp)
-            tpr, fpr, roc_auc = metrics.calculate_auc(test_labels, confidences)
-            metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
-            print("Predicted percentage HPs in test set: {:.2%}".format(hp / (nonhp + hp)))
-            print("Test precision: {:.2%}\nTest recall: {:.2%}".format(test_precision, test_recall))
-            print("Test weighted F1 measure: {0:.4f}".format(float(test_f1)))
-            print("AUC: {0:.4f}".format(roc_auc))
-            
-            #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
-                                    #~ ["homopolymer", "confidence", "truth"], "Comparison_{}".format(self.model_id))
-            
+        # get testing accuracy:
+        feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
+        test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
+                
+        # output performance:
+        test_labels = test_y.reshape(-1)
+        nonhp = np.count_nonzero(pred_vals == 0)
+        hp = np.count_nonzero(pred_vals == 1)
+        hp_true = np.count_nonzero(test_labels == 1)
+        test_precision, test_recall = metrics.precision_recall(test_labels, pred_vals)
+        test_f1 = metrics.weighted_f1(test_precision, test_recall, hp_true, hp + nonhp)
+        tpr, fpr, roc_auc = metrics.calculate_auc(test_labels, confidences)
+        metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
+        print("Predicted percentage HPs: {:.2%}".format(hp / (nonhp + hp)))
+        
+        #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
+                                #~ ["homopolymer", "confidence", "truth"], "Comparison_{}".format(self.model_id))
+        
+        return test_acc, test_precision, test_recall, test_f1, roc_auc
     
     #TODO: if sequence is smaller than needed. Add nonsense values that can be cut later ("dead" value 0?)
     # predict assumes reshaped sequence         
-    def predict(self, sess, sequence):        
+    def predict(self, sequence):        
         # get predicted values:
         feed_dict_pred = {self.x: sequence, self.p_dropout: self.keep_prob_test}
-        pred_vals = sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                 
-        pred_vals = np.concatenate(pred_vals).ravel().astype(int)       # ravel needed?
+        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
+        pred_vals = np.reshape(pred_vals, (-1)).astype(int)    
         
-        confidence = sess.run(self.predictions, feed_dict=feed_dict_pred) 
-        confidence = np.concatenate(confidence).ravel().astype(float)
+        confidence = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
+        confidence = np.reshape(confidence, (-1)).astype(float)
         
         return pred_vals, confidence
         
@@ -307,14 +278,50 @@ class RNN(object):
                   self.batch_size, self.optimizer_choice, self.learning_rate))
         print("Layer size RNN: {}\nNumber of layers RNN: {}\nKeep probability: {}".format(
                   self.layer_size, self.n_layers, self.keep_prob))
-              
+    
+
+
 
     @lru_cache(maxsize=None)                                            # for PBT!
     def copy_from(self, other_model):
         # This method is used for exploitation. We copy all weights and hyper-parameters
         # from other_model to this model
         my_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.name_scope + '/')
-        print(my_weights)
         their_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, other_model.name_scope + '/')
         assign_ops = [mine.assign(theirs).op for mine, theirs in zip(my_weights, their_weights)]
         return tf.group(*assign_ops)
+
+        
+    def _restore(self, checkpoint_path):
+        reader = tf.train.NewCheckpointReader(checkpoint_path)
+        for var in self.saver._var_list:
+            tensor_name = var.name.split(':')[0]
+            if not reader.has_tensor(tensor_name):
+                continue
+            saved_value = reader.get_tensor(tensor_name)
+            resized_value = fit_to_shape(saved_value, var.shape.as_list())
+            var.load(resized_value, self.sess)
+
+
+    def fit_to_shape(array, target_shape):
+        source_shape = np.array(array.shape)
+        target_shape = np.array(target_shape)
+
+        if len(target_shape) != len(source_shape):
+            raise ValueError('Axes must match')
+
+        size_diff = target_shape - source_shape
+
+        if np.all(size_diff == 0):
+            return array
+
+        if np.any(size_diff > 0):
+            paddings = np.zeros((len(target_shape), 2), dtype=np.int32)
+            paddings[:, 1] = np.maximum(size_diff, 0)
+            array = np.pad(array, paddings, mode='constant')
+
+        if np.any(size_diff < 0):
+            slice_desc = [slice(d) for d in target_shape]
+            array = array[slice_desc]
+
+        return array
