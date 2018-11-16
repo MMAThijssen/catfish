@@ -139,36 +139,39 @@ def generate_random_hyperparameters():          # werkt
 
 if __name__ == "__main__":
     #~ batch_size = 64
-    if not len(argv) == 7:
+    # 0. Get input
+    if not len(argv) == 8:
         raise ValueError("The following arguments should be provided:\n\t-number of models\n" +
-                         "\t-trainingdb\n\t-nr trainingreads\n\t-nr epochs\n\t-valdb\n\t-nr validationreads")
+                         "\t-networktype\t-trainingdb\n\t-nr trainingreads\n\t-nr epochs\n" +
+                         "\t-valdb\n\t-nr validationreads")
+    
+    POPULATION_SIZE = int(argv[1])
+    network_type = argv[2]
+    
+    db_dir_train = argv[3]
+    training_nr = int(argv[4])
+    
+    n_epochs = argv[5]
+    
+    db_dir_val = argv[6]
+    max_seq_length = int(argv[7])
+    
     
     # 1. Create different models
-    POPULATION_SIZE = int(argv[1])
-    models = [create_model(i) for i in range(POPULATION_SIZE)]
-    
-    db_dir = argv[2]
-    training_nr = int(argv[3])
-    
-    db_dir_val = argv[5]
-    val_nr = int(argv[6])
-    
-    train_x, train_y = train.retrieve_set(db_dir, training_nr, "trainingreads")
-    val_x, val_y = train.retrieve_set(db_dir_val, val_nr, "squiggles")
+    models = [create_model(i, network_type) for i in range(POPULATION_SIZE)]    
 
     # 2. Train models
-    print("Training on : {} windows".format(training_nr))
-    n_epochs = int(argv[4])
-    train_x, train_y = train.retrieve_set(db_dir, training_nr, "trainingreads")
+    print("Loading training database..")
+    db_train = helper_functions.load_db(db_dir_train)
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        m.train_network(train_x, train_y, n_epochs)
+        train(m, db_train, training_nr, n_epochs)
     
-    #3. Assess performance on validation set (squiggles)
-    db_dir_val = argv[5]
-    val_nr = int(argv[6])                   # // window * window
-    print("Validating on: {} squiggles".format(val_nr))
-    val_x, val_y = train.retrieve_set(db_dir_val, val_nr, "squiggles")
+    
+    #3. Assess performance on validation set
+    print("Loading validation database..")
+    squiggles = helper_functions.load_squiggles(db_dir_val)
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        m.test_network(val_x, val_y)
+        network = m.restore()
+        validate(network, squiggles, max_seq_length)
