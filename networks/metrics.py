@@ -7,7 +7,7 @@ import seaborn as sns
 import sklearn.metrics as sklmet
 from sys import argv
 
-def precision_recall(true_labels, predicted_labels):
+def confusion_matrix(true_labels, predicted_labels):
     """
     Returns precision and recall
     """
@@ -34,8 +34,13 @@ def precision_recall(true_labels, predicted_labels):
                 true_neg += 1
             else:
                 false_neg += 1
-    #~ print("TP: {}\tFP: {}\tTN: {}\tFN: {}".format(true_pos, false_pos, true_neg, false_neg))
+    return true_pos, false_pos, true_neg, false_neg
+    
 
+def precision_recall(true_pos, false_pos, false_neg):
+    """
+    Returns precision and recall
+    """
     try:
         precision = true_pos / (true_pos + false_pos)
     except ZeroDivisionError:
@@ -47,6 +52,10 @@ def precision_recall(true_labels, predicted_labels):
         recall = 0
         print("Recall could not be calculated.")
     return precision, recall
+    
+
+def calculate_accuracy(true_pos, false_pos, true_neg, false_neg):
+    return (true_pos + true_neg) / (true_pos + false_pos + true_neg + false_neg)
     
 
 def calculate_auc(true_labels, predicted_scores, pos_label=1):
@@ -62,10 +71,13 @@ def calculate_auc(true_labels, predicted_scores, pos_label=1):
     """
     # tpr is recall 
     tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
-                                                     y_score=predicted_scores,
-                                                     pos_label=pos_label)
+                                            y_score=predicted_scores,
+                                            pos_label=pos_label)
     roc_auc = sklmet.auc(fpr, tpr)
-    return tpr, fpr, roc_auc
+    return roc_auc
+    
+def compute_auc(tpr, fpr):
+    return sklmet.auc(fpr, tpr)
 
 
 def draw_roc(tpr, fpr, roc_auc, title):
