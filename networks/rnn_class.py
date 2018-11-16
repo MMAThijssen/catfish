@@ -23,7 +23,6 @@ class RNN(object):
         
         # adjustable parameters
         self.batch_size = kwargs["batch_size"]
-#        self.max_seq_length = kwargs["max_seq_length"]
         self.optimizer_choice = kwargs["optimizer_choice"]
         self.learning_rate = kwargs["learning_rate"]
         self.layer_size = kwargs["layer_size"]        
@@ -51,19 +50,24 @@ class RNN(object):
         self.model_type = "bi" + self.cell_type + "-RNN"
         self.save_info()
         self.sess = tf.Session()            # is this right and change everywhere
-
+        
         # build network and additionals
-        #~ self.build_network(self.rnn_layer())
         self.input_layer()
         self.layer_output = self.network_layer(self.x)
         self.logits = self.output_layer(self.layer_output)
         self.loss = self.compute_loss()
         self.accuracy = self.compute_accuracy()
         self.optimizer = self.optimizer_choice
-        self.model_path = self.set_model_path()
-        self.saver = self.set_saver()
+        self.model_path = self.model_type
+        self.saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
         self.summary = self.activate_tensorboard()
         self.initialize_network()
+        
+        # saving test performance
+        self.tp = 0
+        self.fp = 0
+        self.tn = 0
+        self.fn = 0
 
               
     @property
@@ -98,17 +102,24 @@ class RNN(object):
             accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
         
         return accuracy
-        
     
-    def set_model_path(self):
+        
+    @property
+    def model_path(self):
+        return self._model_path
+    
+    
+    @model_path.setter
+    def model_path(self, model_type):
         cur_dir = "/mnt/nexenta/thijs030/networks"                      # change to take abs path - good for now
-        model_path = cur_dir + "/" + self.model_type + "_" + str(self.model_id)
+        #~ model_path = cur_dir + "/" + self.model_type + "_" + str(self.model_id)
         check_for_dir = True
         
         #~ if not os.path.isdir(model_path):
             #~ os.mkdir(model_path)
         
         number = 0
+        model_path = cur_dir + "/" + model_type + "_" + str(number)
         while check_for_dir:
             if os.path.isdir(model_path):
                 number += 1
@@ -119,14 +130,16 @@ class RNN(object):
                 
         print("\nSaving network checkpoints to", model_path, "\n")
         
-        return model_path    
+        self._model_path = model_path
         
+    #~ @property.setter
+    #~ def saver(self):  
+        #~ with tf.name_scope("saver"):
+            #~ self._saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
     
-    def set_saver(self):  
-        with tf.name_scope("saver"):
-            saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
-        
-        return saver
+    #~ @property
+    #~ def saver(self):
+        #~ return _saver
         
         
     def activate_tensorboard(self):
@@ -142,15 +155,6 @@ class RNN(object):
             all_summs = tf.summary.merge_all()
             
             return all_summs
-            
-            
-    def set_nbatches(self, n_train, training_type="trainingreads"):
-        if training_type == "squiggles":
-            n_batches = self.max_seq_length // self.batch_size // self.window      
-        if training_type == "trainingreads":
-            n_batches = n_train // self.batch_size
-        
-        return n_batches
         
 
     def set_cell(self, layer_size):
@@ -173,7 +177,7 @@ class RNN(object):
             self.x = tf.placeholder(tf.float32, shape=[None, self.window, self.n_inputs])
             self.y = tf.placeholder(tf.float32, shape=[None, self.window, self.n_outputs])
             
-        self.p_dropout = tf.placeholder(dtype=tf.float32, name="keep_prob")
+        self.p_dropout = tf.placeholder(dtype=tf.float32, shape=[], name="dropout")
 
             
     def network_layer(self, x_input):
@@ -222,7 +226,7 @@ class RNN(object):
         # removed step += 1
 
 
-    def test_network(self, test_x, test_y, ckpnt="latest"):
+    def restore_network(self):
         # restore model:
         self.sess.run(tf.global_variables_initializer())
         if ckpnt == "latest":
@@ -230,44 +234,45 @@ class RNN(object):
         else:
             self.saver.restore(self.sess, ckpnt)
         print("Model {} restored\n".format(os.path.basename(self.model_path)))
-                      
+        
+
+    def test_network(self, test_x, test_y, ckpnt="latest"):
         # get predicted values:
-        pred_vals, confidences = self.predict(test_x)
-#            pred_list = [pred_vals, confidences]       # limit to one squiggle: [:5250]
+        feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
+        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
+        pred_vals = np.reshape(pred_vals, (-1)).astype(int)    
+        
+        confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
+        confidences = np.reshape(confidences, (-1)).astype(float)       # is necessary! 150 > 5250
+        
+        #~ return pred_vals, confidences
+        
+        #            pred_list = [pred_vals, confidences]       # limit to one squiggle: [:5250]
         #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions_{}".format(self.model_id))
 
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
         test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
-                
-        # output performance:
+        
+    
+    #~ def evaluate_performance(self, test_y):
         test_labels = test_y.reshape(-1)
-        nonhp = np.count_nonzero(pred_vals == 0)
-        hp = np.count_nonzero(pred_vals == 1)
-        hp_true = np.count_nonzero(test_labels == 1)
-        test_precision, test_recall = metrics.precision_recall(test_labels, pred_vals)
-        test_f1 = metrics.weighted_f1(test_precision, test_recall, hp_true, hp + nonhp)
-        tpr, fpr, roc_auc = metrics.calculate_auc(test_labels, confidences)
-        metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
-        print("Predicted percentage HPs: {:.2%}".format(hp / (nonhp + hp)))
+        true_pos, false_pos, true_neg, false_neg = metrics.confusion_matrix(test_labels, pred_vals)
+        self.tp += true_pos
+        self.fp += false_pos
+        self.tn += true_neg
+        self.fn += false_neg
+
+        test_precision, test_recall = metrics.precision_recall(true_pos, false_pos, false_neg)
+        test_f1 = metrics.weighted_f1(test_precision, test_recall, true_pos + false_neg, len(test_labels))
+        roc_auc = metrics.calculate_auc(test_labels, confidences)
+        #~ metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
+        #~ print("Predicted percentage HPs: {:.2%}".format(hp / (nonhp + hp)))
         
         #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
                                 #~ ["homopolymer", "confidence", "truth"], "Comparison_{}".format(self.model_id))
-        
-        return test_acc, test_precision, test_recall, test_f1, roc_auc
-    
-    #TODO: if sequence is smaller than needed. Add nonsense values that can be cut later ("dead" value 0?)
-    # predict assumes reshaped sequence         
-    def predict(self, sequence):        
-        # get predicted values:
-        feed_dict_pred = {self.x: sequence, self.p_dropout: self.keep_prob_test}
-        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
-        pred_vals = np.reshape(pred_vals, (-1)).astype(int)    
-        
-        confidence = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
-        confidence = np.reshape(confidence, (-1)).astype(float)
-        
-        return pred_vals, confidence
+        return test_acc, roc_auc, test_precision, test_recall, test_f1
+
         
     
     def save_info(self):
