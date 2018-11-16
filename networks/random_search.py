@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import helper_functions
 import numpy as np
 from resnet_class import ResNetRNN
 from rnn_class import RNN
@@ -50,16 +51,16 @@ def generate_random_hyperparameters(network_type):
 
 
 def create_model(model_id, network_type):                        # werkt
-    with tf.variable_scope(None, 'model'):
+    with tf.variable_scope(None, "Model_{}".format(model_id)):
         if network_type == "RNN":
-            lr, opt, l_size, n_layers, batch_size, dropout = generate_random_hyperparameters(network_type)
+            lr, opt, l_size, n_layers, batch_size, drpt = generate_random_hyperparameters(network_type)
             return RNN(model_id, learning_rate=lr, optimizer_choice=opt, n_layers=n_layers,
-                    layer_size=l_size, batch_size=batch_size, keep_prob=dropout) 
+                    layer_size=l_size, batch_size=batch_size, keep_prob=drpt) 
         elif network_type == "ResNetRNN":
             lr, opt, l_size, n_layers, batch_size, dropout, 
             n_lay_res, size_lay_res = generate_random_hyperparameters(network_type)
             return ResNetRNN(model_id, learning_rate=lr, optimizer_choice=opt, n_layers=n_layers,
-                    layer_size=l_size, batch_size=batch_size, keep_prob=dropout, 
+                    layer_size=l_size, batch_size=batch_size, keep_prob=drpt, 
                     n_layers_res=n_lay_res, layer_size_res=size_lay_res)             
        
                     
@@ -81,14 +82,25 @@ if __name__ == "__main__":
     max_seq_length = int(argv[7])                   
     
     # 1. Create models
-    models = [create_model(i, network_type) for i in range(POPULATION_SIZE)]
+    models = []
+    for i in range(POPULATION_SIZE):
+        models.append(create_model(i, network_type))
+    #~ models = [create_model(i, network_type) for i in range(POPULATION_SIZE)]
     
     # 2. Train models
+    print("Loading training database..")
+    db_train = helper_functions.load_db(db_dir_train)
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        train(m, db_dir_train, training_nr, n_epochs)
+        train(m, db_train, training_nr, n_epochs)
+    
+    #~ training = [print("------------------------------MODEL {}------------------------------".format(m.model_id)), 
+                #~ train(m, db_train, training_nr, n_epochs) for m in models]
     
     #3. Assess performance on validation set
+    print("Loading validation database..")
+    squiggles = helper_functions.load_squiggles(db_dir_val)
     for m in models:
         print("------------------------------MODEL {}------------------------------".format(m.model_id))
-        validate(m, db_dir_val, max_seq_length)
+        network = m.restore()
+        validate(network, squiggles, max_seq_length)
