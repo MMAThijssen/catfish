@@ -13,10 +13,13 @@ class ExampleDb(object):
         self._db = None
         self.nb_pos = 0
         self.nb_neg = 0
+        self.range_ps = 0
+        self.range_neg = 0
         if not isfile(kwargs['db_name']):
             self.width = kwargs['width']
         self.db_name = kwargs['db_name']
         self.db = self.db_name
+
 
     # get neg and pos from a read added for training
     def add_training_read(self, training_read):
@@ -28,27 +31,38 @@ class ExampleDb(object):
             # equal number of negatives are added to db:
             neg_examples, neg_labels = training_read.get_neg(self.width, len(pos_examples))
             for i, ex in enumerate(neg_examples):
-                conn.root.neg[self.nb_neg+i] = (ex, neg_labels[i])
-            self.nb_neg += len(neg_examples)         
+                conn.root.neg[self.nb_neg + i] = (ex, neg_labels[i])
+            self.nb_neg += len(neg_examples)  
+        
+    def set_ranges(self):
+        self.range_ps = range(self.nb_pos)
+        self.range_ns = range(self.nb_neg)
                 
                 
-    def get_training_set(self, size, sets="train"):
+    def get_training_set(self, size):
+        random.seed(23)     # so same samples are used in each epoch
         """
         Return a balanced subset of reads from the DB
         :param size: number of reads to return
         :param includes: k-mers that should forcefully be included, if available in db
         :return: lists of numpy arrays for training data(x_out) and labels (y_out)
         """
-        if sets == "train":
-            nb_pos = size // 2
-            nb_neg = size - nb_pos
-        elif sets == "test":
-            content = 0.0222269808106684                    # HP content of ref or corrected?
-            nb_pos = round(size * content)
-            nb_neg = size - nb_pos 
 
-        ps = random.sample(range(self.nb_pos), nb_pos)       
-        ns = random.sample(range(self.nb_neg), nb_neg)
+        nb_pos = size // 2
+        nb_neg = size - nb_pos
+        #~ elif sets == "test":
+            #~ content = 0.0222269808106684                    # HP content of ref or corrected?
+            #~ nb_pos = round(size * content)
+            #~ nb_neg = size - nb_pos 
+        
+        #~ ps = random.sample(range(self.nb_pos), nb_pos)       
+        #~ ns = random.sample(range(self.nb_neg), nb_neg)
+        
+        ps = random.sample(self.range_ps, nb_pos)       
+        ns = random.sample(self.range_ns, nb_neg)
+        
+        self.range_ps = set(self.range_ps) - set(ps)
+        self.range_ns = set(self.range_ns) - set(ns)
 
         with self._db.transaction() as conn:
             examples_pos = [conn.root.pos[n] for n in ps]   # conn.root.pos[n] is tuple(arrays, labels)         
@@ -62,12 +76,9 @@ class ExampleDb(object):
         neg_count = 0
         for y in y_out:
             pos = y.count(1)
-            neg = y.count(0)
             pos_count += pos
-            neg_count += neg
            
-        return x_out, y_out, pos_count, neg_count
-
+        return x_out, y_out, pos_count
     def pack_db(self):
         self._db.pack()
 
