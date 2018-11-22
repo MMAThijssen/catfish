@@ -17,7 +17,7 @@ class RNN(object):
 #    def __init__(self):
     #~ def __init__(self, batch_size, layer_size, n_layers, 
                    #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
-    def __init__(self, model_id, **kwargs):
+    def __init__(self, **kwargs):
 
         #~ tf.set_random_seed(16)
         
@@ -40,10 +40,11 @@ class RNN(object):
         self.max_seq_length = 5250  
         
         self.layer_sizes = [self.layer_size,] * self.n_layers                   # does this work when extended or shortened? maybe move to the network layer
-        self.saving_step = 1000
+        self.saving_step = 100
         
         self.cell_type = "GRU"
         self.model_type = "bi" + self.cell_type + "-RNN"
+        #~ self.model_type = "NN"
         self.sess = tf.Session()          
         
         # build network and additionals
@@ -109,9 +110,6 @@ class RNN(object):
     def model_path(self, model_type):
         cur_dir = "/mnt/nexenta/thijs030/networks"
         #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                # "/mnt/nexenta/thijs030/networks"              
-        #~ model_path = cur_dir + "/" + self.model_type + "_" + str(self.model_id)
-        #~ if not os.path.isdir(model_path):
-            #~ os.mkdir(model_path)
             
         check_for_dir = True
         number = 0
@@ -243,11 +241,6 @@ class RNN(object):
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)       # is necessary! 150 > 5250
         
-        #~ return pred_vals, confidences
-        
-        #~ pred_list = [pred_vals, confidences]       # limit to one squiggle: [:5250]
-        #~ metrics.generate_heatmap(pred_list, ["homopolymer", "confidence"], "Predictions_{}".format(self.model_id))
-
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
         test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
@@ -270,8 +263,6 @@ class RNN(object):
         with open(self.model_path + "_predictions.txt", "a+") as dest:
             dest.write("\n")
             dest.write("{}".format(list(confidences)))
-        #~ metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
-        #~ print("Predicted percentage HPs: {:.2%}".format(hp / (nonhp + hp)))
         
         if read_nr % 100 == 0:
             metrics.generate_heatmap([pred_vals, confidences, test_labels], 
@@ -283,10 +274,10 @@ class RNN(object):
     
     def save_info(self):
         with open(self.model_path + ".txt", "w") as dest:
-            dest.write("Model type: {}\n".format(self.model_type))
-            dest.write("batch_size={}\noptimizer_choice={}\nlearning_rate={}\n".format(
+            #~ dest.write("Model type: {}\n".format(self.model_type))
+            dest.write("batch_size: {}\noptimizer_choice: {}\nlearning_rate: {}\n".format(
                       self.batch_size, self.optimizer_choice, self.learning_rate))
-            dest.write("layer_size={}\nn_layers={}\nkeep_prob={}\n".format(
+            dest.write("layer_size: {}\nn_layers: {}\nkeep_prob: {}\n".format(
                       self.layer_size, self.n_layers, self.keep_prob))
     
     

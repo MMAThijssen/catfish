@@ -1,3 +1,12 @@
+    #~ batch_size = 128
+    #~ learning_rate = 0.01
+    #~ n_layers = 3
+    #~ layer_size = 64
+    #~ keep_prob = 0.8     
+    #~ optimizer_choice = "Adam"
+    #~ layer_size_res = 32
+    #~ n_layers_res = 2
+
     #~ #TODO: if sequence is smaller than needed. Add nonsense values that can be cut later ("dead" value 0?)
     #~ # predict assumes reshaped sequence         
     #~ def predict(self, sequence):        

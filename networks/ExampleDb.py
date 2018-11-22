@@ -1,8 +1,7 @@
-import gc
+import datetime
 import ZODB, ZODB.FileStorage, BTrees.IOBTree
 from os.path import isfile
 import random
-#~ import datetime
 
 
 class ExampleDb(object):
@@ -35,8 +34,8 @@ class ExampleDb(object):
                 conn.root.neg[self.nb_neg + i] = (ex, neg_labels[i])
             self.nb_neg += len(neg_examples)  
         
-    def set_ranges(self):
-        random.seed(23)                                                         # so same samples are used in each epoch
+    def set_ranges(self, seed):
+        random.seed(seed)                                                         # so same samples are used in each epoch
         self.range_ps = list(range(self.nb_pos))
         self.range_ns = list(range(self.nb_neg))
         random.shuffle(self.range_ps)
@@ -64,28 +63,28 @@ class ExampleDb(object):
         with self._db.transaction() as conn:
             examples_pos = [conn.root.pos[n] for n in ps]                       # conn.root.pos[n] is tuple(arrays, labels)         
             examples_neg = [conn.root.neg[n] for n in ns]
-            #~ gc.collect()        # TODO: block
         
         data_out = examples_pos + examples_neg
         random.shuffle(data_out)                             
         x_out, y_out = zip(*data_out)
 
-        #~ # calculate percentage HPs:
-        #~ pos_count = 0
-        #~ for y in y_out:
-            #~ pos = y.count(1)
-            #~ pos_count += pos
-            
-        #~ print(pos_count)
+        # calculate percentage HPs:
+        pos_count = 0
+        for y in y_out:
+            pos = y.count(1)
+            pos_count += pos
            
-        return x_out, y_out
+        return x_out, y_out, pos_count
+        
         
     def pack_db(self):
         self._db.pack()
+        
 
     @property
     def db(self):
         return self._db
+        
 
     @db.setter
     def db(self, db_name):

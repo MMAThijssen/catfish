@@ -6,13 +6,12 @@ import tensorflow as tf
 
 class ResNetRNN(RNN):
     
-    def __init__(self, model_id, **kwargs):
-        self.model_id = model_id
+    def __init__(self, **kwargs):
         self.n_layers_res = kwargs["n_layers_res"]
         self.layer_size_res = kwargs["layer_size_res"]
         self.model_type = "ResNet-biGRU-RNN"
         self.model_path = self.model_type
-        RNN.__init__(self, model_id, **kwargs)
+        RNN.__init__(self, **kwargs)
         
     
     def network_layer(self, x_input):
@@ -29,7 +28,7 @@ class ResNetRNN(RNN):
     def save_info(self):
         RNN.save_info(self)
         with open(self.model_path + ".txt", "a") as dest:
-            dest.write("Layer size ResNet: {}\nNumber of layers ResNet: {}\n\n".format(
+            dest.write("layer_size_res: {}\nn_layers_res: {}\n\n".format(
                   self.layer_size_res, self.n_layers_res))        
                   
             
