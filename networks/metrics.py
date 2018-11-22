@@ -74,9 +74,10 @@ def calculate_auc(true_labels, predicted_scores, pos_label=1):
                                             y_score=predicted_scores,
                                             pos_label=pos_label)
     roc_auc = sklmet.auc(fpr, tpr)
-    return roc_auc
+    return tpr, fpr, roc_auc
     
 def compute_auc(tpr, fpr):
+    # tpr and fpr should be arrays!
     return sklmet.auc(fpr, tpr)
 
 
@@ -136,6 +137,16 @@ def parse_txt(cprofile, measure):
         if len(measure_list) == 0:
             raise ValueError("Given measure has not been found in file.") 
     return measure_list
+
+
+def plot_squiggle(signal, title):
+    plt.figure(figsize=(30, 10)) 
+    plt.plot(signal, color="black", linewidth=0.5) 
+    plt.ylabel("Normalized signal", fontsize=14)
+    plt.xlim(left=0, right=len(signal))
+    plt.savefig("{}.png".format(title))
+    plt.close()
+    
     
     
 def plot_settings(measure):
@@ -212,15 +223,40 @@ def generate_heatmap(predicted_list, label_list, title):
                  cbar_kws={"orientation": "horizontal"})
     plt.savefig("{}.png".format(title), bbox_inches="tight")
     #~ plt.show()
+    plt.close()
 
     
                 
 if __name__ == "__main__":
-    measure = argv[1]
-    file_list = argv[2:]
-    measure_list = []
-    for fl in file_list:
-        accuracy = parse_txt(fl, measure)
-        measure_list.append(accuracy)
+    #~ measure = argv[1]
+    #~ file_list = argv[2:]
+    #~ measure_list = []
+    #~ for fl in file_list:
+        #~ accuracy = parse_txt(fl, measure)
+        #~ measure_list.append(accuracy)
     
-    plot_networks_on_metric(measure_list, accuracy)
+    #~ plot_networks_on_metric(measure_list, accuracy)
+    true_file = argv[1]
+    pred_file = argv[2]
+    true_labels = []
+    predicted_scores = []
+    with open(true_file, "r") as source1:
+        for line in source1:
+            if not line.strip():
+                continue
+            else:
+                labels = line.strip()[1:-1].split(", ")
+                labels = list(map(int, labels))
+                true_labels.extend(labels)
+    
+    with open(pred_file, "r") as source2:
+        for line in source2:
+            if not line.strip():
+                continue
+            else:
+                preds = line.strip()[1:-1].split(", ")
+                preds = list(map(float, preds))
+                predicted_scores.extend(preds)   
+                        
+    tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
+    draw_roc(tpr, fpr, auc, argv[3])

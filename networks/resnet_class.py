@@ -28,7 +28,8 @@ class ResNetRNN(RNN):
     
     def save_info(self):
         RNN.save_info(self)
-        print("Layer size ResNet: {}\nNumber of layers ResNet: {}".format(
+        with open(self.model_path + ".txt", "a") as dest:
+            dest.write("Layer size ResNet: {}\nNumber of layers ResNet: {}\n\n".format(
                   self.layer_size_res, self.n_layers_res))        
                   
             

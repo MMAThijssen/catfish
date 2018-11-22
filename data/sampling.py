@@ -65,6 +65,13 @@ def get_sets(fast5_file, n_total, p_train, p_val, p_test):
     
 # 3. Make directory for trainingDB with training samples
 def training_dir(dest_dir, train_set):
+    """
+    Copies reads to folder.
+    
+    Args:
+        dest_dir -- str, path to new or existing folder
+        train_set -- list of str, containing paths to files
+    """
     if not os.path.exists(dest_dir):    
         os.mkdir(dest_dir)
         print("Created directory {}.".format(dest_dir))
@@ -91,12 +98,13 @@ if __name__ == "__main__":
 #    all_samples = retrieve_fast5(argv[1], argv[2], simulated)
     all_samples = "fast5_all.txt"
 #
-## 2. Divide reads over sets
-#    total_number = argv[1]
-#    prop_train = argv[2]
-#    prop_val = argv[3]
-#    prop_test = argv[4]
-    tr_set, val_set, ts_set = get_sets(all_samples, 81703, 0.7, 0.15, 0.15) 
+# 2. Divide reads over sets
+    total_number = int(argv[1])
+    name_traindb = argv[2]
+    name_valdb = argv[3]
+    name_testdb = argv[4]
+
+    tr_set, val_set, ts_set = get_sets(all_samples, total_number, 0.7, 0.15, 0.15) 
 #    tr_set, val_set, ts_set = get_sets(all_samples, 10, 0.7, 0.15, 0.15) 
 #    tr_set, val_set, ts_set = get_sets(all_samples, total_number,
 #                                       prop_train, prop_val, prop_test) 
@@ -106,6 +114,6 @@ if __name__ == "__main__":
     print(len(ts_set))
     
 # 3. Make directory for trainingDB with training samples
-    training_dir("train57192", tr_set)    
-    training_dir("val12255", val_set)
-    training_dir("test12256", ts_set)    
+    training_dir(name_traindb, tr_set)    
+    training_dir(name_valdb, val_set)
+    training_dir(name_testdb, ts_set)    

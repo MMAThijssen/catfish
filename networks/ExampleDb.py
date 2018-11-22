@@ -1,8 +1,9 @@
+import gc
 import ZODB, ZODB.FileStorage, BTrees.IOBTree
 from os.path import isfile
 import random
+#~ import datetime
 
-#~ random.seed(23)
 
 class ExampleDb(object):
     """
@@ -26,7 +27,7 @@ class ExampleDb(object):
         with self._db.transaction() as conn:     # start a transaction
             pos_examples, pos_labels = training_read.get_pos(self.width)
             for i, ex in enumerate(pos_examples):
-                conn.root.pos[self.nb_pos+i] = (ex, pos_labels[i]) # saves to transaction as (index: example)
+                conn.root.pos[self.nb_pos+i] = (ex, pos_labels[i])              # saves to transaction as (index: example)
             self.nb_pos += len(pos_examples)
             # equal number of negatives are added to db:
             neg_examples, neg_labels = training_read.get_neg(self.width, len(pos_examples))
@@ -35,50 +36,50 @@ class ExampleDb(object):
             self.nb_neg += len(neg_examples)  
         
     def set_ranges(self):
-        self.range_ps = range(self.nb_pos)
-        self.range_ns = range(self.nb_neg)
+        random.seed(23)                                                         # so same samples are used in each epoch
+        self.range_ps = list(range(self.nb_pos))
+        self.range_ns = list(range(self.nb_neg))
+        random.shuffle(self.range_ps)
+        random.shuffle(self.range_ns)
                 
                 
     def get_training_set(self, size):
-        random.seed(23)     # so same samples are used in each epoch
         """
         Return a balanced subset of reads from the DB
         :param size: number of reads to return
         :param includes: k-mers that should forcefully be included, if available in db
-        :return: lists of numpy arrays for training data(x_out) and labels (y_out)
+        :return: lists of numpy arrays for training data (x_out) and labels (y_out)
         """
 
         nb_pos = size // 2
         nb_neg = size - nb_pos
-        #~ elif sets == "test":
-            #~ content = 0.0222269808106684                    # HP content of ref or corrected?
-            #~ nb_pos = round(size * content)
-            #~ nb_neg = size - nb_pos 
         
-        #~ ps = random.sample(range(self.nb_pos), nb_pos)       
-        #~ ns = random.sample(range(self.nb_neg), nb_neg)
+        ps = self.range_ps[ : nb_pos]
+        ns = self.range_ns[ : nb_neg]
+        print(ps)
         
-        ps = random.sample(self.range_ps, nb_pos)       
-        ns = random.sample(self.range_ns, nb_neg)
-        
-        self.range_ps = set(self.range_ps) - set(ps)
-        self.range_ns = set(self.range_ns) - set(ns)
+        self.range_ps = self.range_ps[nb_pos : ]
+        self.range_ns = self.range_ns[nb_neg : ]
 
         with self._db.transaction() as conn:
-            examples_pos = [conn.root.pos[n] for n in ps]   # conn.root.pos[n] is tuple(arrays, labels)         
+            examples_pos = [conn.root.pos[n] for n in ps]                       # conn.root.pos[n] is tuple(arrays, labels)         
             examples_neg = [conn.root.neg[n] for n in ns]
+            #~ gc.collect()        # TODO: block
+        
         data_out = examples_pos + examples_neg
         random.shuffle(data_out)                             
         x_out, y_out = zip(*data_out)
 
-        # calculate percentage HPs:
-        pos_count = 0
-        neg_count = 0
-        for y in y_out:
-            pos = y.count(1)
-            pos_count += pos
+        #~ # calculate percentage HPs:
+        #~ pos_count = 0
+        #~ for y in y_out:
+            #~ pos = y.count(1)
+            #~ pos_count += pos
+            
+        #~ print(pos_count)
            
-        return x_out, y_out, pos_count
+        return x_out, y_out
+        
     def pack_db(self):
         self._db.pack()
 
@@ -95,8 +96,6 @@ class ExampleDb(object):
         is_existing_db = isfile(db_name)
         if is_existing_db:
             print("Opening db {db_name}".format(db_name=db_name))
-
-        if is_existing_db:
             storage = ZODB.FileStorage.FileStorage(db_name, read_only=True)
             self._db = ZODB.DB(storage)
             with self._db.transaction() as conn:
@@ -105,9 +104,9 @@ class ExampleDb(object):
                 self.nb_neg = len(conn.root.neg)
 
         else:
-            storage = ZODB.FileStorage.FileStorage(db_name, read_only=True)
+            storage = ZODB.FileStorage.FileStorage(db_name, read_only=False)
             self._db = ZODB.DB(storage)
             with self._db.transaction() as conn:
                 conn.root.width = self.width
-                conn.root.pos = BTrees.IOBTree.BTree()
+                conn.root.pos = BTrees.IOBTree.BTree()      # IOB is for integer - is this about number or measurements - yes!
                 conn.root.neg = BTrees.IOBTree.BTree()

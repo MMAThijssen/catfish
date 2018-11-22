@@ -66,7 +66,7 @@ for i, files in enumerate(file_list):
     if not i+1 % 10:  # Every 10 reads remove history of transactions ('pack' the database) to reduce size
         db.pack_db()
     percentage_processed = int( (i+1) / nb_files * 100)
-    if percentage_processed > count_pct_lim:
+    if percentage_processed >= count_pct_lim:
         print('{pct} % of reads processed, {pos} positives and {neg} negatives in DB'.format(pct=percentage_processed,
                                                                                           neg=db.nb_neg,
                                                                                           pos=db.nb_pos))

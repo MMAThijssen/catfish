@@ -1,4 +1,41 @@
-#   temp unused
+    #~ #TODO: if sequence is smaller than needed. Add nonsense values that can be cut later ("dead" value 0?)
+    #~ # predict assumes reshaped sequence         
+    #~ def predict(self, sequence):        
+        #~ # get predicted values:
+        #~ feed_dict_pred = {self.x: sequence, self.p_dropout: self.keep_prob_test}
+        #~ pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
+        #~ pred_vals = np.reshape(pred_vals, (-1)).astype(int)    
+        
+        #~ confidence = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
+        #~ confidence = np.reshape(confidence, (-1)).astype(float)
+        
+        #~ return pred_vals, confidence
+        
+# train_validate
+    #~ predicted = []
+    #~ probabilities = []
+    #~ tp = 0
+    #~ fp = 0
+    #~ tn = 0
+    #~ fn = 0
+            
+            #~ sgl_predicted, slg_probabilities = network.test_network(set_x)
+            #~ sgl_auc, sgl_tp, sgl_fp, sgl_tn, sgl_fn, true_count = network.test_network(set_x, set_y)
+            #~ sgl_acc, sgl_auc, sgl_tp, sgl_fp, sgl_tn, sgl_fn, true_count = network.test_network(set_x, set_y)
+            #~ accuracy += sgl_acc
+            #~ roc_auc += sgl_auc
+            #~ predicted.append(sgl_predicted)
+            #~ probabilities.append(sgl_probabilities)
+            #~ tp += sgl_tp
+            #~ fp += sgl_fp
+            #~ tn += sgl_tn
+            #~ fn += sgl_fn
+            
+                #~ precision, recall = metrics.precision_recall(tp, fp, fn)
+    #~ f1 = metrics.weighted_f1(precision, recall, true_count, valid_reads * max_seq_length)
+    #~ accuracy = metrics.calculate_accuracy(tp, fp, tn, fn)
+    #~ tpr, fpr, roc_auc = metrics.calculate_auc(test_labels, confidences)
+    #~ metrics.draw_roc(tpr, fpr, roc_auc, "ROC_{}".format(self.model_id))
 
 #~ BACKUP
                 #~ sess.run([m.optimizer for m in models],

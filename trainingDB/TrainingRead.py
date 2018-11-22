@@ -22,6 +22,7 @@ class TrainingRead(Persistent):
         """Initialize a new training read.
 
         """
+        self.lessen = 3
         self._raw = None
         self.condensed_events = None
         self._event_length_list = None
@@ -231,16 +232,12 @@ class TrainingRead(Persistent):
     def get_pos(self, width, nb=None):
         width_l = width // 2  # if width is odd, pick point RIGHT of middle
         width_r = width - width_l
-        #TODO: remove step of 3 - I want to see if this is faster
-#        condensed_hits = [idx for idx in range(width_l, self.final_signal - width_r + 1, 3) if self.classified[idx] == 1]   
-        # if I use this (because faster!) than see how to do with right end...
-        # add separately?
         condensed_hits = [idx for idx in range(width_l, self.final_signal - width_r + 1) if self.classified[idx] == 1]   
         raw_points_out = []
         raw_labels_out = []
-        for ch in condensed_hits:                
-            start = ch - width_l
-            end = ch + width_r + 1
+        for ch in range(0, len(condensed_hits), self.lessen):
+            start = condensed_hits[ch] - width_l
+            end = condensed_hits[ch] + width_r + 1
             raw_labels_out.append(self.classified[start : end])
             raw_points_out.append(self.raw[start : end])
         return(raw_points_out, raw_labels_out)
