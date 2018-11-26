@@ -1,7 +1,8 @@
-import datetime
+import gc
 import ZODB, ZODB.FileStorage, BTrees.IOBTree
 from os.path import isfile
 import random
+#~ import datetime
 
 
 class ExampleDb(object):
@@ -20,10 +21,9 @@ class ExampleDb(object):
         self.db_name = kwargs['db_name']
         self.db = self.db_name
 
-
     # get neg and pos from a read added for training
     def add_training_read(self, training_read):
-        with self._db.transaction() as conn:     
+        with self._db.transaction() as conn:     # start a transaction
             pos_examples, pos_labels = training_read.get_pos(self.width)
             for i, ex in enumerate(pos_examples):
                 conn.root.pos[self.nb_pos+i] = (ex, pos_labels[i])              # saves to transaction as (index: example)
@@ -33,12 +33,12 @@ class ExampleDb(object):
             neg_examples, neg_labels = training_read.get_neg(self.width, len(pos_examples))
             for i, ex in enumerate(neg_examples):
                 conn.root.neg[self.nb_neg + i] = (ex, neg_labels[i])
-            self.nb_neg += len(neg_examples) 
-            conn.root.nb_neg = self.nb_neg 
-            
+            self.nb_neg += len(neg_examples)
+            conn.root.nb_neg = self.nb_neg
+    
         
-    def set_ranges(self, seed):
-        random.seed(seed)                                                         # so same samples are used in each epoch
+    def set_ranges(self):
+        random.seed(23)                                                         # so same samples are used in each epoch
         self.range_ps = list(range(self.nb_pos))
         self.range_ns = list(range(self.nb_neg))
         random.shuffle(self.range_ps)
@@ -58,8 +58,7 @@ class ExampleDb(object):
         
         ps = self.range_ps[ : nb_pos]
         ns = self.range_ns[ : nb_neg]
-        #~ print("pos: ", ps)
-        #~ print("neg: ", ns)
+        #~ print(ps)
         
         self.range_ps = self.range_ps[nb_pos : ]
         self.range_ns = self.range_ns[nb_neg : ]
@@ -67,53 +66,28 @@ class ExampleDb(object):
         with self._db.transaction() as conn:
             examples_pos = [conn.root.pos[n] for n in ps]                       # conn.root.pos[n] is tuple(arrays, labels)         
             examples_neg = [conn.root.neg[n] for n in ns]
+            #~ gc.collect()        # TODO: block
         
         data_out = examples_pos + examples_neg
         random.shuffle(data_out)                             
         x_out, y_out = zip(*data_out)
-        #~ print("len x: ", len(x_out[0]))
-        #~ print("len y: ", len(y_out[0]))
 
-        # calculate percentage HPs:
-        pos_count = 0
-        for y in y_out:
-            pos = y.count(1)
-            pos_count += pos
+        #~ # calculate percentage HPs:
+        #~ pos_count = 0
+        #~ for y in y_out:
+            #~ pos = y.count(1)
+            #~ pos_count += pos
+            
+        #~ print(pos_count)
            
-        return x_out, y_out, pos_count
+        return x_out, y_out
         
-
-    def check_lengths(self, size):
-        """
-        Return a balanced subset of reads from the DB
-        :param size: number of reads to return
-        :param includes: k-mers that should forcefully be included, if available in db
-        :return: lists of numpy arrays for training data (x_out) and labels (y_out)
-        """
-
-        nb_pos = size // 2
-        nb_neg = size - nb_pos
-        
-        ps = self.range_ps[ : nb_pos]
-        ns = self.range_ns[ : nb_neg]
-        
-        self.range_ps = self.range_ps[nb_pos : ]
-        self.range_ns = self.range_ns[nb_neg : ]
-
-        with self._db.transaction() as conn:
-            [print("Pos\t", n, len(conn.root.pos[n][1])) for n in ps if len(conn.root.pos[n][1]) != 35]                       # conn.root.pos[n] is tuple(arrays, labels)         
-            [print("Neg\t", n, len(conn.root.neg[n][1])) for n in ns if len(conn.root.neg[n][1]) != 35]
-        
-
-
     def pack_db(self):
         self._db.pack()
-        
 
     @property
     def db(self):
         return self._db
-        
 
     @db.setter
     def db(self, db_name):
@@ -128,13 +102,11 @@ class ExampleDb(object):
             self._db = ZODB.DB(storage)
             with self._db.transaction() as conn:
                 self.width = conn.root.width
+                # self.nb_pos = len(conn.root.pos)
+                # self.nb_neg = len(conn.root.neg)
                 self.nb_pos = conn.root.nb_pos
                 self.nb_neg = conn.root.nb_neg
-                #~ print(conn.root.neg[630309][0], conn.root.neg[630309][1])
-                #~ print(len(conn.root.neg[360354][0]), len(conn.root.neg[360354][1]))
-                #~ print(len(conn.root.neg[588278][0]), len(conn.root.neg[588278][1]))
-                #~ print(len(conn.root.pos[360118][0]), len(conn.root.pos[360118][1]))
-            print("Width: ", self.width, "\t# pos: ", self.nb_pos, "\t# neg: ", self.nb_neg)
+                
 
         else:
             storage = ZODB.FileStorage.FileStorage(db_name, read_only=False)

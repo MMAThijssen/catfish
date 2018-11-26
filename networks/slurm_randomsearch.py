@@ -15,7 +15,7 @@ def generate_random_hyperparameters(network_type,
                                     layer_size_list=[16, 32, 64, 128, 256],
                                     n_layers_min=1,
                                     n_layers_max=6,   
-                                    batch_size_list=[64, 128, 256],
+                                    batch_size_list=[128, 256, 512],
                                     dropout_min=0.2,
                                     dropout_max=0.8,
                                     n_layers_res_min=1,
@@ -105,11 +105,11 @@ if __name__ == "__main__":
         
         
     # 1. Create model or restore model:
-    hpm_dict = generate_random_hyperparameters(network_type)
-    #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_146.txt")
+    #~ hpm_dict = generate_random_hyperparameters(network_type)
+    hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
     model = build_model(network_type, **hpm_dict)
-    model.initialize_network()
-    #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_146/checkpoints")
+    #~ model.initialize_network()
+    model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
 
  
     # 2. Train models

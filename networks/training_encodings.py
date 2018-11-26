@@ -22,11 +22,11 @@ def hp_class_number(kmer):
     k_length = len(kmer)
     # return 0 if kmer contains unknown base:
     if 'N' in kmer:
-        return(0)
+        return 0
     elif kmer.count(kmer[0]) == k_length:
-        return(1)
+        return 1
     else:
-        return(0)
+        return 0
 
 
 def extend_classification(classified_seq):
@@ -60,10 +60,9 @@ def extend_classification(classified_seq):
                     classified_seq[idx] = 1
                 count += 1
     return(classified_seq)
-
-
+    
 if __name__ == "__main__":
-    print(hp_class_number("ABCDE"))
-    print("------------------------------")
-    print( hp_class_number("AAAAA"))
-    print(hp_class_number("NNNNN"))
+    seq = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    newseq = extend_classification(seq)
+    print(len(seq))
+    print(len(newseq))

@@ -22,7 +22,7 @@ class TrainingRead(Persistent):
         """Initialize a new training read.
 
         """
-        self.lessen = 2
+        self.lessen = 3
         self._raw = None
         self.condensed_events = None
         self._event_length_list = None
@@ -148,7 +148,7 @@ class TrainingRead(Persistent):
             start_idx_list = np.concatenate((self.hdf[hdf_events_path]["start"], np.array([0])))
             # this gets beginning and endings of each corrected event
             event_raw_list = [self.raw[b:e] for b, e in zip(start_idx_list[:-1], start_idx_list[1:])]
-            self.final_signal = start_idx_list[-2] + event_lengths[-1]
+            self.final_signal = start_idx_list[-2] + event_lengths[-1]          # TODO: is this correct?
             event_raw_list[-1] = self.raw[start_idx_list[-2] : self.final_signal] # add signals to final event
             event_length_list = list(event_lengths)
 
@@ -213,7 +213,7 @@ class TrainingRead(Persistent):
             extended_classes = training_encodings.extend_classification(class_numbers)
             labels = self.label_raws(extended_classes)
         except IndexError:
-            print('Index error, likely due to empty k-mer')
+            print("IndexError: likely due to empty k-mer")
             return None    
         return labels
         
@@ -222,11 +222,9 @@ class TrainingRead(Persistent):
         """
         Assign label to raw data points belonging to a classified event.
         """
-        labels = []
-        for ev in range(len(self.condensed_events)):
-            for p in self.condensed_events[ev][2]:
-                labels.append(classified_events[ev])
-        return(labels)
+        labels = [labels.append(classified_events[ev]) for ev in range(len(self.condensed_events)) for p in self.condensed_events[ev][2]]
+        return labels
+        # made list comprehension and removed parentheses labels - UNTESTED
             
 
     def get_pos(self, width, nb=None):

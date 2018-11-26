@@ -225,6 +225,29 @@ def generate_heatmap(predicted_list, label_list, title):
     #~ plt.show()
     plt.close()
 
+
+def draw_roc_from_file(true_file, name_of_roc):
+    """
+    Args:
+        true_file -- str, file outputted after validation
+    """
+    true_labels = []
+    predicted_scores = []
+    with open(true_file, "r") as source1:
+        for line in source1:
+            if not line.strip():
+                continue
+            elif line.startswith("*"):
+                labels = line.strip()[3:-1].split(", ")
+                labels = list(map(int, labels))
+                true_labels.extend(labels)
+            elif line.startswith("#"):
+                preds = line.strip()[3:-1].split(", ")
+                preds = list(map(float, preds))
+                predicted_scores.extend(preds)   
+                        
+    tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
+    draw_roc(tpr, fpr, auc, name_of_roc)
     
                 
 if __name__ == "__main__":
@@ -236,27 +259,5 @@ if __name__ == "__main__":
         #~ measure_list.append(accuracy)
     
     #~ plot_networks_on_metric(measure_list, accuracy)
-    true_file = argv[1]
-    pred_file = argv[2]
-    true_labels = []
-    predicted_scores = []
-    with open(true_file, "r") as source1:
-        for line in source1:
-            if not line.strip():
-                continue
-            else:
-                labels = line.strip()[1:-1].split(", ")
-                labels = list(map(int, labels))
-                true_labels.extend(labels)
-    
-    with open(pred_file, "r") as source2:
-        for line in source2:
-            if not line.strip():
-                continue
-            else:
-                preds = line.strip()[1:-1].split(", ")
-                preds = list(map(float, preds))
-                predicted_scores.extend(preds)   
-                        
-    tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
-    draw_roc(tpr, fpr, auc, argv[3])
+    draw_roc_from_file(argv[1], argv[2])
+

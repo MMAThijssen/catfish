@@ -40,7 +40,7 @@ class RNN(object):
         self.max_seq_length = 5250  
         
         self.layer_sizes = [self.layer_size,] * self.n_layers                   # does this work when extended or shortened? maybe move to the network layer
-        self.saving_step = 100
+        self.saving_step = 10000
         
         self.cell_type = "GRU"
         self.model_type = "bi" + self.cell_type + "-RNN"
@@ -56,7 +56,7 @@ class RNN(object):
         self.optimizer = self.optimizer_choice
         self.model_path = self.model_type
         self.save_info()
-        self.saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
+        self.saver = tf.train.Saver(max_to_keep=1000)
         self.summary = self.activate_tensorboard()
         #~ self.initialize_network()
         
@@ -195,29 +195,19 @@ class RNN(object):
         
     
     def initialize_network(self, mode="initial"):
-        #~ self.sess = tf.Session()
         if mode=="initial":
             self.sess.run(tf.global_variables_initializer())
             print("\nNot yet initialized: ", self.sess.run(tf.report_uninitialized_variables()), "\n")
 
+
     def restore_network(self, path=None, ckpnt="latest", meta=None):
             self.sess.run(tf.global_variables_initializer())
-            #~ new_saver = tf.train.import_meta_graph(path + "/" + meta)
             if ckpnt == "latest":
-                #~ tf.train.Saver(tf.global_variables()).restore(self.sess, tf.train.latest_checkpoint(path))
                 self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
             else:
-                #~ saver.restore(self.sess, ckpnt)
                 new_saver.restore(self.sess, path + "/" + ckpnt)
 
-            print("Model {} restored\n".format(os.path.basename(path)))
-            
-
-#~ def restore_network(sess, path, ckpnt="latest"):
-    #~ # restore model:
-    #~ self.sess.run(tf.global_variables_initializer())
-    #~ saver = tf.train.import_meta_graph("{}/checkpoints-1.meta".format(path))
-
+            print("Model {} restored\n".format(path.split("/")[-2]))
 
             
     
@@ -226,17 +216,19 @@ class RNN(object):
                      self.y: train_y, 
                      self.p_dropout: self.keep_prob}
 
-        _, summary = self.sess.run([self.optimizer, self.summary], feed_dict=feed_dict)
+        self.sess.run(self.optimizer, feed_dict=feed_dict)
+        
+        summary = self.sess.run(self.summary, feed_dict=feed_dict)
 
         self.writer.add_summary(summary, step)  
         
         
 
-    def test_network(self, test_x, test_y, read_nr, ckpnt="latest"):
+    def test_network(self, test_x, test_y, read_nr, read_name):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
         pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
-        pred_vals = np.reshape(pred_vals, (-1)).astype(int)   
+        pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
         
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)       # is necessary! 150 > 5250
@@ -246,7 +238,7 @@ class RNN(object):
         test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
         
     
-    #~ def evaluate_performance(self, test_y):
+        # evaluate performance:
         test_labels = test_y.reshape(-1)
         true_pos, false_pos, true_neg, false_neg = metrics.confusion_matrix(test_labels, pred_vals)
         self.tp += true_pos
@@ -254,20 +246,19 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        #~ test_precision, test_recall = metrics.precision_recall(true_pos, false_pos, false_neg)
-        #~ test_f1 = metrics.weighted_f1(test_precision, test_recall, true_pos + false_neg, len(test_labels))
-        #~ roc_auc = metrics.calculate_auc(test_labels, confidences)
-        with open(self.model_path + "_labels.txt", "a+") as dest:
+        with open(self.model_path + "_output.txt", "a+") as dest:
+            dest.write(read_name)
             dest.write("\n")
-            dest.write("{}".format(list(test_labels)))
-        with open(self.model_path + "_predictions.txt", "a+") as dest:
+            dest.write("* {}".format(list(test_labels)))
             dest.write("\n")
-            dest.write("{}".format(list(confidences)))
-        
-        if read_nr % 100 == 0:
+            dest.write("# {}".format(list(pred_vals)))
+            dest.write("\n")
+            dest.write("@ {}".format(list(confidences)))
+            dest.write("\n")
+                    
+        if read_nr % self.saving_step == 0:
             metrics.generate_heatmap([pred_vals, confidences, test_labels], 
-                                     ["homopolymer", "confidence", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
-        #~ return test_acc, roc_auc, test_precision, test_recall, test_f1
+                                     ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
         return test_acc
 
         
