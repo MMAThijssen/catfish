@@ -43,8 +43,7 @@ class RNN(object):
         self.saving_step = 10000
         
         self.cell_type = "GRU"
-        self.model_type = "bi" + self.cell_type + "-RNN"
-        #~ self.model_type = "NN"
+        self.model_type = self.cell_type
         self.sess = tf.Session()          
         
         # build network and additionals
@@ -58,7 +57,6 @@ class RNN(object):
         self.save_info()
         self.saver = tf.train.Saver(max_to_keep=1000)
         self.summary = self.activate_tensorboard()
-        #~ self.initialize_network()
         
         # saving test performance
         self.tp = 0
@@ -100,6 +98,10 @@ class RNN(object):
         
         return accuracy
     
+    
+    @property
+    def model_type(self):
+        return self._model_type
         
     @property
     def model_path(self):
@@ -126,15 +128,11 @@ class RNN(object):
         
         self._model_path = model_path
         
-    #~ @property.setter
-    #~ def saver(self):  
-        #~ with tf.name_scope("saver"):
-            #~ self._saver = tf.train.Saver(max_to_keep=100, keep_checkpoint_every_n_hours=2)
-    
-    #~ @property
-    #~ def saver(self):
-        #~ return _saver
         
+    @model_type.setter
+    def model_type(self, cell_type):
+        self._model_type = "bi" + self.cell_type + "-RNN"
+                
         
     def activate_tensorboard(self):
         with tf.name_scope("TensorBoard"):            
@@ -194,10 +192,9 @@ class RNN(object):
         return final_output
         
     
-    def initialize_network(self, mode="initial"):
-        if mode=="initial":
-            self.sess.run(tf.global_variables_initializer())
-            print("\nNot yet initialized: ", self.sess.run(tf.report_uninitialized_variables()), "\n")
+    def initialize_network(self):
+        self.sess.run(tf.global_variables_initializer())
+        print("\nNot yet initialized: ", self.sess.run(tf.report_uninitialized_variables()), "\n")
 
 
     def restore_network(self, path=None, ckpnt="latest", meta=None):
@@ -209,7 +206,6 @@ class RNN(object):
 
             print("Model {} restored\n".format(path.split("/")[-2]))
 
-            
     
     def train_network(self, train_x, train_y, step):        
         feed_dict = {self.x: train_x, 
@@ -222,7 +218,6 @@ class RNN(object):
 
         self.writer.add_summary(summary, step)  
         
-        
 
     def test_network(self, test_x, test_y, read_nr, read_name):
         # get predicted values:
@@ -231,12 +226,11 @@ class RNN(object):
         pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
         
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
-        confidences = np.reshape(confidences, (-1)).astype(float)       # is necessary! 150 > 5250
+        confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
         test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
-        
     
         # evaluate performance:
         test_labels = test_y.reshape(-1)
@@ -261,61 +255,11 @@ class RNN(object):
                                      ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
         return test_acc
 
-        
     
     def save_info(self):
         with open(self.model_path + ".txt", "w") as dest:
-            #~ dest.write("Model type: {}\n".format(self.model_type))
+            dest.write("MODEL TYPE: {}\n\n".format(self.model_type))
             dest.write("batch_size: {}\noptimizer_choice: {}\nlearning_rate: {}\n".format(
                       self.batch_size, self.optimizer_choice, self.learning_rate))
             dest.write("layer_size: {}\nn_layers: {}\nkeep_prob: {}\n".format(
                       self.layer_size, self.n_layers, self.keep_prob))
-    
-    
-
-        
-
-#~ ############# NOT USED YET: PBT ################
-    #~ @lru_cache(maxsize=None)                                            
-    #~ def copy_from(self, other_model):
-        #~ # This method is used for exploitation. We copy all weights and hyper-parameters
-        #~ # from other_model to this model
-        #~ my_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.name_scope + '/')
-        #~ their_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, other_model.name_scope + '/')
-        #~ assign_ops = [mine.assign(theirs).op for mine, theirs in zip(my_weights, their_weights)]
-        #~ return tf.group(*assign_ops)
-
-        
-    #~ def _restore(self, checkpoint_path):
-        #~ reader = tf.train.NewCheckpointReader(checkpoint_path)
-        #~ for var in self.saver._var_list:
-            #~ tensor_name = var.name.split(':')[0]
-            #~ if not reader.has_tensor(tensor_name):
-                #~ continue
-            #~ saved_value = reader.get_tensor(tensor_name)
-            #~ resized_value = fit_to_shape(saved_value, var.shape.as_list())
-            #~ var.load(resized_value, self.sess)
-
-
-    #~ def fit_to_shape(array, target_shape):
-        #~ source_shape = np.array(array.shape)
-        #~ target_shape = np.array(target_shape)
-
-        #~ if len(target_shape) != len(source_shape):
-            #~ raise ValueError('Axes must match')
-
-        #~ size_diff = target_shape - source_shape
-
-        #~ if np.all(size_diff == 0):
-            #~ return array
-
-        #~ if np.any(size_diff > 0):
-            #~ paddings = np.zeros((len(target_shape), 2), dtype=np.int32)
-            #~ paddings[:, 1] = np.maximum(size_diff, 0)
-            #~ array = np.pad(array, paddings, mode='constant')
-
-        #~ if np.any(size_diff < 0):
-            #~ slice_desc = [slice(d) for d in target_shape]
-            #~ array = array[slice_desc]
-
-        #~ return array

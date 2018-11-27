@@ -58,8 +58,6 @@ class ExampleDb(object):
         
         ps = self.range_ps[ : nb_pos]
         ns = self.range_ns[ : nb_neg]
-        #~ print("pos: ", ps)
-        #~ print("neg: ", ns)
         
         self.range_ps = self.range_ps[nb_pos : ]
         self.range_ns = self.range_ns[nb_neg : ]
@@ -71,8 +69,6 @@ class ExampleDb(object):
         data_out = examples_pos + examples_neg
         random.shuffle(data_out)                             
         x_out, y_out = zip(*data_out)
-        #~ print("len x: ", len(x_out[0]))
-        #~ print("len y: ", len(y_out[0]))
 
         # calculate percentage HPs:
         pos_count = 0
@@ -133,8 +129,6 @@ class ExampleDb(object):
                 self.nb_neg = conn.root.nb_neg
                 #~ print(conn.root.neg[630309][0], conn.root.neg[630309][1])
                 #~ print(len(conn.root.neg[360354][0]), len(conn.root.neg[360354][1]))
-                #~ print(len(conn.root.neg[588278][0]), len(conn.root.neg[588278][1]))
-                #~ print(len(conn.root.pos[360118][0]), len(conn.root.pos[360118][1]))
             print("Width: ", self.width, "\t# pos: ", self.nb_pos, "\t# neg: ", self.nb_neg)
 
         else:

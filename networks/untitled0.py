@@ -5,25 +5,22 @@ Created on Mon Nov 26 13:55:45 2018
 @author: thijs030
 """
 #
-#import helper_functions
-#from sys import argv
-##from ExampleDb import check_lengths
-#
+import helper_functions
+from sys import argv
+import reader
+import datetime
+
 #db = helper_functions.load_db(argv[1])
+t1 = datetime.datetime.now()
+squiggles = helper_functions.load_squiggles(argv[1])
+t2 = datetime.datetime.now()
 
-window = 4      # actually 5
+print("Loaded squiggels in {}".format(t2 - t1))
+#target = argv[2]
 
-final = 10
-width_l = window // 2
-width_r = window - width_l
 
-l = range(final)
-print(l)
-
-signals = [idx for idx in range(width_l, final - width_r + 1)]
-print(signals)
-print(signals[0], signals[-1])
-cur_idx = 8
-start = cur_idx - width_l
-end = cur_idx + width_r + 1
-print(start, end, l[start : end])
+for sgl in squiggles:
+    t3 = datetime.datetime.now()
+    _, labels = reader.load_npz(sgl)
+    t4 = datetime.datetime.now()
+    print("Loaded one npzs in {}".format(t4 - t3))

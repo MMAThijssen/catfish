@@ -1,3 +1,50 @@
+# FOR PBT:
+#~ ############# NOT USED YET: PBT ################
+    #~ @lru_cache(maxsize=None)                                            
+    #~ def copy_from(self, other_model):
+        #~ # This method is used for exploitation. We copy all weights and hyper-parameters
+        #~ # from other_model to this model
+        #~ my_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.name_scope + '/')
+        #~ their_weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, other_model.name_scope + '/')
+        #~ assign_ops = [mine.assign(theirs).op for mine, theirs in zip(my_weights, their_weights)]
+        #~ return tf.group(*assign_ops)
+
+        
+    #~ def _restore(self, checkpoint_path):
+        #~ reader = tf.train.NewCheckpointReader(checkpoint_path)
+        #~ for var in self.saver._var_list:
+            #~ tensor_name = var.name.split(':')[0]
+            #~ if not reader.has_tensor(tensor_name):
+                #~ continue
+            #~ saved_value = reader.get_tensor(tensor_name)
+            #~ resized_value = fit_to_shape(saved_value, var.shape.as_list())
+            #~ var.load(resized_value, self.sess)
+
+
+    #~ def fit_to_shape(array, target_shape):
+        #~ source_shape = np.array(array.shape)
+        #~ target_shape = np.array(target_shape)
+
+        #~ if len(target_shape) != len(source_shape):
+            #~ raise ValueError('Axes must match')
+
+        #~ size_diff = target_shape - source_shape
+
+        #~ if np.all(size_diff == 0):
+            #~ return array
+
+        #~ if np.any(size_diff > 0):
+            #~ paddings = np.zeros((len(target_shape), 2), dtype=np.int32)
+            #~ paddings[:, 1] = np.maximum(size_diff, 0)
+            #~ array = np.pad(array, paddings, mode='constant')
+
+        #~ if np.any(size_diff < 0):
+            #~ slice_desc = [slice(d) for d in target_shape]
+            #~ array = array[slice_desc]
+
+        #~ return array
+
+
     #~ batch_size = 128
     #~ learning_rate = 0.01
     #~ n_layers = 3

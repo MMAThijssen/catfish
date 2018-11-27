@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+import datetime
 import helper_functions
 import numpy as np
 import os
+import psutil
 from resnet_class import ResNetRNN
 from rnn_class import RNN
 from sys import argv
@@ -22,13 +24,14 @@ def generate_random_hyperparameters(network_type,
                                     n_layers_res_max=12,
                                     size_layers_res_list=[16, 32, 64, 128, 256]):
     """
-    Generates random hyperparameters
+    Generates random hyperparameters.
     
     Args:
         network_type -- str, type of network (empty (RNN) or "ResNetRNN")
         learning_rate_min -- int, minimal negative number in exponential for learning rate [default: -4]
         learning_rate_max -- int, maximal positive number in exponential for learning rate [default: 0]
-    Returns: dict of hyperparameters
+    
+    Returns: dict {str: value for hyperparameter}
     """   
     # pick random hyperparameter:
     learning_rate = 10 ** np.random.randint(learning_rate_min, learning_rate_max)
@@ -55,12 +58,13 @@ def generate_random_hyperparameters(network_type,
 
 
 
-def retrieve_hyperparams(model_file):
+def retrieve_hyperparams(model_file, split_on=": "):
     """
     Retrieve hyperparameters from model file.
     
     Args:
         model_file -- str, path to file on model created by train_validate.build_model
+        split_on -- str, combination of characters to split on [default: ": "]
     
     Returns: dict of hyperparameters
     """
@@ -68,21 +72,21 @@ def retrieve_hyperparams(model_file):
     with open(model_file, "r") as source:
         for line in source:
             if line.startswith("batch_size"):
-                hpm_dict["batch_size"] = int(line.strip().split(": ")[1])
+                hpm_dict["batch_size"] = int(line.strip().split(split_on)[1])
             if line.startswith("optimizer_choice"):
-                hpm_dict["optimizer_choice"] = line.strip().split(": ")[1]
+                hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
             if line.startswith("learning_rate"):
-                hpm_dict["learning_rate"] = float(line.strip().split(": ")[1])
+                hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
             if line.startswith("layer_size"):
-                hpm_dict["layer_size"] = int(line.strip().split(": ")[1])
+                hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
             if line.startswith("n_layers"):
-                hpm_dict["n_layers"] = int(line.strip().split(": ")[1])
+                hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
             if line.startswith("keep_prob"):
-                hpm_dict["keep_prob"] = float(line.strip().split(": ")[1])
+                hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
             if line.startswith("layer_size_res"):
-                hpm_dict["layer_size_res"] = int(line.strip().split(": ")[1])
+                hpm_dict["layer_size_res"] = int(line.strip().split(split_on)[1])
             if line.startswith("n_layers_res"):   
-                hpm_dict["n_layers_res"] = int(line.strip().split(": ")[1])
+                hpm_dict["n_layers_res"] = int(line.strip().split(split_on)[1])
                 
     return hpm_dict
 
@@ -102,24 +106,43 @@ if __name__ == "__main__":
     n_epochs = int(argv[4])
     db_dir_val = argv[5]
     max_seq_length = int(argv[6])                  
+    
+    # Keep track of memory and time
+    p = psutil.Process(os.getpid())
+    t1 = datetime.datetime.now() 
+    m1 = p.memory_full_info().pss
+    print("\nMemory use at start is", m1)  
+    print("Started script at {}\n".format(t1))
         
-        
-    # 1. Create model or restore model:
-    #~ hpm_dict = generate_random_hyperparameters(network_type)
-    hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
+    # 1. Create model
+    hpm_dict = generate_random_hyperparameters(network_type)
     model = build_model(network_type, **hpm_dict)
-    #~ model.initialize_network()
-    model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
+    model.initialize_network()
+    t2 = datetime.datetime.now()  
+    m2 = p.memory_full_info().pss
+    print("\nMemory after building model is ", m2)
+    print("Built and initialized model in {}\n".format(t2 - t1))
 
+    #~ # 1b. Restore model
+    #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
+    #~ model = build_model(network_type, **hpm_dict)
+    #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
  
-    # 2. Train models
+    # 2. Train model
     print("Loading training database..")
     db_train = helper_functions.load_db(db_dir_train)
     train(model, db_train, training_nr, n_epochs)
-
+    t3 = datetime.datetime.now()  
+    m3 = p.memory_full_info().pss
+    print("\nMemory after training is ", m3)
+    print("Trained model in {}\n".format(t3 - t2))
     
     #3. Assess performance on validation set
     print("Loading validation database..")
     squiggles = helper_functions.load_squiggles(db_dir_val)
     validate(model, squiggles, max_seq_length)
+    t4 = datetime.datetime.now()  
+    m4 = p.memory_full_info().pss
+    print("Memory use at end is ", m4)
+    print("Validated model in {}".format(t4 - t3))
 

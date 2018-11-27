@@ -13,7 +13,7 @@ from sys import argv
 import tensorflow as tf
 
 
-def reshape_input(data, batch_size, window, n_inputs):
+def reshape_input(data, window, n_inputs):
     """
     Reshapes input to fit input tensor
     
@@ -25,8 +25,7 @@ def reshape_input(data, batch_size, window, n_inputs):
     Returns: np.array
     """
     try:
-        data = np.reshape(data, (batch_size, window, n_inputs)) 
-        #~ data = np.reshape(data, (-1, window, n_inputs)) 
+        data = np.reshape(data, (-1, window, n_inputs)) 
     except ValueError:
         print(len(data))
         print(len(data[0]))
@@ -62,14 +61,11 @@ def train(network, db, training_nr, n_epochs):
         n_epochs -- str, number of epochs
     """
     saving = True
-    p = psutil.Process(os.getpid())
-    m1 = p.memory_full_info().pss
-    print("Memory use at start of training (in def): ", m1)
         
     # 2. train network
     n_examples = training_nr // network.batch_size * network.batch_size
     n_batches = n_examples // network.batch_size
-    print("Training on {} examples in {} batches\n".format(n_examples, n_batches))
+    print("\nTraining on {} examples in {} batches\n".format(n_examples, n_batches))
     with open(network.model_path + ".txt", "a") as dest:
         dest.write("Training on {} examples in {} batches\n".format(n_examples, n_batches))
     
@@ -78,34 +74,21 @@ def train(network, db, training_nr, n_epochs):
     seed = random.randint(0, 1000000000)
     for n in range(n_epochs):
         network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", write_meta_graph=True)
-        print("\nSaved checkpoint at start op epoch {} at step {}\n".format(n, step))
-        m2 = p.memory_full_info().pss
+        print("Saved checkpoint at start on epoch {} at step {}\n".format(n, step))
+
         db.set_ranges(seed)
-        m3 = p.memory_full_info().pss
-        print("Memory used to set ranges: ", m3 - m2)
-        m8 = p.memory_full_info().pss
+
         for b in range(n_batches):
             # load batch sized training examples:
-            t1 = datetime.datetime.now()
-            m4 = m1 = p.memory_full_info().pss
             data, labels, pos = db.get_training_set(network.batch_size)  
-            t2 = datetime.datetime.now()
-            m5 = p.memory_full_info().pss
-    
             positives += pos
             
-            set_x = reshape_input(data, network.batch_size, network.window, network.n_inputs)
-            set_y = reshape_input(labels, network.batch_size, network.window, network.n_outputs)
+            set_x = reshape_input(data, network.window, network.n_inputs)
+            set_y = reshape_input(labels, network.window, network.n_outputs)
             
             # train on batch:
             step += 1                                                           # step is per batch
-            t4 = datetime.datetime.now()
-            m6 = p.memory_full_info().pss
-            #~ print(set_x)
-            #~ print(set_y)
             network.train_network(set_x, set_y, step)
-            t5 = datetime.datetime.now()
-            m7 = p.memory_full_info().pss
             
             if step % network.saving_step == 0:   
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
@@ -113,10 +96,6 @@ def train(network, db, training_nr, n_epochs):
                 train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
                 print("Training accuracy: ", train_acc)
                 print("Training loss: ", train_loss)
-                #~ print("Time to get training set {}".format(t2 - t1))
-                #~ print("Time to train network {}".format(t5 - t4))
-                #~ print("Memory taken by getting training set on one batch: ", m5 -m4)
-                #~ print("Memory taken by training on one batch: ", m7 - m6)
             
             # DO NOT DO THIS NOW; CAN DO THIS LATER BY RESTORING (every 100 000 steps)
             #~ # After each half epoch validate     if steps % (n_batches / 2) == 0:
@@ -126,18 +105,11 @@ def train(network, db, training_nr, n_epochs):
                 #~ tv2 = datetime.datetime.now()
                 #~ print("Validated in {}".format(tv2 - tv1)) 
                 
-        print("Finished epoch: ", n)   
-        m9 = p.memory_full_info().pss   
-        print("Memory taken after last epoch: ", m9 - m8)
-    
+        print("Finished epoch: ", n)     
    
     network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step)
     print("\nSaved final checkpoint at step ", step, "\n")
-    t6 = datetime.datetime.now()
-    print("Training set had {:.2%} HPs".format(positives / (network.window * n_examples)))
-    print("Time to save {}".format(t6 - t5))
-    
-    print("Finished training!\n")
+    print("\nFinished training!\t-\tTraining set had {:.2%} HPs".format(positives / (network.window * n_examples)))
   
     
 def validate(network, squiggles, max_seq_length):
@@ -151,9 +123,9 @@ def validate(network, squiggles, max_seq_length):
     """  
    
     # 2. Validate model 
-    valid_reads = 0
     max_seq_length = max_seq_length // network.window * network.window
     accuracy = 0
+    valid_reads = 0
 
     # per squiggle:
     for squig in squiggles:
@@ -169,8 +141,8 @@ def validate(network, squiggles, max_seq_length):
             read_name = os.path.basename(squig).split(".npz")[0]
             valid_reads += 1
     
-            set_x = reshape_input(data, network.batch_size, network.window, network.n_inputs)
-            set_y = reshape_input(labels, network.batch_size, network.window, network.n_outputs)
+            set_x = reshape_input(data, network.window, network.n_inputs)
+            set_y = reshape_input(labels, network.window, network.n_outputs)
             
             t3 = datetime.datetime.now()
             sgl_acc  = network.test_network(set_x, set_y, valid_reads, read_name)
