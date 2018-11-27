@@ -101,8 +101,8 @@ if __name__ == "__main__":
 # 2. Divide reads over sets
     total_number = int(argv[1])
     name_traindb = argv[2]
-    name_valdb = argv[3]
-    name_testdb = argv[4]
+    #~ name_valdb = argv[3]
+    #~ name_testdb = argv[4]
 
     tr_set, val_set, ts_set = get_sets(all_samples, total_number, 0.7, 0.15, 0.15) 
 #    tr_set, val_set, ts_set = get_sets(all_samples, 10, 0.7, 0.15, 0.15) 
@@ -110,10 +110,10 @@ if __name__ == "__main__":
 #                                       prop_train, prop_val, prop_test) 
     
     print(len(tr_set))
-    print(len(val_set))
-    print(len(ts_set))
+    #~ print(len(val_set))
+    #~ print(len(ts_set))
     
 # 3. Make directory for trainingDB with training samples
     training_dir(name_traindb, tr_set)    
-    training_dir(name_valdb, val_set)
-    training_dir(name_testdb, ts_set)    
+    #~ training_dir(name_valdb, val_set)
+    #~ training_dir(name_testdb, ts_set)    

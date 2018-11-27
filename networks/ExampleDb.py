@@ -83,7 +83,7 @@ class ExampleDb(object):
         return x_out, y_out, pos_count
         
 
-    def check_lengths(self, size):
+    def check_lengths(self, size, i):
         """
         Return a balanced subset of reads from the DB
         :param size: number of reads to return
@@ -104,6 +104,7 @@ class ExampleDb(object):
             [print("Pos\t", n, len(conn.root.pos[n][1])) for n in ps if len(conn.root.pos[n][1]) != 35]                       # conn.root.pos[n] is tuple(arrays, labels)         
             [print("Neg\t", n, len(conn.root.neg[n][1])) for n in ns if len(conn.root.neg[n][1]) != 35]
         
+        print((i + 1) * size)
 
 
     def pack_db(self):

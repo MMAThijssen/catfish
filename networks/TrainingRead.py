@@ -27,7 +27,7 @@ class TrainingRead(Persistent):
         self.condensed_events = None
         self._event_length_list = None
         self._hdf_path = None
-        self.final_signal = None
+        self.final_signal = None                                                # is exclusive
 
         self.hdf = hdf
         self.normalization = normalization
@@ -148,7 +148,7 @@ class TrainingRead(Persistent):
             start_idx_list = np.concatenate((self.hdf[hdf_events_path]["start"], np.array([0])))
             # this gets beginning and endings of each corrected event
             event_raw_list = [self.raw[b:e] for b, e in zip(start_idx_list[:-1], start_idx_list[1:])]
-            self.final_signal = start_idx_list[-2] + event_lengths[-1]          # TODO: is this correct?
+            self.final_signal = start_idx_list[-2] + event_lengths[-1]          # DONE: is correct
             event_raw_list[-1] = self.raw[start_idx_list[-2] : self.final_signal] # add signals to final event
             event_length_list = list(event_lengths)
 
@@ -222,15 +222,14 @@ class TrainingRead(Persistent):
         """
         Assign label to raw data points belonging to a classified event.
         """
-        labels = [labels.append(classified_events[ev]) for ev in range(len(self.condensed_events)) for p in self.condensed_events[ev][2]]
+        labels = [classified_events[ev] for ev in range(len(self.condensed_events)) for p in self.condensed_events[ev][2]]
         return labels
-        # made list comprehension and removed parentheses labels - UNTESTED
             
 
     def get_pos(self, width, nb=None):
         width_l = width // 2  # if width is odd, pick point RIGHT of middle
         width_r = width - width_l
-        condensed_hits = [idx for idx in range(width_l, self.final_signal - width_r + 1) if self.classified[idx] == 1]   
+        condensed_hits = [idx for idx in range(width_l, self.final_signal - width_r) if self.classified[idx] == 1]   
         raw_points_out = []
         raw_labels_out = []
         for ch in range(0, len(condensed_hits), self.lessen):
@@ -238,18 +237,22 @@ class TrainingRead(Persistent):
             end = condensed_hits[ch] + width_r + 1
             raw_labels_out.append(self.classified[start : end])
             raw_points_out.append(self.raw[start : end])
+            if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
+                print("positive with number ", ch, "has length of differing width")
         return(raw_points_out, raw_labels_out)
 
 
     def get_neg(self, width, nb):
         width_l = width // 2  # if width is odd, pick point RIGHT of middle
         width_r = width - width_l
-        idx_list = [idx for idx in range(width_l, self.final_signal - width_r + 1) if self.classified[idx] == 0]   
+        idx_list = [idx for idx in range(width_l, self.final_signal - width_r) if self.classified[idx] == 0]   
         raw_points_out = []
         raw_labels_out = []
         for cur_idx in sample(idx_list, nb):
             start = cur_idx - width_l
-            end = cur_idx + width_r + 1
+            end = cur_idx + width_r + 1 
             raw_labels_out.append(self.classified[start : end])
             raw_points_out.append(self.raw[start : end])  
+            if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
+                print("negative with number ", ch, "has length of differing width")
         return(raw_points_out, raw_labels_out)
