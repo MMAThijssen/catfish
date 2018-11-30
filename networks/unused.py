@@ -1,3 +1,12 @@
+# for validation
+        # DO NOT DO THIS NOW; CAN DO THIS LATER BY RESTORING (every 100 000 steps)
+        #~ # After each half epoch validate     if steps % (n_batches / 2) == 0:
+        #~ tv1 = datetime.datetime.now()
+        #~ if steps % 100000 == 0:
+            #~ validate(squiggles, max_seq_length)
+            #~ tv2 = datetime.datetime.now()
+            #~ print("Validated in {}".format(tv2 - tv1)) 
+
 # FOR PBT:
 #~ ############# NOT USED YET: PBT ################
     #~ @lru_cache(maxsize=None)                                            
