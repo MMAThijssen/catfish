@@ -2,7 +2,7 @@
 
 t_score = [0.53085935, 0.58493304]
 v_score = [0.53446553446553, 0.7353646353646354]
-t1_score = [0.53085935, 0.58493304]
+t1_score = [1.53085935, 1.58493304]
 v1_score = [0.53446553446553, 0.7353646353646354]
 sizes = [1000, 10000]
 
@@ -20,12 +20,18 @@ max_list = []
 mean_list = []
 
 
-for s in range(len(sizes)):
+for s in range(len(sizes)):   
     total = 0
+    temp_list = []
     for i in range(len(samples)):
         total += samples[i][s]
+        temp_list.append(samples[i][s])
     mean = total / len(samples)
     mean_list.append(mean)
     
-print(mean_list)
+    min_list.append(min(temp_list))
+    max_list.append(max(temp_list))
+    
+    
+print(mean_list, max_list, min_list)
         

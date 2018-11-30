@@ -12,17 +12,29 @@ from slurm_randomsearch import retrieve_hyperparams
 from train_validate import train, validate, build_model
 
 
-def main(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_length):
-    max_nr = 100000000
-    #~ max_nr = 10000
-    step_factor = 10
-    samples = 2
-
+def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_length, 
+            max_nr=100000000, step_factor=10):
+    """
+    Train and validation after each epoch for an increasing number of training reads.
+    
+    Args:
+        network_type -- str, type of neural network: either "RNN" or "ResNetRNN"
+        db_dir_train -- str, path to training database
+        training_nr -- int, number of training reads
+        n_epochs -- int, number of epochs
+        db_dir_val -- str, path to validation database
+        max_seq_length -- int, maximum length of validation reads
+        max_nr -- int, maximum number of training reads
+        step_factor -- int / float, size to increase number of training reads with
+        
+    Returns: training accuracy, validation accuracy, list of training_nr
+    """
     # 1. Build model from file
     hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/learning_curve_{}.txt".format(network_type))
     model = build_model(network_type, **hpm_dict)
     model.initialize_network()
  
+    # initialize lists with zero to start at 0 in plot:
     size_list = [0]
     train_error = [0]
     val_error = [0]
@@ -39,7 +51,7 @@ def main(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_
         for n in range(n_epochs):
             db_train.set_ranges(seed)
             size_list.append(training_nr)
-            # 2. Train model
+            # train model:
             t2 = datetime.datetime.now()
             train_accuracy = train(model, db_train, training_nr)
             train_error.append(train_accuracy)
@@ -47,7 +59,7 @@ def main(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_
             print("Trained model in {}\n".format(t3 - t2))
             print("Finished epoch: {}".format(n))
             
-            #3. Assess performance on validation set
+            # validate model:
             val_accuracy = validate(model, squiggles, max_seq_length)
             val_error.append(val_accuracy)
             t4 = datetime.datetime.now()  
@@ -58,6 +70,37 @@ def main(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_
     return(train_error, val_error, size_list)
 
 
+def compute_lines(samples):
+    """
+    Takes matrix of lists of errors per sample to compute mean, min and max 
+    values per size per sample.
+    
+    Args:
+        samples -- list of lists of (floats), different samples
+    
+    Returns: list of means, list of min, list of max 
+    """    
+    min_list = []
+    max_list = []   
+    mean_list = []
+
+    for s in range(len(samples[0])):   
+        total = 0
+        temp_list = []                                                          # save list per size
+        for i in range(len(samples)):
+            total += samples[i][s]
+            temp_list.append(samples[i][s])
+        mean = total / len(samples)
+        mean_list.append(mean)
+        
+        min_list.append(min(temp_list))
+        max_list.append(max(temp_list))
+        
+        
+    print(mean_list, min_list, max_list)
+
+#TODO: draw borders + impplement compute lines
+# fill between from pyplt
 def draw_learning_curves(training_score, validation_score, train_sizes, img_title):
     """
     Plots learning curve. 
@@ -67,10 +110,7 @@ def draw_learning_curves(training_score, validation_score, train_sizes, img_titl
         validation_score -- list of float/ints
         train_sizes -- list of ints
         
-    """
-    #~ training_scores_mean = training_scores.mean(axis = 1)
-    #~ validation_scores_mean = validation_scores.mean(axis = 1)
-    
+    """    
     plt.style.use("seaborn")
     
     plt.plot(train_sizes, training_score, label = 'Training error')
@@ -107,7 +147,7 @@ if __name__ == "__main__":
     print("Started script at {}\n".format(t1))
     
     #1. Train and validate network
-    train_error, val_error, sizes = main(network_type, db_dir_train, training_nr, 
+    train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
                                          n_epochs, db_dir_val, max_seq_length)
     print("Training: ", train_error)
     print("Validation: ", val_error)
@@ -115,9 +155,7 @@ if __name__ == "__main__":
 
     #~ #2. Calculate mean, min and max training and validation scores
     #~ # suppose you have multiple networks, eg. 2:
-    #~ for s in range(len(sizes)):
-        #~ mean_training_score = train_error[s].mean()
-        #~ mean_validation_score = val_error[s].mean()    
+    #~ mean_list, min_list, max_list = compute_lines(sample_matrix)
     
     #~ #5. Plot learning curve
     #~ img_title = "Learning_curve_{}".format(network_type)
