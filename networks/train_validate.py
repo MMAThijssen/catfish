@@ -50,8 +50,7 @@ def build_model(network_type, **kwargs):
     return network   
 
 
-def train(network, db, training_nr, n_epochs):
-    #~ train(network, db, training_nr, n_epochs, squiggles, max_seq_length)
+def train(network, db, training_nr):
     """
     Training on windows
     
@@ -61,6 +60,7 @@ def train(network, db, training_nr, n_epochs):
         n_epochs -- str, number of epochs
     """
     saving = True
+    print(datetime.datetime.now())
         
     # 2. train network
     n_examples = training_nr // network.batch_size * network.batch_size
@@ -71,46 +71,46 @@ def train(network, db, training_nr, n_epochs):
     
     step = 0
     positives = 0
-    seed = random.randint(0, 1000000000)
-    for n in range(n_epochs):
-        network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", write_meta_graph=True)
-        print("Saved checkpoint at start on epoch {} at step {}\n".format(n, step))
 
-        db.set_ranges(seed)
-
-        for b in range(n_batches):
-            # load batch sized training examples:
-            data, labels, pos = db.get_training_set(network.batch_size)  
-            positives += pos
-            
-            set_x = reshape_input(data, network.window, network.n_inputs)
-            set_y = reshape_input(labels, network.window, network.n_outputs)
-            
-            # train on batch:
-            step += 1                                                           # step is per batch
-            network.train_network(set_x, set_y, step)
-            
-            if step % network.saving_step == 0:   
-                network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
-                print("Saved checkpoint at step ", step)
-                train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
-                print("Training accuracy: ", train_acc)
-                print("Training loss: ", train_loss)
-            
-            # DO NOT DO THIS NOW; CAN DO THIS LATER BY RESTORING (every 100 000 steps)
-            #~ # After each half epoch validate     if steps % (n_batches / 2) == 0:
-            #~ tv1 = datetime.datetime.now()
-            #~ if steps % 100000 == 0:
-                #~ validate(squiggles, max_seq_length)
-                #~ tv2 = datetime.datetime.now()
-                #~ print("Validated in {}".format(tv2 - tv1)) 
-                
-        print("Finished epoch: ", n)     
-   
+    for b in range(n_batches):
+        # load batch sized training examples:
+        data, labels, pos = db.get_training_set(network.batch_size)  
+        positives += pos
+        
+        set_x = reshape_input(data, network.window, network.n_inputs)
+        set_y = reshape_input(labels, network.window, network.n_outputs)
+        
+        # train on batch:
+        step += 1                                                           # step is per batch
+        network.train_network(set_x, set_y, step)
+        
+        if step % network.saving_step == 0:   
+            network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
+            print("Saved checkpoint at step ", step)
+            train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+            print("Training accuracy: ", train_acc)
+            print("Training loss: ", train_loss)
+        
+        if step % 1000 == 0:
+            print(step)
+            print(datetime.datetime.now())
+    
+    try:
+        train_hp = positives / (network.window * n_examples)  
+    except ZeroDivisionError:
+        train_hp = 0
+    print("Training set had {:.2%} HPs".format(train_hp))
+        
     network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step)
     print("\nSaved final checkpoint at step ", step, "\n")
-    print("\nFinished training!\t-\tTraining set had {:.2%} HPs".format(positives / (network.window * n_examples)))
+    train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+    print("Training accuracy: ", train_acc)
+    print("Training loss: ", train_loss)
+    
+    print("\nFinished training!")
   
+    return(train_acc)       # also return step?
+    
     
 def validate(network, squiggles, max_seq_length):
     """
@@ -183,6 +183,8 @@ def validate(network, squiggles, max_seq_length):
     print("\nFinished validation of model {} on {} raw signals of length {}.".format(network.model_type, 
                                                                                    valid_reads,
                                                                                    max_seq_length))
+    print("Validation accuracy: ", whole_accuracy)
+    return(whole_accuracy)
 
 
 
@@ -203,7 +205,7 @@ if __name__ == "__main__":
     #~ hpm_dict = {"batch_size": 16, "learning_rate": 0.01, "n_layers": 2,
                 #~ "layer_size": 16, "keep_prob": 0.6, "optimizer_choice": "Adam"}
     #~ hpm_dict = {"batch_size":256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res":11}
-    hpm_dict = {"batch_size":1, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3}
+    #~ hpm_dict = {"batch_size": 256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res": 10}
 
     p = psutil.Process(os.getpid())
     m1 = p.memory_full_info().pss
@@ -216,7 +218,7 @@ if __name__ == "__main__":
     t2 = datetime.datetime.now()
     m2 = p.memory_full_info().pss
     print("Extra memory use after building network is", m2 - m1)
-    #~ network.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_183/checkpoints")
+    network.restore_network("/mnt/nexenta/thijs030/networks/ResNet-RNN_9/checkpoints")
     network.initialize_network()
     t22 = datetime.datetime.now()
     m3 = p.memory_full_info().pss
@@ -234,28 +236,32 @@ if __name__ == "__main__":
     print("Extra memory use after loading db is", m4 - m3)
     print("Loaded db in {}".format(t4 - t3))
     
-    #~ print("Loading validation database..")
-    #~ squiggles = helper_functions.load_squiggles(db_dir_val)
+    seed = random.randint(0, 1000000000)
     
-    t5 = datetime.datetime.now()
-    train(network, db_train, training_nr, n_epochs)
-    t6 = datetime.datetime.now()
-    m5 = p.memory_full_info().pss
-    print("Extra memory use after training is", m5 - m4)
-    print("Trained network in {}".format(t6 - t5))
+    for n in range(n_epochs):
+        db_train.set_ranges(seed)
+        network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", write_meta_graph=True)
+        print("Saved checkpoint at start of epoch {}".format(n))
+        t5 = datetime.datetime.now()
+        train_acc = train(network, db_train, training_nr, n_epochs)
+        t6 = datetime.datetime.now()
+        m5 = p.memory_full_info().pss
+        print("Extra memory use after training is", m5 - m4)
+        print("Trained network in {}".format(t6 - t5))
+        print("Finished epoch: {}".format(n))
     
-    # validate network
+    #~ # validate network
     #~ print("Loading validation database..")
     #~ squiggles = helper_functions.load_squiggles(db_dir_val)
     #~ t7 = datetime.datetime.now()
     #~ m6 = p.memory_full_info().pss
     #~ print("Extra memory use after loading squiggles is ", m6 - m5)
     #~ print("Loaded squiggles in {}".format(t7 - t6))
-    #~ validate(network, squiggles, max_seq_length)
+    #~ val_acc = validate(network, squiggles, max_seq_length)
     #~ t8 = datetime.datetime.now()
     #~ m7 = p.memory_full_info().pss
     #~ print("Extra memory use after validation is ", m7 - m6)
     #~ print("Validated network in {}".format(t8 - t7))
     #~ print("Finished script at ", t8)
     
-    print("Memory use at end is ", p.memory_full_info().pss)
+    #~ print("Memory use at end is ", p.memory_full_info().pss)

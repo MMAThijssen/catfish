@@ -124,9 +124,9 @@ if __name__ == "__main__":
     print("Built and initialized model in {}\n".format(t2 - t1))
 
     #~ # 1b. Restore model
-    #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
+    #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/ResNet-RNN_9.txt")
     #~ model = build_model(network_type, **hpm_dict)
-    #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
+    #~ model.restore_network("/mnt/nexenta/thijs030/networks/ResNet-RNN_9/checkpoints")
  
     # 2. Train model
     print("Loading training database..")
@@ -137,12 +137,13 @@ if __name__ == "__main__":
     print("\nMemory after training is ", m3)
     print("Trained model in {}\n".format(t3 - t2))
     
-    #3. Assess performance on validation set
-    print("Loading validation database..")
-    squiggles = helper_functions.load_squiggles(db_dir_val)
-    validate(model, squiggles, max_seq_length)
-    t4 = datetime.datetime.now()  
-    m4 = p.memory_full_info().pss
-    print("Memory use at end is ", m4)
-    print("Validated model in {}".format(t4 - t3))
+    #~ #3. Assess performance on validation set
+    #~ t3 = datetime.datetime.now() 
+    #~ print("Loading validation database..")
+    #~ squiggles = helper_functions.load_squiggles(db_dir_val)
+    #~ validate(model, squiggles, max_seq_length)
+    #~ t4 = datetime.datetime.now()  
+    #~ m4 = p.memory_full_info().pss
+    #~ print("Memory use at end is ", m4)
+    #~ print("Validated model in {}".format(t4 - t3))
 
