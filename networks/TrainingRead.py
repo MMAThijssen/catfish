@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-Created on Tue Oct 16 12:45:55 2018
-
-@author: thijs030
+Class for Tombo-corrected MinION reads that contain the raw signal 
+on which a neural network can train.
 """
 from helper_functions import normalize_raw_signal
 from itertools import chain, repeat
@@ -12,17 +11,14 @@ from persistent import Persistent
 from random import sample
 import training_encodings
 
-# A class for tombo-corrected MinION training reads, containing raw signal, and the derivation of classes on which
-# a neural network can train.
-
 
 class TrainingRead(Persistent):
 
     def __init__(self, hdf, normalization, hdf_path, clipped_bases, kmer_size, use_tombo=False):
-        """Initialize a new training read.
-
         """
-        self.lessen = 3
+        Initialize a new training read.
+        """
+        self.lessen = 1
         self._raw = None
         self.condensed_events = None
         self._event_length_list = None
