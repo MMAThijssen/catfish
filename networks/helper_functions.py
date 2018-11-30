@@ -68,7 +68,6 @@ def load_db(db_dir):
 def load_squiggles(db_dir):
     if db_dir[-1] != '/':
         db_dir += '/'
-    print("Loading npz files..")
     squiggles = parse_input_path(db_dir + 'test_squiggles')
     return squiggles
 
