@@ -1,6 +1,7 @@
 # ignore compiled code
 **/*.pyc
 /networks/__pycache__/
+*.pyc
 
 # ignore test.py
 test.py
