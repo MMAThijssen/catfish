@@ -1,19 +1,31 @@
-import helper_functions
-from sys import argv
-#from ExampleDb import check_lengths
+#from learning_curve import draw_learning_curves
 
-db = helper_functions.load_db(argv[1])
-number = int(argv[2]) * 2
+t_score = [0.53085935, 0.58493304]
+v_score = [0.53446553446553, 0.7353646353646354]
+t1_score = [0.53085935, 0.58493304]
+v1_score = [0.53446553446553, 0.7353646353646354]
+sizes = [1000, 10000]
 
-db.set_ranges(83)
-size = 250
+samples = []
+samples.append(t_score)
+samples.append(t1_score)
+print(samples)
 
-[db.check_lengths(size, i) for i in range(number // size)]
+#for s in range(len(sizes)):
+#    mean_training_score = train_error[s].mean()
+#    mean_validation_score = val_error[s].mean() 
+# 
+min_list = []
+max_list = []   
+mean_list = []
 
-rest = number - (number // size)
-db.check_lengths(rest, 1)
 
-
-#labels = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-#labels = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-#print(len(labels))
+for s in range(len(sizes)):
+    total = 0
+    for i in range(len(samples)):
+        total += samples[i][s]
+    mean = total / len(samples)
+    mean_list.append(mean)
+    
+print(mean_list)
+        
