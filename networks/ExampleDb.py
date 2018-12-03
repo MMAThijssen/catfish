@@ -42,7 +42,9 @@ class ExampleDb(object):
         self.range_ps = list(range(self.nb_pos))
         self.range_ns = list(range(self.nb_neg))
         random.shuffle(self.range_ps)
-        random.shuffle(self.range_ns)
+        random.shuffle(self.range_ns)  
+        
+        return self.range_ps, self.range_ns      
                 
                 
     def get_training_set(self, size):
@@ -55,7 +57,7 @@ class ExampleDb(object):
 
         nb_pos = size // 2
         nb_neg = size - nb_pos
-        
+
         ps = self.range_ps[ : nb_pos]
         ns = self.range_ns[ : nb_neg]
         

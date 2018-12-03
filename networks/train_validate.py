@@ -204,7 +204,7 @@ if __name__ == "__main__":
     
     #~ hpm_dict = {"batch_size": 16, "learning_rate": 0.01, "n_layers": 2,
                 #~ "layer_size": 16, "keep_prob": 0.6, "optimizer_choice": "Adam"}
-    #~ hpm_dict = {"batch_size":256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res":11}
+    hpm_dict = {"batch_size":256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res":11}
     #~ hpm_dict = {"batch_size": 256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res": 10}
 
     p = psutil.Process(os.getpid())
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     t2 = datetime.datetime.now()
     m2 = p.memory_full_info().pss
     print("Extra memory use after building network is", m2 - m1)
-    network.restore_network("/mnt/nexenta/thijs030/networks/ResNet-RNN_9/checkpoints")
+    #~ network.restore_network("/mnt/nexenta/thijs030/networks/ResNet-RNN_9/checkpoints")
     network.initialize_network()
     t22 = datetime.datetime.now()
     m3 = p.memory_full_info().pss
@@ -238,12 +238,16 @@ if __name__ == "__main__":
     
     seed = random.randint(0, 1000000000)
     
+    t0 = datetime.datetime.now()
+    pos_range, neg_range = db_train.set_ranges(seed)
+    print("Set ranges in {}".format(datetime.datetime.now() - t0))
     for n in range(n_epochs):
-        db_train.set_ranges(seed)
+        db_train.range_ps = pos_range
+        db_train.range_ns = neg_range
         network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", write_meta_graph=True)
         print("Saved checkpoint at start of epoch {}".format(n))
         t5 = datetime.datetime.now()
-        train_acc = train(network, db_train, training_nr, n_epochs)
+        train_acc = train(network, db_train, training_nr)
         t6 = datetime.datetime.now()
         m5 = p.memory_full_info().pss
         print("Extra memory use after training is", m5 - m4)
