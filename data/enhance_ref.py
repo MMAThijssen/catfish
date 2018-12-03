@@ -9,18 +9,21 @@ import numpy as np
 import random
 from sys import argv
 
-# 2. Enhance reference
+
 def get_pos_hps(hp_loc_dict):
     """
-    Returns list of homompolymer positions per base + adjacent bases
+    Creates list of homopolymeric base positions.
+    
+    Args:
+        hp_loc_dict -- dict {hp: start pos, length}
+    
+    Returns: list of ints 
     """
-    pos_list = []
-    for locs in hp_loc_dict.values():
-        for loc in range(len(locs)):
-            pos_list += list(range(locs[loc][0], locs[loc][1]))
-    return(pos_list)
+    pos_list = [list(range(locs[loc][0], locs[loc][1])) for locs in hp_loc_dict.values() for loc in range(len(locs))]
+    return pos_list
 
-def calc_hp(seq, threshold = 5):
+
+def calc_hp(seq, threshold=5):
     """
     Calculates homopolymer content as number of bases part of a homopolymer
     in total DNA sequence.
@@ -44,7 +47,8 @@ def calc_hp(seq, threshold = 5):
         else:
             hp = False
     hp_content = float(hp_nr) / float(len(seq))
-    return(hp_content)
+    
+    return hp_content
     
 
 def substitute(seq, subst_seq, pos_list):
@@ -54,22 +58,22 @@ def substitute(seq, subst_seq, pos_list):
     Args:
         seq -- str, sequence
         subst_seq -- str, sequence to substitute with
-        pos_list -- list of hp positions
+        pos_list -- list of ints, positions of homopolymers
         
-    Returns: seq
+    Returns: str, int, int (new sequence, start position, end position)
     """
     if not subst_seq.count(subst_seq[0]) == len(subst_seq):
         raise ValueError("The substituting sequence is not a homopolymer.")
     not_substituted = True        
     while not_substituted:
-        rand_pos = random.randint(1, len(seq) - len(subst_seq) - 1)  # to assure to have one base at begin and end      
-        # assure that the hp is not equal to side            
-        if not (subst_seq[0] == seq[rand_pos - 1] or subst_seq[0] == seq[rand_pos + len(subst_seq)]):
-            # assure that HP will not be placed in other HP OR next to a HP
-            if (rand_pos not in pos_list) or ((rand_pos + len(subst_seq) -1) not in pos_list):
+        rand_pos = random.randint(1, len(seq) - len(subst_seq) - 1)                                         # assure to have one base at begin and end      
+        if not (subst_seq[0] == seq[rand_pos - 1] or subst_seq[0] == seq[rand_pos + len(subst_seq)]):       # assure that the hp is not equal to side  
+            if (rand_pos not in pos_list) or ((rand_pos + len(subst_seq) -1) not in pos_list):              # assure that HP will not be placed in other HP OR next to a HP
                 new_seq = seq[:rand_pos] + subst_seq + seq[rand_pos + len(subst_seq):]                
                 not_substituted = False
-    return(new_seq, rand_pos, rand_pos + len(subst_seq))
+                
+    return new_seq, rand_pos, rand_pos + len(subst_seq)
+ 
     
 def create_progfile(file_name, prog, txt, ext="fasta"):
     """
@@ -79,9 +83,9 @@ def create_progfile(file_name, prog, txt, ext="fasta"):
         file_name -- str, name of output file
         prog -- str / int, progress
         txt -- str / int, text to be save in file
-        ext -- str, file extension
+        ext -- str, file extension [default: "fasta"]
 
-    Returns: name of file (str)
+    Returns: str (name of file)
     """
     out_file = "{}_{}.{}".format(file_name, prog, ext)
     with open(out_file, "w") as dest_file:
@@ -98,7 +102,7 @@ def enhance_seq(seq_file, perc, enhanced_name):
     
     Returns: file (str)
     """
-    # check if enhancement is needed
+    # check if enhancement is needed:
     seq = get_sequence(seq_file)
     hp_loc_dict = save_hp_loc(seq)
     total_hps, total_hp_stretches, hp_cont, hp_lengths, different_hps, sorted_hp_nr = get_info(seq)
@@ -109,16 +113,15 @@ def enhance_seq(seq_file, perc, enhanced_name):
     # get needed stretches and number to copy:
     else:
         # to get HPs and proportions
-        hp_list = [hpl[0] for hpl in sorted_hp_nr] # to get hps seperately
-        nr_list = [hpr[1] for hpr in sorted_hp_nr] # to get according numbers
+        hp_list = [hpl[0] for hpl in sorted_hp_nr]                              # to get hps seperately
+        nr_list = [hpr[1] for hpr in sorted_hp_nr]                              # to get according numbers
         prop_list = [float(nr)/total_hp_stretches for nr in nr_list]
 
         # to get enhancement properties
         bases_per_perc = len(seq) / 100
         stretch_per_perc = total_hp_stretches / (hp_cont * 100)
         needed_stretches = round(perc * stretch_per_perc)
-        samples = np.random.choice(hp_list, size=needed_stretches, p=prop_list)  
-        #new_stretches = needed_stretches - total_hp_stretches     
+        samples = np.random.choice(hp_list, size=needed_stretches, p=prop_list)      
         
         # substitute original reference to over/undersample:
         #TODO: calculate percentage to be sure it reached defined percentage
@@ -139,13 +142,14 @@ def enhance_seq(seq_file, perc, enhanced_name):
         progress = "finished"
         prog_file = create_progfile(enhanced_name, progress, seq)
         print("Created file {}.".format(prog_file))
-        return(prog_file)
+        
+        return prog_file
         
 
 if __name__ == "__main__":
     # 1. Get command line arguments
     if len(argv) != 4:
-        print("Arguments is missing. Enter reference file, desired percentage, name of outfile.")
+        print("Argument is missing. Enter reference file, desired percentage, name of outfile.")
     else:
         seq_file = argv[1]
         wanted_perc = float(argv[2])
