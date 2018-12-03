@@ -48,10 +48,14 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
     
     #2. Train and validate
     while training_nr <= max_nr:
+        t0 = datetime.datetime.now()
+        pos_range, neg_range = db_train.set_ranges(seed)
+        print("Set ranges in {}".format(datetime.datetime.now() - t0))
         for n in range(n_epochs):
-            db_train.set_ranges(seed)
             size_list.append(training_nr)
             # train model:
+            db_train.range_ps = pos_range
+            db_train.range_ns = neg_range
             t2 = datetime.datetime.now()
             train_accuracy = train(model, db_train, training_nr)
             train_error.append(train_accuracy)
@@ -76,7 +80,7 @@ def compute_lines(samples):
     values per size per sample.
     
     Args:
-        samples -- list of lists of (floats), different samples
+        samples -- list of lists of (floats), scores of different samples
     
     Returns: list of means, list of min, list of max 
     """    
@@ -97,24 +101,28 @@ def compute_lines(samples):
         max_list.append(max(temp_list))
         
         
-    print(mean_list, min_list, max_list)
+    return mean_list, min_list, max_list
 
-#TODO: draw borders + impplement compute lines
-# fill between from pyplt
-def draw_learning_curves(training_score, validation_score, train_sizes, img_title):
+
+def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title):
     """
     Plots learning curve. 
     
     Args:
-        training_score -- list of float/ints
-        validation_score -- list of float/ints
+        training_score -- list of lists of float/ints
+        validation_score -- list of lists of float/ints
         train_sizes -- list of ints
         
     """    
     plt.style.use("seaborn")
     
-    plt.plot(train_sizes, training_score, label = 'Training error')
-    plt.plot(train_sizes, validation_score, label = 'Validation error')
+    train_means, train_mins, train_maxs = compute_lines(training_scores)
+    val_means, val_mins, val_maxs = compute_lines(validation_scores)
+    
+    plt.plot(train_sizes, train_means, label = 'Training error')
+    plt.plot(train_sizes, val_means, label = 'Validation error')
+    plt.fill_between(train_sizes, train_mins, train_maxs, alpha=0.3)
+    plt.fill_between(train_sizes, val_mins, val_maxs, alpha=0.3)
 
     plt.ylabel('Accuracy', fontsize = 14)
     plt.xlabel('Training set size', fontsize = 14)
@@ -148,15 +156,12 @@ if __name__ == "__main__":
     
     #1. Train and validate network
     train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
-                                         n_epochs, db_dir_val, max_seq_length)
+                                         n_epochs, db_dir_val, max_seq_length, max_nr=1469636)
     print("Training: ", train_error)
     print("Validation: ", val_error)
     print("Sizes: ", sizes)
-
-    #~ #2. Calculate mean, min and max training and validation scores
-    #~ # suppose you have multiple networks, eg. 2:
-    #~ mean_list, min_list, max_list = compute_lines(sample_matrix)
+    
     
     #~ #5. Plot learning curve
     #~ img_title = "Learning_curve_{}".format(network_type)
-    #~ draw_learning_curves(mean_training_score, mean_validation_score, size_list, img_title)
+    #~ draw_learning_curves(training_scores, validation_scores, train_sizes, img_title)
