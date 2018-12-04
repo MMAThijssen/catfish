@@ -1,12 +1,14 @@
 #/usr/bin/env python3
+
 """
 Retrieves information on homopolymers from FASTA or txt file.
 
 @author: Marijke Thijssen
 """
+
 from sys import argv
 
-# 1. Get sequence from file
+
 def get_sequence(fasta_file):
     """ 
     Retrieves sequence from FASTA or txt file.
@@ -14,12 +16,11 @@ def get_sequence(fasta_file):
     Args:
         fasta_file -- string, name of FASTA file
     
-    Returns: str
+    Returns: dict {id: list of sequences}
     """
+    seq_dict = {}
+    seq_nr = 0
     with open(fasta_file, "r") as dest_file:
-    #dest_file = open(fasta_file, "r")
-        seq_dict = {}
-        seq_nr = 0
         for line in dest_file:
             if not line.strip():
                 continue
@@ -28,10 +29,7 @@ def get_sequence(fasta_file):
                 seq_dict[seq_nr] = []
             else:
                 seq_dict[seq_nr].append(line.strip())
-#                seq.append(line.strip())
-#                sequence_list.append(line.strip())
-    #dest_file.close()
-    return(seq_dict)
+    return seq_dict
 
 # 2. Get homopolymer content and other info
 def check_hp(seq, length = 5):

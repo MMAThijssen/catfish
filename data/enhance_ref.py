@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+
 """
 Module to enhance reference genome and print information of homopolymers.
 
 @author: Marijke Thijssen
 """
+
 from info_hp import print_info, get_sequence, save_hp_loc, get_info, check_hp
 import numpy as np
 import random
@@ -17,7 +19,7 @@ def get_pos_hps(hp_loc_dict):
     Args:
         hp_loc_dict -- dict {hp: start pos, length}
     
-    Returns: list of ints 
+    Returns: homopolymer posititions (list of ints)
     """
     pos_list = [list(range(locs[loc][0], locs[loc][1])) for locs in hp_loc_dict.values() for loc in range(len(locs))]
     return pos_list
@@ -32,7 +34,7 @@ def calc_hp(seq, threshold=5):
     threshold -- int, minimal number of equal bases to define 
                     homopolymer stretch [default:5]
     
-    Returns: float (0.00 to 1.00)
+    Returns: homopolymer content (float (0.00 to 1.00))
     """
     # does not check if sequence is DNA
     hp_nr = 0  
@@ -60,7 +62,7 @@ def substitute(seq, subst_seq, pos_list):
         subst_seq -- str, sequence to substitute with
         pos_list -- list of ints, positions of homopolymers
         
-    Returns: str, int, int (new sequence, start position, end position)
+    Returns: new sequence (str), start position (int), end position (int)
     """
     if not subst_seq.count(subst_seq[0]) == len(subst_seq):
         raise ValueError("The substituting sequence is not a homopolymer.")
@@ -85,12 +87,14 @@ def create_progfile(file_name, prog, txt, ext="fasta"):
         txt -- str / int, text to be save in file
         ext -- str, file extension [default: "fasta"]
 
-    Returns: str (name of file)
+    Returns: name of file (str)
     """
     out_file = "{}_{}.{}".format(file_name, prog, ext)
     with open(out_file, "w") as dest_file:
         dest_file.write(txt)
-    return(out_file)
+    
+    return out_file
+    
     
 def enhance_seq(seq_file, perc, enhanced_name):
     """
