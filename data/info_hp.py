@@ -28,29 +28,29 @@ def get_sequence(fasta_file):
                 seq_nr += 1
                 seq_dict[seq_nr] = []
             else:
-                seq_dict[seq_nr].append(line.strip())
+                seq_dict[seq_nr].extend(line.strip())
+    
     return seq_dict
 
-# 2. Get homopolymer content and other info
-def check_hp(seq, length = 5):
+
+def check_hp(seq, length=5):
     """
     Checks if sequence of defined length is a homopolymer. 
     
     Args:
         seq -- str, DNA sequence
-        length -- int, number of equal bases that defines 
-                        homopolymer stretch [default:5]
+        length -- int, number of equal bases that defines homopolymer stretch [default:5]
     
     Returns: boolean (true if homopolymer, false if not homopolymer)
     """
     if len(seq) != length:
         raise ValueError("Provided sequence must have specified length.")
     if seq.count(seq[0]) == length:
-            return(True)
+            return True
     else:
-        return(False)
+        return False
 
-def save_hp_loc(seq, threshold = 5):
+def save_hp_loc(seq, threshold=5):
     """
     Saves locations of homopolymers in a dictionary.
     
@@ -77,8 +77,10 @@ def save_hp_loc(seq, threshold = 5):
             if hp in hp_dict:
                 hp_dict[hp] += [(hp_start, hp_end)]
             else:
-                hp_dict[hp] = [(hp_start, hp_end)] #copy parts as seq[start:end]
-    return(hp_dict)
+                hp_dict[hp] = [(hp_start, hp_end)]                              #copy parts as seq[start:end]
+    
+    return hp_dict
+
 
 def calc_hp_bases(hp_dict):
     """
@@ -97,13 +99,16 @@ def calc_hp_bases(hp_dict):
         number = len(hp_dict[hp])
         hps = length * number
         total_hps += hps
-    return(total_hps)    # hp content
+    
+    return total_hps    
+    
 
 def calc_hpcontent(nr_hp_bases, seq):
     """
     Returns HP content as float. 
     """
-    return(nr_hp_bases / float(len(seq)))
+    return nr_hp_bases / float(len(seq))
+
 
 def len_hp(hp_dict):
     """
@@ -112,39 +117,54 @@ def len_hp(hp_dict):
     Args:
         hp_dict -- dict, {seq (str), ...}
         
-    Returns: list of ints
+    Returns: unique, sorted list of ints
     """
-    
     hp_list = list(hp_dict.keys())
     size_list = [len(hp) for hp in hp_list]
-    return(sorted(set(size_list))) 
+    
+    return sorted(set(size_list))
+    
 
 def get_hp_count(hp_loc_dict):
+    """
+    Orders homopolymers on prevalence. 
+    
+    Args:
+        hp_loc_dict -- dict {seq: ...}
+        
+    Returns: sorted list of ints
+    """
     # to get sorted list (HP, count)    
     hp_nr_list = [(hp, len(hp_loc_dict[hp])) for hp in hp_loc_dict]
     sorted_hp_nr = sorted(hp_nr_list)
-    return(sorted_hp_nr)  
+    
+    return sorted_hp_nr
+    
 
 def get_info(seq):
     """
     Gets information on homopolymers.
     
+    Args:
+        seq -- str, DNA sequence
+    
     Returns: total number of HP bases (int), total number of HP stretches (int),
              HP content (float), number of different HPs (int)
     """
     hp_loc_dict = save_hp_loc(seq)
-    # get HP content and number of HP bases
+    # get HP content and number of HP bases:
     total_hps = calc_hp_bases(hp_loc_dict) 
     hp_content = calc_hpcontent(total_hps, seq)
     total_hp_stretches = sum([len(hp) for hp in hp_loc_dict.values()])
-    # get HP lengths and number of different HPs
+    # get HP lengths and number of different HPs:
     hp_lengths = len_hp(hp_loc_dict)
     different_hps = len(hp_loc_dict.keys())
     hp_count_tuple = get_hp_count(hp_loc_dict)
-    return(total_hps, total_hp_stretches,
-                     hp_content, hp_lengths, different_hps, hp_count_tuple)
+    
+    return total_hps, total_hp_stretches,
+                     hp_content, hp_lengths, different_hps, hp_count_tuple
 
-# 3. Print info to screen
+
 def print_info(seq_file, total_hps, total_hp_stretches,
                      hp_cont, hp_lengths, different_hps, sorted_hp_nr, extra=False):
 #def print_hp_info(seq_file):
@@ -161,7 +181,7 @@ def print_info(seq_file, total_hps, total_hp_stretches,
         sorted_hp_nr -- list of tuples (hp, nr)
         extra -- bool, prints HP and prevelance [default:True]
     
-    Returns: -
+    Returns: None
     """
     hp_info = "SEQUENCE: {}\n" \
         "Total number of bases in homopolymers: {}\n" \
@@ -178,30 +198,28 @@ def print_info(seq_file, total_hps, total_hp_stretches,
         for hpnr in sorted_hp_nr:
             print(hpnr[0] + "\t" + str(hpnr[1]))  
 
-if __name__ == "__main__":
-    # 1. Get sequence from file
-#    if len(argv) == 3:
-#        if argv[2] == "False":
-#            extra = False
-#        else:
-#            extra = True
 
-    seq_dict = get_sequence(argv[1])
+def main(fasta_file, extra):
+    """
+    Prints homopolymer information on FASTA file.
+    """
+    # 1. Get sequence from file:
+    seq_dict = get_sequence(fasta_file)
     n_seq = len(seq_dict)
     sequences = list(seq_dict.values())
     seq_length = 0
     for seqs in sequences:
         for seq in seqs:
             seq_length += len(seq)
-#    print("Total sequence length: {}".format(seq_length))
+    print("Total sequence length: {}".format(seq_length))
 
-    # 2. Get homopolymer content and other info
+    # 2. Get homopolymer content and other info:
     all_hps = 0
     all_stretches = 0
     all_content = 0
-    all_lengths = [] #TODO
-    all_different_hps = [] #TODO
-    all_hp_count_tuple = [] #TODO
+    all_lengths = []            #TODO
+    all_different_hps = []      #TODO
+    all_hp_count_tuple = []     #TODO
     for sq in seq_dict:
         seq = "".join(seq_dict[sq])
         total_hps, total_hp_stretches, hp_content, hp_lengths, different_hps, hp_count_tuple = get_info(seq)
@@ -218,6 +236,19 @@ if __name__ == "__main__":
   
     # 3. Print info to screen
     print_info(argv[1], all_hps, all_stretches, final_content, lengths, 
-               diff_hp, all_hp_count_tuple)      # no extra for now
+               diff_hp, all_hp_count_tuple)                                     # no extra for now
     print("Total sequence length: {}\nHP count: {}".format(seq_length, 
           all_hps / seq_length))
+
+
+if __name__ == "__main__":
+    fasta_file = argv[1]
+    if len(argv) == 3:
+        if argv[2] == "False":
+            extra = False
+        else:
+            extra = True
+
+    main(fasta_file, extra)
+
+
