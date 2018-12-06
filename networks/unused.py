@@ -1,3 +1,12 @@
+# process_tp
+                #~ print(base_dict)
+                # using basenew file     # SLOWER.. 0m19.006s
+                #~ base = list_basenew(base_file, read_name, "bases")
+                #~ new = list_basenew(base_file, read_name,  "new")
+                #~ base_dict = {k: get_bases(base, new, predicted_dict[k][0], predicted_dict[k][1]) for k in predicted_dict}
+                #~ print(base[15:64])
+                #~ print(base_dict)
+
 # for validation
         # DO NOT DO THIS NOW; CAN DO THIS LATER BY RESTORING (every 100 000 steps)
         #~ # After each half epoch validate     if steps % (n_batches / 2) == 0:

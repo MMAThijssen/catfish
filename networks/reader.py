@@ -33,3 +33,17 @@ def load_npz_labels(npz_file):
     with np.load(npz_file) as npz:
         labels = npz["base_labels"]                                                  # labels are 0 (non-HP) or 1 (HP)
     return labels
+    
+
+def load_npz_raw(npz_file):
+    """
+    Retrieves information saved in NPZ file.
+    
+    Args:
+        npz_file -- str, path to .npz file
+        
+    Returs: tuple (np.array of raw signal, np.array of labels)
+    """
+    with np.load(npz_file) as npz:
+        raw = npz["raw"]
+    return raw

@@ -4,8 +4,8 @@
 Assigns the bases that belong to a measurement, while keeping a distinction
 between separate bases.
 """
+
 import h5py
-import reader
 import os
 from sys import argv
 
@@ -59,9 +59,6 @@ def get_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
         # get list of event lengths:
         event_lengths = hdf[hdf_events_path]["length"]
         if use_tombo:
-            # get list of base sequence:
-            event_bases = hdf[hdf_events_path]["base"].astype(str)
-
             # make a new list by copying the base the times of the event length
             new = []
             for i in range(len(event_lengths)):
@@ -95,7 +92,6 @@ def get_base_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
         if use_tombo:
             # get list of base sequence:
             event_bases = hdf[hdf_events_path]["base"].astype(str)
-
             # make a base list by copying the base the times of the event length
             bases = []
             new = []

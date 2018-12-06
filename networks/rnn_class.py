@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-#~ from functools import lru_cache
+
 import metrics
 import numpy as np
 import os
 import tensorflow as tf
-
-#TODO:
-# * implement check for given max_seq_length: must be divisible
-# * fix set batches (self.n_train now..)
-# * make properties of n_batches, cell_type (set_cell), saver, model_path
-# * change cur dir to take abspath
-# * ASK: What is the difference between a class def returning something or setting self.variable?
 
 
 class RNN(object):
@@ -31,7 +24,7 @@ class RNN(object):
         self.keep_prob_test = 1.0                                               # no dropout wanted in testing
                 
         # set parameters
-        #~ self.model_id = model_id                                                # for pbt
+        #~ self.model_id = model_id                                             # for pbt
         #~ self.name_scope = tf.get_default_graph().get_name_scope()            # for pbt
         
         self.n_inputs = 1        
@@ -111,7 +104,7 @@ class RNN(object):
     @model_path.setter
     def model_path(self, model_type):
         cur_dir = "/mnt/nexenta/thijs030/networks"
-        #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                # "/mnt/nexenta/thijs030/networks"              
+        #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                
             
         check_for_dir = True
         number = 0

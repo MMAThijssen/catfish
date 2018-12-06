@@ -13,7 +13,7 @@ from train_validate import train, validate, build_model
 
 
 def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_length, 
-            max_nr=100000000, step_factor=10):
+            max_nr=100000000, steps=200):
     """
     Train and validation after each epoch for an increasing number of training reads.
     
@@ -25,7 +25,7 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
         db_dir_val -- str, path to validation database
         max_seq_length -- int, maximum length of validation reads
         max_nr -- int, maximum number of training reads
-        step_factor -- int / float, size to increase number of training reads with
+        step_factor -- int, number of steps after which to print accuracies
         
     Returns: training accuracy, validation accuracy, list of training_nr
     """
@@ -33,6 +33,7 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
     hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/learning_curve_{}.txt".format(network_type))
     model = build_model(network_type, **hpm_dict)
     model.initialize_network()
+    #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_70/checkpoints")
  
     # initialize lists with zero to start at 0 in plot:
     size_list = [0]
@@ -47,31 +48,31 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
     seed = random.randint(0, 1000000000)
     
     #2. Train and validate
-    while training_nr <= max_nr:
-        t0 = datetime.datetime.now()
-        pos_range, neg_range = db_train.set_ranges(seed)
-        print("Set ranges in {}".format(datetime.datetime.now() - t0))
-        for n in range(n_epochs):
-            size_list.append(training_nr)
-            # train model:
-            db_train.range_ps = pos_range
-            db_train.range_ns = neg_range
-            t2 = datetime.datetime.now()
-            train_accuracy = train(model, db_train, training_nr)
-            train_error.append(train_accuracy)
-            t3 = datetime.datetime.now()  
-            print("Trained model in {}\n".format(t3 - t2))
-            print("Finished epoch: {}".format(n))
-            
-            # validate model:
-            val_accuracy = validate(model, squiggles, max_seq_length)
-            val_error.append(val_accuracy)
-            t4 = datetime.datetime.now()  
-            print("Validated model in {}".format(t4 - t3))
-            
-        training_nr *= step_factor
+    #~ while training_nr <= max_nr:
+    t0 = datetime.datetime.now()
+    pos_range, neg_range = db_train.set_ranges(seed)
+    print("Set ranges in {}".format(datetime.datetime.now() - t0))
+    for n in range(n_epochs):
+        size_list.append(training_nr)
+        # train model:
+        db_train.range_ps = pos_range
+        db_train.range_ns = neg_range
+        t2 = datetime.datetime.now()
+        train_accuracy = train(model, db_train, training_nr, squiggles, max_seq_length)
+        train_error.append(train_accuracy)
+        t3 = datetime.datetime.now()  
+        print("Trained model in {}\n".format(t3 - t2))
+        print("Finished epoch: {}".format(n))
+        
+        # validate model at end:
+        val_accuracy = validate(model, squiggles, max_seq_length)
+        val_error.append(val_accuracy)
+        t4 = datetime.datetime.now()  
+        print("Validated model in {}".format(t4 - t3))
+        
+    #~ training_nr *= step_factor
     
-    return(train_error, val_error, size_list)
+    return train_error, val_error, size_list
 
 
 def compute_lines(samples):
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     
     #1. Train and validate network
     train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
-                                         n_epochs, db_dir_val, max_seq_length, max_nr=1469636)
+                                         n_epochs, db_dir_val, max_seq_length)
     print("Training: ", train_error)
     print("Validation: ", val_error)
     print("Sizes: ", sizes)

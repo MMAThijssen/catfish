@@ -205,15 +205,15 @@ def plot_settings(measure):
 
     
 def plot_networks_on_metric(network_list, metric):
-    colours = plot_settings(measure)
+    colours = plot_settings(metric)
 
     for i in range(len(network_list)):
-        network = file_list[i].split("_")[0]
+        network = network_list[i].split("_")[0]
         network_list[i].insert(0, 0)    # prepend starting at 0
         plt.plot(range(0, len(network_list[i]) + 1), network_list[i],lw=2.5, color=colours[i], label=network)
-    plt.title(measure, loc="center")
+    plt.title(metric, loc="center")
     plt.legend(loc="lower right")
-    plt.savefig("{}.png".format(measure), bbox_inches="tight")
+    plt.savefig("{}.png".format(metric), bbox_inches="tight")
     #~ plt.show()
 
 
@@ -221,8 +221,8 @@ def generate_heatmap(predicted_list, label_list, title):
     sns.heatmap(predicted_list, vmin=0.0, vmax=1.0, cmap="GnBu",      # PiYG - YlGnBu
                  xticklabels=False, yticklabels=label_list, 
                  cbar_kws={"orientation": "horizontal"})
-    plt.savefig("{}.png".format(title), bbox_inches="tight")
     #~ plt.show()
+    plt.savefig("{}.png".format(title), bbox_inches="tight")
     plt.close()
 
 
@@ -241,7 +241,7 @@ def draw_roc_from_file(true_file, name_of_roc):
                 labels = line.strip()[3:-1].split(", ")
                 labels = list(map(int, labels))
                 true_labels.extend(labels)
-            elif line.startswith("#"):
+            elif line.startswith("@"):
                 preds = line.strip()[3:-1].split(", ")
                 preds = list(map(float, preds))
                 predicted_scores.extend(preds)   

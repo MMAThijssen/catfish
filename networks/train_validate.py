@@ -50,7 +50,7 @@ def build_model(network_type, **kwargs):
     return network   
 
 
-def train(network, db, training_nr):
+def train(network, db, training_nr, squiggles, max_seq_length):
     """
     Training on windows
     
@@ -58,6 +58,8 @@ def train(network, db, training_nr):
         db -- str, ZODB database
         training_nr -- int, number of training examples
         n_epochs -- str, number of epochs
+    
+    Returns: training accuracy (float)
     """
     saving = True
     print(datetime.datetime.now())
@@ -84,16 +86,19 @@ def train(network, db, training_nr):
         step += 1                                                           # step is per batch
         network.train_network(set_x, set_y, step)
         
-        if step % network.saving_step == 0:   
+        if step % 20 == 0:   
             network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
             print("Saved checkpoint at step ", step)
             train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
             print("Training accuracy: ", train_acc)
             print("Training loss: ", train_loss)
         
-        if step % 1000 == 0:
-            print(step)
+            print(step * network.batch_size)
             print(datetime.datetime.now())
+            
+            val_acc = validate(network, squiggles, max_seq_length)
+            print("Validation accuracy: ", val_acc)
+            
     
     try:
         train_hp = positives / (network.window * n_examples)  
@@ -109,7 +114,7 @@ def train(network, db, training_nr):
     
     print("\nFinished training!")
   
-    return(train_acc)       # also return step?
+    return train_acc        # also return step?
     
     
 def validate(network, squiggles, max_seq_length):
@@ -120,9 +125,9 @@ def validate(network, squiggles, max_seq_length):
         network -- RNN object, network model
         squiggles -- npz files, raw signals and labels of MinION sequencing data
         max_seq_length -- int, maximum length of read to take in
+        
+    Returns: validation accuracy
     """  
-   
-    # 2. Validate model 
     max_seq_length = max_seq_length // network.window * network.window
     accuracy = 0
     valid_reads = 0
@@ -135,7 +140,6 @@ def validate(network, squiggles, max_seq_length):
 
         if len(data_sq) >= max_seq_length:
             labels = labels_sq[: max_seq_length] 
-            #~ if np.count_nonzero(labels == 1) > 0:          # 0 because is neg label
             data = data_sq[: max_seq_length]
             
             read_name = os.path.basename(squig).split(".npz")[0]
@@ -148,7 +152,6 @@ def validate(network, squiggles, max_seq_length):
             sgl_acc  = network.test_network(set_x, set_y, valid_reads, read_name)
             t4 = datetime.datetime.now()
             
-            # NOT NECESSARY ANYMORE BECAUSE I SAVE THE NAMES IS A FILE.
             #~ if valid_reads % network.saving_step == 0:
                 #~ metrics.plot_squiggle(data, "Squiggle_{}_{}".format(os.path.basename(network.model_path), valid_reads))
                 #~ metrics.plot_squiggle(data[2000 : 3001], "Squiggle_{}_{}_middle".format(os.path.basename(network.model_path), valid_reads))
@@ -184,7 +187,7 @@ def validate(network, squiggles, max_seq_length):
                                                                                    valid_reads,
                                                                                    max_seq_length))
     print("Validation accuracy: ", whole_accuracy)
-    return(whole_accuracy)
+    return whole_accuracy
 
 
 
