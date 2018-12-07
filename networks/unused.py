@@ -1,4 +1,10 @@
 # process_tp
+                    #~ for hp in true_hp.values():
+                        #~ state, estimate, inter = check_true_hp(hp, predicted_labels)  
+                        #~ states.append(state)
+                        #~ estimates.append(estimates)
+                        #~ inters.append(inters) 
+
                 #~ print(base_dict)
                 # using basenew file     # SLOWER.. 0m19.006s
                 #~ base = list_basenew(base_file, read_name, "bases")

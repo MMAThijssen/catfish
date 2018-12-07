@@ -3,7 +3,7 @@
 from base_to_signal import get_base_new_signal
 from collections import Counter
 import matplotlib
-#~ matplotlib.use("Agg")
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from reader import load_npz_raw
@@ -13,7 +13,7 @@ from sys import argv
 
 # TODO: implement something as max nr to limit number of reads to process,
 # but should also take full file if max nr exceeds number of reads in file.
-def main(output_file, main_dir, npz_dir):
+def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -21,12 +21,18 @@ def main(output_file, main_dir, npz_dir):
         output_file -- str, file outputted by neural network validation
         main_dir -- str, path to main directory containing FAST5 files
         npz_dir -- str, path to directory containing .npz files
+        out_name -- str, name of file to write output to
+        max_nr -- int, maximum number of reads to use [default: 12255]
         
     Returns: None
     """
-    show_plots = False
+    show_plots = True
     predicted_labels = None
     true_labels = None
+    
+    read_counter = 0
+    
+    states = []
 
     all_count_predictions = Counter({})
     all_count_basehp = Counter({})
@@ -76,62 +82,71 @@ def main(output_file, main_dir, npz_dir):
 
                     # 6. Check finding back true HP
                             # or with counting number of measurements found back
-                            # compare true labels with predicted labels
-                        # TODO:
-                    states, estimates, inters = [check_true_hp(hp, predicted_labels) for hp in true_hp.values()]        
-                    print(states)
-                    print(estimates)
-                    
-                    #~ # count how many completely found back
-                    #~ complete_st = [1 for st in states if st[0] == "complete"]
-                    #~ complete_st = sum(complete_st)
-                    #~ overleft = [st[1][0] for st in states if st[0] == "complete"]
-                    #~ overright = [st[1][1] for st in states if st[0] == "complete"]
-                    #~ perfectcomplete = [1 for st in states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
-                    #~ avg_overleft = sum(overleft) / complete_st
-                    #~ avg_overright = sum(overright) / complete_st
-                    #~ perfectcomplete = sum(perfectcomplete)
-                    #~ print(avg_overleft, avg_overright, perfectcomplete)
-                    
-                    #~ # count interruptions
-                    #~ incomplete_st = len(states) - complete_st
-                    #~ print("incomplete: ", incomplete_st)
-                    #~ list_inters = [len(st[2]) for st in states]
-                    #~ nr_inters = sum(list_inters)
-                    #~ avg_inters = nr_inters / incomplete_st                                      # if less than 0: usually no inters
-                    #~ median_inters = median(list_inters)  
-                    
-                    #~ print("interruptions: ", nr_inters)
-                    #~ print("average: ", avg_inters)
-                    #~ print("median: ", median_inters)
-                    
-                    #~ # what length of inters? only if inter is present
-                    #~ length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
-                    #~ print(length_inters)
+                            # compare true labels with predicted labels  
+                    read_states = [check_true_hp(hp, predicted_labels) for hp in true_hp.values()] 
+                    if read_states != []:
+                        states.extend(read_states)     
                         
-                    #~ search_read = True
-                    #~ predicted_labels = None
-                    #~ true_labels = None
-        # something with positions of interruptions?
+                    #~ # 6b. Check finding HP in truth
+                    #~ fake_states = [check_true_hp(hp, true_labels) for hp in predicted_hp.values()]
+                    #~ print(fake_states)
+
+                    # 7. Add dictionaries to make common:
+                    all_count_predictions = all_count_predictions + count_predictions
+                    all_count_basehp = all_count_basehp + count_basehp
+                    all_count_truehp = all_count_truehp + count_truehp
+                    all_count_basetrue = all_count_basetrue + count_basetrue
+                    all_count_seq = all_count_seq + count_seq
+                    all_count_seqtrue = all_count_seqtrue + count_seqtrue
                     
-                    #~ # 7. Add dictionaries to make common:
-                    #~ all_count_predictions = all_count_predictions + count_predictions
-                    #~ all_count_basehp = all_count_basehp + count_basehp
-                    #~ all_count_truehp = all_count_truehp + count_truehp
-                    #~ all_count_basetrue = all_count_basetrue + count_basetrue
-                    #~ all_count_seq = all_count_seq + count_seq
-                    #~ all_count_seqtrue = all_count_seqtrue + count_seqtrue
+                    all_seq_list = dict_to_ordered_list(all_count_seq)
+                    all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
                     
-                    #~ all_seq_list = dict_to_ordered_list(all_count_seq)
-                    #~ all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
+                    read_counter += 1
+                    if read_counter == max_number:
+                        break
+                    search_read = True
+                    predicted_labels = None
+                    true_labels = None
+    
+    # 6b. Check from TP perspective:                    
+    # count how many completely found back
+    complete_st = [1 for st in states if st[0] == "complete"]
+    complete_st = sum(complete_st)
+    if complete_st != 0:
+        overleft = [st[1][0] for st in states if st[0] == "complete"]
+        overright = [st[1][1] for st in states if st[0] == "complete"]
+        perfectcomplete = [1 for st in states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
+        avg_overleft = sum(overleft) / complete_st
+        avg_overright = sum(overright) / complete_st
+        perfectcomplete = sum(perfectcomplete)
+        
+    # count how many absent
+    absent_st = [1 for st in states if st[0] == "absent"]
+    absent_st = sum(absent_st)
+    print(absent_st)
+    
+    # count interruptions
+    incomplete_st = len(states) - complete_st - absent_st
+    list_inters = [len(st[2]) for st in states]
+    nr_inters = sum(list_inters)
+    if nr_inters != 0:
+        avg_inters = nr_inters / incomplete_st                                      # if less than 0: usually no inters
+        median_inters = median(list_inters)  
+        length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
+        avg_len_inters = sum(length_inters) / nr_inters
+        median_len_inters = median(length_inters)
+    
+        # TODO: something with positions of interruptions?
 
     if show_plots:
         plot_prevalence(all_count_predictions, name="HP_length_measurements")       # 1
         plot_prevalence(all_count_basehp, name="HP_length_bases")                   # 3
         plot_prevalence(all_count_truehp, name="True HP lengths_measurements")      # 4a
         plot_prevalence(all_count_basetrue, name="True_HP_length_bases")            # 4b
-        plot_list(all_seq_list, "Predicted_HP_sequences", rotate=True)              # 5
-        plot_list(all_seqtrue_list, "True_HP_sequences")                            # 5
+        plot_list(all_seq_list, name="Predicted_HP_sequences", rotate=True)              # 5
+        plot_list(all_seqtrue_list, name="True_HP_sequences")                            # 5
+        print("Shows plots - DOES NOT SAVE YET!")
     
     # 7. Check surroundings
         # when do I consider it close?
@@ -140,8 +155,45 @@ def main(output_file, main_dir, npz_dir):
     # maybe something with some kind of clustering as well #
     # check def LATER #
 
+    # 8. Write outputs to file:
+    with open("{}.txt".format(out_name), "w") as dest:
+        dest.write("PROCESSED VALIDATED READS\n\n")
+        dest.write("\tbased on {} reads\n".format(read_counter))
+        # part on true hps
+        dest.write("\ntotal HPs: {}\n".format(sum(all_count_truehp.values())))
+        dest.write("incomplete HPs: {}\n".format(incomplete_st))
+        dest.write("\ttotal interruptions: {}\n".format(nr_inters))
+        if nr_inters != 0:
+            dest.write("\taverage interruptions: {}\n".format(avg_inters))
+            dest.write("\tmedian interruptions: {}\n".format(median_inters))
+            dest.write("\taverage length interruptions: {}\n".format(avg_len_inters))
+            dest.write("\tmedian length interruptions: {}\n".format(median_len_inters))
+        dest.write("absent HPs: {}\n".format(absent_st))
+        dest.write("complete HPs: {}\n".format(complete_st))
+        if complete_st != 0:
+            dest.write("\taverage overestimated to the left: {}\n".format(avg_overleft))
+            dest.write("\taverage overestimated to the right: {}\n".format(avg_overright))
+            dest.write("\tperfectly found HPs: {}\n".format(perfectcomplete))
+        # part on all predictions
+        dest.write("Comparison on length and composition        (length / seq, count)\n")
+        dest.write("\tPredicted HP length in measurements\n")
+        dest.write("{}\n".format(dict_to_ordered_list(all_count_predictions)))
+        dest.write("\tPredicted HP length in bases\n")
+        dest.write("{}\n".format(dict_to_ordered_list(all_count_basehp)))
+        dest.write("\tPredicted HP sequences\n")
+        dest.write("{}\n".format(all_seq_list))
+        dest.write("\tTrue HP length in measurements\n")
+        dest.write("{}\n".format(dict_to_ordered_list(all_count_truehp)))
+        dest.write("\tTrue HP length in bases\n")
+        dest.write("{}\n".format(dict_to_ordered_list(all_count_basetrue)))
+        dest.write("\tTrue HP sequences\n")
+        dest.write("{}\n".format(all_seqtrue_list))
+        #~ dest.write("{}\n".format())
+        if show_plots:
+            dest.write("\nSaved plots on prevalences.\n")
 
     return None
+    
 
 def list_predicted(line, types="predicted_labels"):
     """
@@ -166,7 +218,6 @@ def list_predicted(line, types="predicted_labels"):
     if line.startswith(sign):
         predicted = line.strip()[3:-1].split(", ")
         predicted = list(map(datatype, predicted))
-        #~ print("Y")
     else:
         predicted = None
 
@@ -222,8 +273,6 @@ def hp_loc_dict(predicted_labels):
             is_hp = True
             start = i
             end = i
-        #~ elif is_hp and predicted_labels[i] == 1:
-            #~ end = i
         elif is_hp:
             if (i + 1 == len(predicted_labels)):
                 end = i
@@ -275,9 +324,9 @@ def plot_prevalence(count_dict, name="Prevalence", rotate=False):
     plt.title(name)
     if rotate:
         plt.xticks(rotation=75)
-    plt.show()
-    #~ plt.savefig("{}.png".format(name), bbox_inches="tight")
-    #~ plt.close()
+    #~ plt.show()
+    plt.savefig("{}.png".format(name), bbox_inches="tight")
+    plt.close()
     
 
 def plot_list(count_list, name="Prevalence", rotate=False):
@@ -299,9 +348,9 @@ def plot_list(count_list, name="Prevalence", rotate=False):
     plt.title(name)
     if rotate:
         plt.xticks(rotation=75)
-    plt.show()
-    #~ plt.savefig("{}.png".format(name), bbox_inches="tight")
-    #~ plt.close()
+    #~ plt.show()
+    plt.savefig("{}.png".format(name), bbox_inches="tight")
+    plt.close()
     
 
 def plot_multi_bars(x, bar1, bar2):     # not yet tested
@@ -390,6 +439,10 @@ def check_true_hp(true_hp, predicted_labels):
     # check if true homopolymer is completely or partly detected
     if (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(1):
         state = "complete"
+    elif (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(0):
+        state = "absent"
+        l = None
+        r = None
     else:
         state = "incomplete" 
         # check for interruptions: where, how long, how often  
@@ -411,43 +464,67 @@ def check_true_hp(true_hp, predicted_labels):
                     if not (start == 0 or end == len(predicted_stretch) - 1):
                         inter_list.append(temp)               
 
-    # check if prediction is overestimated on either side:   
-    l = 0
-    if predicted_labels[true_hp[0]] == 1:
-        check_left = True
-        while check_left:
-            if predicted_labels[true_hp[0] + l - 1] == 1:
-                l -= 1
-            else:
-                check_left = False
-    r = 0 
-    if predicted_labels[true_hp[1]] == 1:
-        check_right = True
-        while check_right:
-            if predicted_labels[true_hp[1] + r + 1] == 1:
-                r += 1
-            else:
-                check_right = False
-            
-    # check if prediction is underestimated on either side:         
-    if l == 0:
-        check_left = True
-        while check_left:
-            if predicted_labels[true_hp[0] + l] == 0:
-                l += 1
-            else:
-                check_left = False
-    if r == 0: 
-        check_right = True
-        while check_right:
-            if predicted_labels[true_hp[1] + r] == 0:
-                r -= 1
-            else:
-                check_right = False    
+    if state != "absent":
+        # check if prediction is overestimated on either side:   
+        l = 0
+        if predicted_labels[true_hp[0]] == 1:
+            check_left = True
+            while check_left:
+                position = true_hp[0] + l - 1
+                if position != 0 and predicted_labels[position] == 1:
+                    l -= 1
+                else:
+                    check_left = False
+        r = 0 
+        if predicted_labels[true_hp[1]] == 1:
+            check_right = True
+            while check_right:
+                position = true_hp[1] + r + 1
+                if position != len(predicted_labels) and predicted_labels[position] == 1:
+                    r += 1
+                else:
+                    check_right = False
+                
+        # check if prediction is underestimated on either side:         
+        if l == 0:
+            check_left = True
+            while check_left:
+                if predicted_labels[true_hp[0] + l] == 0:
+                    l += 1
+                else:
+                    check_left = False
+        if r == 0: 
+            check_right = True
+            while check_right:
+                if predicted_labels[true_hp[1] + r] == 0:
+                    r -= 1
+                else:
+                    check_right = False    
     
     return state, (l, r), inter_list
     
 
+#~ def search(predicted, start, direction):
+    #~ """
+    #~ Helper function for check_true_hp
+    
+    #~ direction -- direction to search in: "l" or "r"
+    #~ """
+    #~ s = 0
+    #~ if direction == "l":
+        #~ sign = -
+    #~ elif direction == "r":
+        #~ sign = +
+    #~ if predicted[start] == 1:
+        #~ check_side = True
+        #~ while check_side:
+            #~ position = start + s sign 1
+            #~ if position != 0 and predicted[position] == 1:
+                #~ s sign= 1
+            #~ else:
+                #~ check_side = False
+    
+    #~ return s
 
 def kmeans_clustering(x, n):
     # https://jakevdp.github.io/PythonDataScienceHandbook/05.11-k-means.html
@@ -512,6 +589,10 @@ if __name__ == "__main__":
     read_file = argv[1]
     main_fast5_dir = argv[2]
     main_npz_dir = argv[3]
-    predicted_dict = main(read_file, main_fast5_dir, main_npz_dir)
+    output_name = argv[4]
+    max_number = 12255
+    if len(argv) > 5:
+        max_number = int(argv[5])
+    predicted_dict = main(read_file, main_fast5_dir, main_npz_dir, output_name, max_number)
 
 

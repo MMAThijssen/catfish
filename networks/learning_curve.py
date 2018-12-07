@@ -105,7 +105,39 @@ def compute_lines(samples):
     return mean_list, min_list, max_list
 
 
-def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title):
+def parse_txt(infile):
+    """
+    """
+    training = []
+    validation = []
+    sizes = []
+    
+    new_round = True
+    get_size = False
+    with open(infile, "r") as source:
+        for line in source:
+            if new_round:
+                if get_size:
+                    size = int(line.strip())
+                    get_size = False
+                if line.startswith("Training accuracy"):
+                    train_acc = float(line.strip().split(": ")[1])
+                elif line.startswith("Validation accuracy"):
+                    val_acc = float(line.strip().split(": ")[1])
+                    new_round = False
+                elif line.startswith("Training loss"):
+                    get_size = True
+            else:
+                training.append(train_acc)
+                validation.append(val_acc)
+                sizes.append(size)
+                new_round = True
+                
+    return training, validation, sizes
+            
+            
+
+def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title, network_type):
     """
     Plots learning curve. 
     
@@ -113,15 +145,24 @@ def draw_learning_curves(training_scores, validation_scores, train_sizes, img_ti
         training_score -- list of lists of float/ints
         validation_score -- list of lists of float/ints
         train_sizes -- list of ints
+        img_title -- str, name and title of figure
+        network_type -- str, type of network: RNN or ResNetRNN
         
     """    
     plt.style.use("seaborn")
     
+    if network_type == "RNN":
+        c = "darkcyan"
+        c2 = "paleturquoise"
+    if network_type == "ResNetRNN":
+        c = "forestgreen"
+        c2 = "lightgreen"
+    
     train_means, train_mins, train_maxs = compute_lines(training_scores)
     val_means, val_mins, val_maxs = compute_lines(validation_scores)
     
-    plt.plot(train_sizes, train_means, label = 'Training error')
-    plt.plot(train_sizes, val_means, label = 'Validation error')
+    plt.plot(train_sizes, train_means, label = 'Training error', color=c)
+    plt.plot(train_sizes, val_means, label = 'Validation error', color=c2)
     plt.fill_between(train_sizes, train_mins, train_maxs, alpha=0.3)
     plt.fill_between(train_sizes, val_mins, val_maxs, alpha=0.3)
 
@@ -136,33 +177,36 @@ def draw_learning_curves(training_scores, validation_scores, train_sizes, img_ti
 
 
 if __name__ == "__main__":
-    #0. Get input
-    if not len(argv) == 7:
-        raise ValueError("The following arguments should be provided in this order:\n" + 
-                         "\t-network type\n\t-model id\n\t-path to training db" +
-                         "\n\t-number of training reads\n\t-number of epochs" + 
-                         "\n\t-path to validation db\n\t-max length of validation reads")
+    #~ #0. Get input
+    #~ if not len(argv) == 7:
+        #~ raise ValueError("The following arguments should be provided in this order:\n" + 
+                         #~ "\t-network type\n\t-model id\n\t-path to training db" +
+                         #~ "\n\t-number of training reads\n\t-number of epochs" + 
+                         #~ "\n\t-path to validation db\n\t-max length of validation reads")
     
     network_type = argv[1]
-    db_dir_train = argv[2]
-    training_nr = int(argv[3])      # at start
-    n_epochs = int(argv[4])         
-    db_dir_val = argv[5]
-    max_seq_length = int(argv[6])                  
+    #~ db_dir_train = argv[2]
+    #~ training_nr = int(argv[3])      # at start
+    #~ n_epochs = int(argv[4])         
+    #~ db_dir_val = argv[5]
+    #~ max_seq_length = int(argv[6])                  
     
-    # Keep track of memory and time
-    p = psutil.Process(os.getpid())
-    t1 = datetime.datetime.now() 
-    print("Started script at {}\n".format(t1))
+    #~ # Keep track of memory and time
+    #~ p = psutil.Process(os.getpid())
+    #~ t1 = datetime.datetime.now() 
+    #~ print("Started script at {}\n".format(t1))
     
-    #1. Train and validate network
-    train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
-                                         n_epochs, db_dir_val, max_seq_length)
-    print("Training: ", train_error)
-    print("Validation: ", val_error)
-    print("Sizes: ", sizes)
+    #~ #1. Train and validate network
+    #~ train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
+                                         #~ n_epochs, db_dir_val, max_seq_length)
+    #~ print("Training: ", train_error)
+    #~ print("Validation: ", val_error)
+    #~ print("Sizes: ", sizes)
     
+    # 2. Get training and validation curves
+    input_file = argv[2]
+    training, validation, sizes = parse_txt(input_file)
     
-    #~ #5. Plot learning curve
-    #~ img_title = "Learning_curve_{}".format(network_type)
-    #~ draw_learning_curves(training_scores, validation_scores, train_sizes, img_title)
+    #5. Plot learning curve
+    img_title = "Learning_curve_{}".format(network_type)
+    draw_learning_curves([training], [validation], sizes, img_title, network_type)

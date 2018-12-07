@@ -41,7 +41,6 @@ def main(output_file, main_dir, npz_dir):
                 # using directory       # FASTER! 0m1.437s
                 bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
                 base_dict = {k: get_bases(bases, new, predicted_hp[k][0], predicted_hp[k][1]) for k in predicted_hp}
-                print(base_dict)  
                 
     # 3. Make a distrubtion on base lengths of HPs
     count_basehp = get_prevalence(base_dict, types="base_lengths")
@@ -379,7 +378,8 @@ def check_true_hp(true_hp, predicted_labels):
     if predicted_labels[true_hp[0]] == 1:
         check_left = True
         while check_left:
-            if predicted_labels[true_hp[0] + l - 1] == 1:
+            position = true_hp[0] + l - 1
+            if position != 0 and predicted_labels[position] == 1:
                 l -= 1
             else:
                 check_left = False
@@ -387,7 +387,8 @@ def check_true_hp(true_hp, predicted_labels):
     if predicted_labels[true_hp[1]] == 1:
         check_right = True
         while check_right:
-            if predicted_labels[true_hp[1] + r + 1] == 1:
+            position = true_hp[1] + r + 1
+            if position != len(predicted_labels) and predicted_labels[position] == 1:
                 r += 1
             else:
                 check_right = False
