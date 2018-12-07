@@ -41,6 +41,7 @@ def main(output_file, main_dir, npz_dir):
                 # using directory       # FASTER! 0m1.437s
                 bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
                 base_dict = {k: get_bases(bases, new, predicted_hp[k][0], predicted_hp[k][1]) for k in predicted_hp}
+                print(base_dict)  
                 
     # 3. Make a distrubtion on base lengths of HPs
     count_basehp = get_prevalence(base_dict, types="base_lengths")
@@ -75,34 +76,35 @@ def main(output_file, main_dir, npz_dir):
             # or with counting number of measurements found back
             # compare true labels with predicted labels
         # TODO:
-    states = [check_true_hp(hp, predicted_labels) for hp in true_hp.values()]        
+    states = [check_true_hp(hp, predicted_labels) for hp in true_hp.values()] 
+    print(states)       
     
-    # count how many completely found back
-    complete_st = [1 for st in states if st[0] == "complete"]
-    complete_st = sum(complete_st)
-    overleft = [st[1][0] for st in states if st[0] == "complete"]
-    overright = [st[1][1] for st in states if st[0] == "complete"]
-    perfectcomplete = [1 for st in states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
-    avg_overleft = sum(overleft) / complete_st
-    avg_overright = sum(overright) / complete_st
-    perfectcomplete = sum(perfectcomplete)
-    print(avg_overleft, avg_overright, perfectcomplete)
+    #~ # count how many completely found back
+    #~ complete_st = [1 for st in states if st[0] == "complete"]
+    #~ complete_st = sum(complete_st)
+    #~ overleft = [st[1][0] for st in states if st[0] == "complete"]
+    #~ overright = [st[1][1] for st in states if st[0] == "complete"]
+    #~ perfectcomplete = [1 for st in states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
+    #~ avg_overleft = sum(overleft) / complete_st
+    #~ avg_overright = sum(overright) / complete_st
+    #~ perfectcomplete = sum(perfectcomplete)
+    #~ print(avg_overleft, avg_overright, perfectcomplete)
     
-    # count interruptions
-    incomplete_st = len(states) - complete_st
-    print("incomplete: ", incomplete_st)
-    list_inters = [len(st[2]) for st in states]
-    nr_inters = sum(list_inters)
-    avg_inters = nr_inters / incomplete_st                                      # if less than 0: usually no inters
-    median_inters = median(list_inters)  
+    #~ # count interruptions
+    #~ incomplete_st = len(states) - complete_st
+    #~ print("incomplete: ", incomplete_st)
+    #~ list_inters = [len(st[2]) for st in states]
+    #~ nr_inters = sum(list_inters)
+    #~ avg_inters = nr_inters / incomplete_st                                      # if less than 0: usually no inters
+    #~ median_inters = median(list_inters)  
     
-    print("interruptions: ", nr_inters)
-    print("average: ", avg_inters)
-    print("median: ", median_inters)
+    #~ print("interruptions: ", nr_inters)
+    #~ print("average: ", avg_inters)
+    #~ print("median: ", median_inters)
     
-    # what length of inters? only if inter is present
-    length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
-    print(length_inters)
+    #~ # what length of inters? only if inter is present
+    #~ length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
+    #~ print(length_inters)
 
     # something with positions of interruptions?
     
@@ -406,7 +408,7 @@ def check_true_hp(true_hp, predicted_labels):
             else:
                 check_right = False    
     
-    return [state, (l, r), inter_list]
+    return state, (l, r), inter_list
     
 
 
