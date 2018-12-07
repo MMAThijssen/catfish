@@ -37,7 +37,7 @@ def build_model(network_type, **kwargs):
     Constructs neural network
     
     Args:
-        network_type -- str, type of network ["RNN" or "ResNetRNN"]
+        network_type -- str, type of network: "RNN" or "ResNetRNN"
         
     Returns: network object
     """
