@@ -86,7 +86,7 @@ def train(network, db, training_nr, squiggles, max_seq_length):
         step += 1                                                           # step is per batch
         network.train_network(set_x, set_y, step)
         
-        if step % 20 == 0:   
+        if step % 200 == 0:   
             network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
             print("Saved checkpoint at step ", step)
             train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
@@ -96,9 +96,9 @@ def train(network, db, training_nr, squiggles, max_seq_length):
             print(step * network.batch_size)
             print(datetime.datetime.now())
             
-            val_acc = validate(network, squiggles, max_seq_length)
-            print("Validation accuracy: ", val_acc)
-            
+            val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
+            print("Validation precision: ", whole_precision)
+            print("Validation recall: ", whole_recall)
     
     try:
         train_hp = positives / (network.window * n_examples)  
@@ -130,6 +130,7 @@ def validate(network, squiggles, max_seq_length):
     """  
     max_seq_length = max_seq_length // network.window * network.window
     accuracy = 0
+    loss = 0
     valid_reads = 0
 
     # per squiggle:
@@ -149,7 +150,7 @@ def validate(network, squiggles, max_seq_length):
             set_y = reshape_input(labels, network.window, network.n_outputs)
             
             t3 = datetime.datetime.now()
-            sgl_acc  = network.test_network(set_x, set_y, valid_reads, read_name)
+            sgl_acc, sgl_loss  = network.test_network(set_x, set_y, valid_reads, read_name)
             t4 = datetime.datetime.now()
             
             #~ if valid_reads % network.saving_step == 0:
@@ -157,6 +158,7 @@ def validate(network, squiggles, max_seq_length):
                 #~ metrics.plot_squiggle(data[2000 : 3001], "Squiggle_{}_{}_middle".format(os.path.basename(network.model_path), valid_reads))
                 
             accuracy += sgl_acc
+            loss += sgl_loss
         
         else:
             continue
@@ -170,6 +172,7 @@ def validate(network, squiggles, max_seq_length):
         dest.write("\nNEXT EPOCH")
         dest.write("\nAverage performance of validation set:\n")
         dest.write("\tAccuracy: {:.2%}\n".format(accuracy / valid_reads))
+        dest.write("\tLoss: {0:.4f}".format(loss / valid_reads))
 
     # over whole set:
         dest.write("\nPerformance over whole set: \n")
@@ -187,7 +190,8 @@ def validate(network, squiggles, max_seq_length):
                                                                                    valid_reads,
                                                                                    max_seq_length))
     print("Validation accuracy: ", whole_accuracy)
-    return whole_accuracy
+    print("Validation loss: ", loss / valid_reads)
+    return whole_accuracy, whole_precision, whole_recall
 
 
 

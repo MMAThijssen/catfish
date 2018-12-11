@@ -223,7 +223,7 @@ class RNN(object):
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
-        test_acc = self.sess.run(self.accuracy, feed_dict=feed_dict_test)
+        test_acc, test_loss = self.sess.run([self.accuracy, self.loss], feed_dict=feed_dict_test)
     
         # evaluate performance:
         test_labels = test_y.reshape(-1)
@@ -246,7 +246,7 @@ class RNN(object):
         if read_nr % self.saving_step == 0:
             metrics.generate_heatmap([pred_vals, confidences, test_labels], 
                                      ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
-        return test_acc
+        return test_acc, test_loss
 
     
     def save_info(self):

@@ -76,22 +76,46 @@ def calculate_auc(true_labels, predicted_scores, pos_label=1):
     roc_auc = sklmet.auc(fpr, tpr)
     return tpr, fpr, roc_auc
     
+    
+def calculate_pr(true_labels, predicted_scores, pos_label=1):
+    precision, recall, thresholds = sklmet.precision_recall_curve(true_labels, 
+                                                                  predicted_scores,
+                                                                  pos_label)  
+    return precision, recall, thresholds
+    
+    
 def compute_auc(tpr, fpr):
     # tpr and fpr should be arrays!
     return sklmet.auc(fpr, tpr)
 
 
 def draw_roc(tpr, fpr, roc_auc, title):
+    plt.style.use("seaborn")
     plt.title("Receiver Operator Characteristic")
-    plt.plot(fpr, tpr, "b", label="AUC = {:.2f}".format(roc_auc))
+    plt.plot(fpr, tpr, "b", label="AUC = {:.2f}".format(roc_auc), c="darkblue")
     plt.legend(loc="lower right")
-    plt.plot([0, 1], [0, 1],'r--')
+    plt.plot([0, 1], [0, 1],'r--', c="r")
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
-    plt.savefig("{}.png".format(title), bbox_inches="tight")
-    #~ plt.show()
+    plt.savefig("ROC_{}.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
+    
+def draw_pr(precision, recall, title):
+    plt.style.use("seaborn")
+    color = "hotpink"
+    plt.title("Precision Recall Curve")
+    plt.plot(precision, recall, c=color)
+    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('Precision')
+    plt.xlabel('Recall')
+    plt.savefig("PR_{}.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
     
 
 def weighted_f1(precision, recall, n, N):
@@ -226,14 +250,18 @@ def generate_heatmap(predicted_list, label_list, title):
     plt.close()
 
 
-def draw_roc_from_file(true_file, name_of_roc):
+def draw_roc_from_file(predout_file, name_of_roc, name_of_pr):
     """
     Args:
-        true_file -- str, file outputted after validation
+        predout_file -- str, file outputted after validation
+        name_of_roc -- str, name of image
+        name_of_pr -- str, name of precision recall curve
+        
+    Returns: None
     """
     true_labels = []
     predicted_scores = []
-    with open(true_file, "r") as source1:
+    with open(predout_file, "r") as source1:
         for line in source1:
             if not line.strip():
                 continue
@@ -249,15 +277,74 @@ def draw_roc_from_file(true_file, name_of_roc):
     tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
     draw_roc(tpr, fpr, auc, name_of_roc)
     
+    prec, rec, thres = calculate_pr(true_labels, predicted_scores)
+    draw_pr(prec, rec, name_of_pr)
+    
+    return None
+    
+#def draw_pr_curve(in_files, outname):
+#    """
+#    Draws precision recall curve.
+#    
+#    Args:
+#        in_file -- str, path to file
+#        outname -- str, name of figure
+#        
+#    Returns: list (precision), list (recall)
+#    """
+#    plt.style.use("seaborn")
+#    
+#    # get precision and recall:
+#    precision_list = []
+#    recall_list = []
+#    with open(in_files, "r") as source:
+#        for line in source:
+#            if line.strip().startswith("Precision"):
+#                precision_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %
+#            elif line.strip().startswith("Recall"):
+#                recall_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %
+#    
+#    # draw plot
+#    color = "hotpink"
+#    plt.plot(precision_list, recall_list, c=color)   
+#    plt.title("Precision Recall Curve")
+#    plt.xlim(left=0)    
+#    plt.ylim([0.0, 1.0])
+#    plt.ylabel('Precision')
+#    plt.xlabel('Recall')
+#    plt.savefig("PR_{}.png".format(outname), bbox_inches="tight")
+##    plt.show()
+#    plt.close()
+
+
+
+def draw_F1(in_file, outname):
+    plt.style.use("seaborn")
+    matplotlib.rc("image", cmap="Pastel2")
+    
+    # get F1
+    f1_list = [0]
+    with open(in_file, "r") as source:
+        for line in source:
+            if line.strip().startswith("Weighed F1"):
+                f1_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %    
+    
+    # draw plot
+    plt.plot(f1_list, label="F1", c="gold")    
+    plt.title("F1")  
+    plt.ylim(bottom=0)
+    plt.ylabel('F1 score')
+    plt.xlabel("rounds of validation")          # should adjust!
+    plt.savefig("F1_{}.png".format(outname), bbox_inches="tight")
+#    plt.show()   
+    plt.close()
+    
                 
 if __name__ == "__main__":
-    #~ measure = argv[1]
-    #~ file_list = argv[2:]
-    #~ measure_list = []
-    #~ for fl in file_list:
-        #~ accuracy = parse_txt(fl, measure)
-        #~ measure_list.append(accuracy)
+    input_file = argv[1]
+    output_roc = argv[2]
+    output_pr = argv[3]
+    draw_roc_from_file(input_file, output_roc, output_pr)
+#    draw_F1(input_file, output_pr)
     
-    #~ plot_networks_on_metric(measure_list, accuracy)
-    draw_roc_from_file(argv[1], argv[2])
 

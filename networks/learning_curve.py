@@ -13,7 +13,7 @@ from train_validate import train, validate, build_model
 
 
 def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_seq_length, 
-            max_nr=100000000, steps=200):
+            max_nr=100000000):
     """
     Train and validation after each epoch for an increasing number of training reads.
     
@@ -133,8 +133,7 @@ def parse_txt(infile):
                 sizes.append(size)
                 new_round = True
                 
-    return training, validation, sizes
-            
+    return training, validation, sizes           
             
 
 def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title, network_type):
@@ -177,36 +176,42 @@ def draw_learning_curves(training_scores, validation_scores, train_sizes, img_ti
 
 
 if __name__ == "__main__":
-    #~ #0. Get input
-    #~ if not len(argv) == 7:
-        #~ raise ValueError("The following arguments should be provided in this order:\n" + 
-                         #~ "\t-network type\n\t-model id\n\t-path to training db" +
-                         #~ "\n\t-number of training reads\n\t-number of epochs" + 
-                         #~ "\n\t-path to validation db\n\t-max length of validation reads")
+    #0. Get input
+#    if not len(argv) == 7:
+#        raise ValueError("The following arguments should be provided in this order:\n" + 
+#                         "\t-network type\n\t-model id\n\t-path to training db" +
+#                         "\n\t-number of training reads\n\t-number of epochs" + 
+#                         "\n\t-path to validation db\n\t-max length of validation reads")
     
-    network_type = argv[1]
-    #~ db_dir_train = argv[2]
-    #~ training_nr = int(argv[3])      # at start
-    #~ n_epochs = int(argv[4])         
-    #~ db_dir_val = argv[5]
-    #~ max_seq_length = int(argv[6])                  
+#    network_type = argv[1]
+#    db_dir_train = argv[2]
+#    training_nr = int(argv[3])      # at start
+#    n_epochs = int(argv[4])         
+#    db_dir_val = argv[5]
+#    max_seq_length = int(argv[6])     
+    network_type = "RNN"
+    db_dir_train = "/mnt/nexenta/thijs030/data/trainingDB/train100/"
+    training_nr = 1469634
+    n_epochs = 1        
+    db_dir_val = "/mnt/nexenta/thijs030/data/trainingDB/val857w34/"
+    max_seq_length = 5000                
     
-    #~ # Keep track of memory and time
-    #~ p = psutil.Process(os.getpid())
-    #~ t1 = datetime.datetime.now() 
-    #~ print("Started script at {}\n".format(t1))
+    # Keep track of memory and time
+    p = psutil.Process(os.getpid())
+    t1 = datetime.datetime.now() 
+    print("Started script at {}\n".format(t1))
     
-    #~ #1. Train and validate network
-    #~ train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
-                                         #~ n_epochs, db_dir_val, max_seq_length)
-    #~ print("Training: ", train_error)
-    #~ print("Validation: ", val_error)
-    #~ print("Sizes: ", sizes)
+    #1. Train and validate network
+    train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
+                                         n_epochs, db_dir_val, max_seq_length)
+    print("Training: ", train_error)
+    print("Validation: ", val_error)
+    print("Sizes: ", sizes)
     
-    # 2. Get training and validation curves
-    input_file = argv[2]
-    training, validation, sizes = parse_txt(input_file)
+    #~ # 2. Get training and validation curves
+    #~ input_file = argv[2]
+    #~ training, validation, sizes = parse_txt(input_file)
     
-    #5. Plot learning curve
-    img_title = "Learning_curve_{}".format(network_type)
-    draw_learning_curves([training], [validation], sizes, img_title, network_type)
+    #~ #5. Plot learning curve
+    #~ img_title = "Learning_curve_{}".format(network_type)
+    #~ draw_learning_curves([training], [validation], sizes, img_title, network_type)

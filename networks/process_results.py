@@ -26,7 +26,7 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
         
     Returns: None
     """
-    show_plots = True
+    show_plots = False
     predicted_labels = None
     true_labels = None
     
@@ -40,6 +40,11 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
     all_count_basetrue = Counter({})
     all_count_seq = Counter({})
     all_count_seqtrue = Counter({})
+    
+    all_count_fntrue = Counter({})
+    all_count_fnbasestrue = Counter({})
+    all_count_fnseqtrue = Counter({})
+    all_fnpositions = []
     
     search_read = True
     with open(output_file, "r") as source:
@@ -67,8 +72,8 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
                     # 2. Find underlying base sequences
                     # using directory       # FASTER! 0m1.437s
                     bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
-                    base_dict = {k: get_bases(bases, new, predicted_hp[k][0], predicted_hp[k][1]) for k in predicted_hp}
-                    base_dict_true = {k: get_bases(bases, new, true_hp[k][0], true_hp[k][1]) for k in true_hp}
+                    base_dict = base_count_dict(predicted_hp, bases, new)
+                    base_dict_true = base_count_dict(true_hp, bases, new)
 
                     # 3. Make a distrubtion on base lengths of HPs
                     count_basehp = get_prevalence(base_dict, types="base_lengths")
@@ -83,13 +88,33 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
                     # 6. Check finding back true HP
                             # or with counting number of measurements found back
                             # compare true labels with predicted labels  
-                    read_states = [check_true_hp(hp, predicted_labels) for hp in true_hp.values()] 
+                    read_states = [check_true_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
                     if read_states != []:
-                        states.extend(read_states)     
+                        states.extend(read_states)    
+                        
+                    #~ # 6a. check composition of ones that are found
+                    #~ true_positives = [st[3] for st in read_states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
+                    
+                    # 6b. Check false negatives:                                # check composition of ones that are absent
+                    false_negatives = [st[3] for st in read_states if st[0] == "absent"]
+                    if false_negatives != []:                                
+                        fn_truehp = filter_dict(true_hp, false_negatives)
+                        [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]     # check positions
+                        count_fntrue = get_prevalence(fn_truehp)
+                        fn_basedicttrue = base_count_dict(fn_truehp, bases, new)
+                        count_fnbasestrue = get_prevalence(fn_basedicttrue, types="base_lengths")
+                        count_fnseqtrue = get_prevalence(fn_basedicttrue, "bases")
+                    
+                    # and compare the results
+                    
+                    # check for the incomplete ones if they are shifted 
+                    # so maybe always shifted to the left or right
                         
                     #~ # 6b. Check finding HP in truth
                     #~ fake_states = [check_true_hp(hp, true_labels) for hp in predicted_hp.values()]
                     #~ print(fake_states)
+                    
+                    # check composition of misclassified
 
                     # 7. Add dictionaries to make common:
                     all_count_predictions = all_count_predictions + count_predictions
@@ -99,8 +124,11 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
                     all_count_seq = all_count_seq + count_seq
                     all_count_seqtrue = all_count_seqtrue + count_seqtrue
                     
-                    all_seq_list = dict_to_ordered_list(all_count_seq)
-                    all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
+                    # for FN:
+                    if false_negatives != []: 
+                        all_count_fntrue = all_count_fntrue + count_fntrue
+                        all_count_fnbasestrue = all_count_fnbasestrue + count_fnbasestrue
+                        all_count_fnseqtrue = all_count_fnseqtrue + count_fnseqtrue
                     
                     read_counter += 1
                     if read_counter == max_number:
@@ -138,15 +166,34 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
         median_len_inters = median(length_inters)
     
         # TODO: something with positions of interruptions?
+    
+    all_seq_list = dict_to_ordered_list(all_count_seq)
+    all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
+    all_fnseqtrue = dict_to_ordered_list(all_count_fnseqtrue)
+    all_fnpositions = Counter(all_fnpositions)
+    all_count_fnpositions = dict_to_ordered_list(all_fnpositions)
+    #~ all_count_fnpositions = dict_to_ordered_list(Counter(all_fnpositions))
 
+    plot_list(all_count_fnpositions, name="False_negatives_positions")
+        
     if show_plots:
-        plot_prevalence(all_count_predictions, name="HP_length_measurements")       # 1
-        plot_prevalence(all_count_basehp, name="HP_length_bases")                   # 3
-        plot_prevalence(all_count_truehp, name="True HP lengths_measurements")      # 4a
+        # plots on all positives:
+        plot_prevalence(all_count_predictions, name="Predicted_HP_length_measurements")       # 1
+        plot_prevalence(all_count_basehp, name="Predicted_HP_length_bases")                   # 3
+        plot_prevalence(all_count_truehp, name="True_HP_lengths_measurements")      # 4a
         plot_prevalence(all_count_basetrue, name="True_HP_length_bases")            # 4b
         plot_list(all_seq_list, name="Predicted_HP_sequences", rotate=True)              # 5
-        plot_list(all_seqtrue_list, name="True_HP_sequences")                            # 5
-        print("Shows plots - DOES NOT SAVE YET!")
+        plot_list(all_seqtrue_list, name="True_HP_sequences", rotate=True)                            # 5
+    
+        # plots on false negatives:
+        if false_negatives != []: 
+            plot_prevalence(all_count_fntrue, name="False_negatives_true_measurements")    
+            plot_prevalence(all_count_fnbasestrue, name="False_negatives_true_bases")  
+            #~ plot_list(all_count_fnpositions, name="False_negatives_positions")          
+            plot_list(all_fnseqtrue, name="False_negatives_true_HP_sequences", rotate=True)    
+    
+    prev_bases = count_bases(all_seq_list)
+    prev_basestrue = count_bases(all_seqtrue_list)
     
     # 7. Check surroundings
         # when do I consider it close?
@@ -169,25 +216,38 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             dest.write("\taverage length interruptions: {}\n".format(avg_len_inters))
             dest.write("\tmedian length interruptions: {}\n".format(median_len_inters))
         dest.write("absent HPs: {}\n".format(absent_st))
+        if absent_st != 0:
+            dest.write("\tLength of FN in measurements\n")
+            dest.write("{}\n".format(all_count_fntrue))
+            dest.write("\tLength of FN in bases\n")
+            dest.write("{}\n".format(all_count_fnbasestrue))
+            dest.write("\tFN composition\n")
+            dest.write("{}\n".format(all_count_fnseqtrue))
+            dest.write("\tFN positions\n")
+            dest.write("{}\n".format(all_count_fnpositions))
         dest.write("complete HPs: {}\n".format(complete_st))
         if complete_st != 0:
             dest.write("\taverage overestimated to the left: {}\n".format(avg_overleft))
             dest.write("\taverage overestimated to the right: {}\n".format(avg_overright))
             dest.write("\tperfectly found HPs: {}\n".format(perfectcomplete))
         # part on all predictions
-        dest.write("Comparison on length and composition        (length / seq, count)\n")
+        dest.write("\nComparison on length and composition        (length / seq, count)\n")
         dest.write("\tPredicted HP length in measurements\n")
         dest.write("{}\n".format(dict_to_ordered_list(all_count_predictions)))
         dest.write("\tPredicted HP length in bases\n")
         dest.write("{}\n".format(dict_to_ordered_list(all_count_basehp)))
         dest.write("\tPredicted HP sequences\n")
         dest.write("{}\n".format(all_seq_list))
+        dest.write("\tPrevalence of bases underlying predictions\n")
+        dest.write("{}\n".format(prev_bases))
         dest.write("\tTrue HP length in measurements\n")
         dest.write("{}\n".format(dict_to_ordered_list(all_count_truehp)))
         dest.write("\tTrue HP length in bases\n")
         dest.write("{}\n".format(dict_to_ordered_list(all_count_basetrue)))
         dest.write("\tTrue HP sequences\n")
         dest.write("{}\n".format(all_seqtrue_list))
+        dest.write("\tPrevalence of bases\n")
+        dest.write("{}\n".format(prev_basestrue))
         #~ dest.write("{}\n".format())
         if show_plots:
             dest.write("\nSaved plots on prevalences.\n")
@@ -301,7 +361,7 @@ def get_prevalence(hp_dict, types="measurements"):
     elif types == "base_lengths":
         length_list = [len(k) for k in hp_dict.values()]
     elif types == "bases":
-        length_list = hp_dict.values()
+        length_list = hp_dict.values()        
     count_dict = Counter(length_list)
     
     return count_dict   
@@ -326,6 +386,7 @@ def plot_prevalence(count_dict, name="Prevalence", rotate=False):
         plt.xticks(rotation=75)
     #~ plt.show()
     plt.savefig("{}.png".format(name), bbox_inches="tight")
+    plt.clf()
     plt.close()
     
 
@@ -348,6 +409,7 @@ def plot_list(count_list, name="Prevalence", rotate=False):
     plt.title(name)
     if rotate:
         plt.xticks(rotation=75)
+    plt.xticks(fontsize=6)
     #~ plt.show()
     plt.savefig("{}.png".format(name), bbox_inches="tight")
     plt.close()
@@ -380,6 +442,10 @@ def get_bases(base_seq, new_seq, hp_start, hp_end):
     bases = first_base + bases
     
     return "".join(bases)
+    
+
+def base_count_dict(indict, bases, new):
+    return {k: get_bases(bases, new, indict[k][0], indict[k][1]) for k in indict}
     
 
 def detected_from_true(predicted_hp, true_hp):
@@ -423,13 +489,14 @@ def dict_to_ordered_list(dict_in, sort_on=0):
     #~ return dict1 + dict2
     
 
-def check_true_hp(true_hp, predicted_labels):
+def check_true_hp(true_hp, predicted_labels, ids):
     """
     Checks how well a true homopolymer is detected by network.
     
     Args:
         true_hp -- tuple of ints, start and end position of hp
         predicted_labels -- list of ints, predicted labels
+        ids -- str / int, id for hp to recognize
         
     Returns: [state, (left, right), [length of interruption, ...]]
             left and right are the number of over- or underestimated measurements
@@ -501,7 +568,7 @@ def check_true_hp(true_hp, predicted_labels):
                 else:
                     check_right = False    
     
-    return state, (l, r), inter_list
+    return state, (l, r), inter_list, ids
     
 
 #~ def search(predicted, start, direction):
@@ -525,7 +592,57 @@ def check_true_hp(true_hp, predicted_labels):
                 #~ check_side = False
     
     #~ return s
+    
+def count_bases(counter_tuple):
+    """
+    Counts the number of bases from Counter dict.
+    
+    Args:
+        counter_tuple -- tuple (seq: count)
+        
+    Returns: dict {A: count, C: count, G: count, T: count}
+    """
+    count_A = 0
+    count_C = 0
+    count_G = 0 
+    count_T = 0
+    
+    count_dict = {"A": count_A, "C": count_C, "G": count_G, "T": count_T} 
+    
+    for i in range(len(counter_tuple)):
+        for b in counter_tuple[i][0]:
+            count_dict[b] += counter_tuple[i][1]
+                               
+    return count_dict
+    
 
+def filter_dict(indict, include):
+    """
+    Args: 
+        indict -- dict to filter
+        include -- list, keys to include
+    
+    Returns: dict    
+    """
+    return {k: v for k, v in indict.items() if k in include}
+    
+    
+def cut_from_output():
+    reads = 856
+    lines = 4
+    rounds = 14
+
+    counter = 0
+    with open(destfile, "a") as dest:
+        with open(sourcefile, "r") as source:
+            for line in source:
+               counter += 1
+               if counter == (14 * lines * reads + 1):
+    #           if counter in list(range(13 * lines * reads, 14 * lines * reads)):
+                   dest.write(line)
+                   
+    print("Finished writing")
+    
 def kmeans_clustering(x, n):
     # https://jakevdp.github.io/PythonDataScienceHandbook/05.11-k-means.html
     """

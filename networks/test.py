@@ -1,35 +1,11 @@
-from sys import argv
+from sys import argv 
+import matplotlib
+import matplotlib.pyplot as plt
 
-def parse_txt(infile):
-    """
-    """
-    training = []
-    validation = []
-    sizes = []
+fn_truehp = {0: (2, 10), 1: (99, 112)}
     
-    new_round = True
-    get_size = False
-    with open(infile, "r") as source:
-        for line in source:
-            if new_round:
-                if get_size:
-                    size = int(line.strip())
-                    get_size = False
-                if line.startswith("Training accuracy"):
-                    train_acc = float(line.strip().split(": ")[1])
-                elif line.startswith("Validation accuracy"):
-                    val_acc = float(line.strip().split(": ")[1])
-                    new_round = False
-                elif line.startswith("Training loss"):
-                    get_size = True
-            else:
-                training.append(train_acc)
-                validation.append(val_acc)
-                sizes.append(size)
-                new_round = True
-                
-    return training, validation, sizes
+all_fnpos = []
+[all_fnpos.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()] 
+print(all_fnpos)
     
-print(len(parse_txt(argv[1])[2]))
-        
-    
+print(all_fnpos.extend(fn_positions))
