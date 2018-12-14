@@ -86,7 +86,7 @@ def train(network, db, training_nr, squiggles, max_seq_length):
         step += 1                                                           # step is per batch
         network.train_network(set_x, set_y, step)
         
-        if step % 200 == 0:   
+        if step % 2 == 0:   
             network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
             print("Saved checkpoint at step ", step)
             train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
@@ -99,6 +99,10 @@ def train(network, db, training_nr, squiggles, max_seq_length):
             val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
             print("Validation precision: ", whole_precision)
             print("Validation recall: ", whole_recall)
+            network.tp = 0
+            network.fp = 0
+            network.tn = 0
+            network.fn = 0
     
     try:
         train_hp = positives / (network.window * n_examples)  

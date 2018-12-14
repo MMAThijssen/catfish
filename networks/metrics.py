@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import matplotlib
-matplotlib.use("Agg")
+#~ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -55,8 +55,11 @@ def precision_recall(true_pos, false_pos, false_neg):
     
 
 def calculate_accuracy(true_pos, false_pos, true_neg, false_neg):
-    return (true_pos + true_neg) / (true_pos + false_pos + true_neg + false_neg)
-    
+    try:
+        accuracy = (true_pos + true_neg) / (true_pos + false_pos + true_neg + false_neg)
+    except ZeroDivisionError:
+        accuracy = 0
+    return accuracy
 
 def calculate_auc(true_labels, predicted_scores, pos_label=1):
     """
@@ -250,7 +253,7 @@ def generate_heatmap(predicted_list, label_list, title):
     plt.close()
 
 
-def draw_roc_from_file(predout_file, name_of_roc, name_of_pr):
+def draw_roc_and_pr_from_file(predout_file, name_of_roc, name_of_pr):
     """
     Args:
         predout_file -- str, file outputted after validation
@@ -327,8 +330,8 @@ def draw_F1(in_file, outname):
     with open(in_file, "r") as source:
         for line in source:
             if line.strip().startswith("Weighed F1"):
-                f1_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %    
-    
+                f1_list.append(float(line.strip()[:-1].split(": ")[1])) # -1 to get rid of %    
+    print(f1_list)
     # draw plot
     plt.plot(f1_list, label="F1", c="gold")    
     plt.title("F1")  
@@ -339,12 +342,31 @@ def draw_F1(in_file, outname):
 #    plt.show()   
     plt.close()
     
+
+def draw_F1_now(in_file, outname):
+    plt.style.use("seaborn")
+    matplotlib.rc("image", cmap="Pastel2")
+    
+    # get F1
+    fscore = [(0, 0), (1024, 0.001), (2048, 0.002), (3072, 0.003), (4096, 0.004), (5120, 0.006), (6144, 0.007), (7168, 0.008), (8192, 0.009), (9216, 0.01), (10240, 0.011), (10240, 0.001), (11264, 0.013), (12288, 0.014), (13312, 0.016), (14336, 0.017), (15360, 0.019), (16384, 0.021), (17408, 0.023), (18432, 0.025), (19456, 0.026), (20480, 0.028), (20480, 0.003), (21504, 0.03), (22528, 0.031), (23552, 0.033), (24576, 0.035), (25600, 0.037), (26624, 0.039), (27648, 0.04), (28672, 0.042), (29696, 0.044), (30720, 0.046), (30720, 0.005), (31744, 0.048), (32768, 0.05), (33792, 0.052), (34816, 0.054), (35840, 0.056), (36864, 0.057), (37888, 0.059), (38912, 0.061), (39936, 0.063), (40960, 0.065), (40960, 0.007), (41984, 0.067), (43008, 0.069), (44032, 0.071), (45056, 0.073), (46080, 0.075), (47104, 0.077), (48128, 0.079), (49152, 0.081), (50176, 0.082), (51200, 0.084), (51200, 0.008), (52224, 0.086), (53248, 0.088), (54272, 0.09), (55296, 0.092), (56320, 0.094), (57344, 0.096), (58368, 0.098), (59392, 0.1), (60416, 0.102), (61440, 0.104), (61440, 0.01), (62464, 0.106), (63488, 0.108), (71680, 0.013), (81920, 0.015), (92160, 0.017), (102400, 0.002), (102400, 0.019), (112640, 0.021), (122880, 0.023), (133120, 0.026), (143360, 0.028), (153600, 0.03), (163840, 0.032), (174080, 0.035), (184320, 0.037), (194560, 0.039), (204800, 0.004), (204800, 0.041), (215040, 0.044), (225280, 0.046), (235520, 0.048), (245760, 0.05), (256000, 0.053), (266240, 0.055), (276480, 0.057), (286720, 0.06), (296960, 0.062), (307200, 0.006), (307200, 0.064), (317440, 0.066), (327680, 0.069), (337920, 0.071), (348160, 0.073), (358400, 0.076), (368640, 0.078), (378880, 0.08), (389120, 0.083), (399360, 0.085), (409600, 0.009), (409600, 0.088), (419840, 0.09), (430080, 0.092), (440320, 0.095), (450560, 0.097), (460800, 0.099), (471040, 0.102), (481280, 0.104), (491520, 0.107), (501760, 0.109), (512000, 0.011), (512000, 0.111), (522240, 0.114), (532480, 0.116), (542720, 0.119), (552960, 0.121), (563200, 0.123), (573440, 0.126), (583680, 0.128), (593920, 0.131), (604160, 0.133), (614400, 0.014), (614400, 0.135), (716800, 0.016), (819200, 0.018), (921600, 0.021), (1024000, 0.024), (1126400, 0.026), (1228800, 0.029), (1331200, 0.032), (1433600, 0.034), (1536000, 0.037)] # (5120000, 0.003), (10240000, 0.007), (15360000, 0.011)]
+    f1_list = [x[1] for x in fscore]
+    sizes = [x[0] for x in fscore]   
+    
+    # draw plot
+    plt.plot(sizes, f1_list, label="F1", c="gold")    
+    plt.title("F1")  
+    plt.ylim(bottom=0)
+    plt.ylabel('F1 score')
+    plt.xlabel("rounds of validation")          # should adjust!
+    #~ plt.savefig("F1_{}.png".format(outname), bbox_inches="tight")
+    plt.show()   
+    #~ plt.close()
+    
                 
 if __name__ == "__main__":
     input_file = argv[1]
-    output_roc = argv[2]
-    output_pr = argv[3]
-    draw_roc_from_file(input_file, output_roc, output_pr)
-#    draw_F1(input_file, output_pr)
+    output_name = argv[2]       # usually choose network: eg RNN92
+    #~ draw_roc_and_pr_from_file(input_file, output_name)
+    draw_F1_now(input_file, output_name)
     
 

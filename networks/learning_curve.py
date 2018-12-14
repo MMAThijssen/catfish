@@ -34,11 +34,6 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
     model = build_model(network_type, **hpm_dict)
     model.initialize_network()
     #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_70/checkpoints")
- 
-    # initialize lists with zero to start at 0 in plot:
-    size_list = [0]
-    train_error = [0]
-    val_error = [0]
     
     print("Loading training database..")
     db_train = helper_functions.load_db(db_dir_train)
@@ -53,26 +48,23 @@ def t_and_v(network_type, db_dir_train, training_nr, n_epochs, db_dir_val, max_s
     pos_range, neg_range = db_train.set_ranges(seed)
     print("Set ranges in {}".format(datetime.datetime.now() - t0))
     for n in range(n_epochs):
-        size_list.append(training_nr)
         # train model:
         db_train.range_ps = pos_range
         db_train.range_ns = neg_range
         t2 = datetime.datetime.now()
         train_accuracy = train(model, db_train, training_nr, squiggles, max_seq_length)
-        train_error.append(train_accuracy)
         t3 = datetime.datetime.now()  
         print("Trained model in {}\n".format(t3 - t2))
         print("Finished epoch: {}".format(n))
         
         # validate model at end:
         val_accuracy = validate(model, squiggles, max_seq_length)
-        val_error.append(val_accuracy)
         t4 = datetime.datetime.now()  
         print("Validated model in {}".format(t4 - t3))
         
     #~ training_nr *= step_factor
     
-    return train_error, val_error, size_list
+    return train_accuracy, val_accuracy
 
 
 def compute_lines(samples):
@@ -105,7 +97,7 @@ def compute_lines(samples):
     return mean_list, min_list, max_list
 
 
-def parse_txt(infile):
+def parse_txt(infile, measure="accuracy"):
     """
     """
     training = []
@@ -120,23 +112,23 @@ def parse_txt(infile):
                 if get_size:
                     size = int(line.strip())
                     get_size = False
-                if line.startswith("Training accuracy"):
+                if line.startswith("Training {}".format(measure)):
                     train_acc = float(line.strip().split(": ")[1])
-                elif line.startswith("Validation accuracy"):
+                elif line.startswith("Validation {}".format(measure)):
                     val_acc = float(line.strip().split(": ")[1])
                     new_round = False
-                elif line.startswith("Training loss"):
+                if line.startswith("Training loss"):
                     get_size = True
             else:
                 training.append(train_acc)
                 validation.append(val_acc)
                 sizes.append(size)
                 new_round = True
-                
     return training, validation, sizes           
             
 
-def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title, network_type):
+def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title, 
+                         network_type, measure="accuracy"):
     """
     Plots learning curve. 
     
@@ -146,6 +138,7 @@ def draw_learning_curves(training_scores, validation_scores, train_sizes, img_ti
         train_sizes -- list of ints
         img_title -- str, name and title of figure
         network_type -- str, type of network: RNN or ResNetRNN
+        measure -- str, 'accuracy' or 'loss' [default: accuracy]
         
     """    
     plt.style.use("seaborn")
@@ -160,41 +153,36 @@ def draw_learning_curves(training_scores, validation_scores, train_sizes, img_ti
     train_means, train_mins, train_maxs = compute_lines(training_scores)
     val_means, val_mins, val_maxs = compute_lines(validation_scores)
     
-    plt.plot(train_sizes, train_means, label = 'Training error', color=c)
-    plt.plot(train_sizes, val_means, label = 'Validation error', color=c2)
+    plt.plot(train_sizes, train_means, label = 'Training', color=c)
+    plt.plot(train_sizes, val_means, label = 'Validation', color=c2)
     plt.fill_between(train_sizes, train_mins, train_maxs, alpha=0.3)
     plt.fill_between(train_sizes, val_mins, val_maxs, alpha=0.3)
 
-    plt.ylabel('Accuracy', fontsize = 14)
-    plt.xlabel('Training set size', fontsize = 14)
-    title = "Learning curves"
+    plt.ylabel(measure, fontsize = 14)
+    plt.xlabel('number of training examples', fontsize = 14)
+    title = "Learning curve"
     plt.title(title, fontsize = 18, y = 1.03)
     plt.legend()
     plt.ylim(0.0, 1.0)
-    plt.savefig("{}.png".format(img_title), bbox_inches="tight")
-
+    plt.savefig("{}-{}.png".format(img_title, measure[:2]), bbox_inches="tight")
+    plt.close()
+    #~ plt.show()
 
 
 if __name__ == "__main__":
-    #0. Get input
-#    if not len(argv) == 7:
-#        raise ValueError("The following arguments should be provided in this order:\n" + 
-#                         "\t-network type\n\t-model id\n\t-path to training db" +
-#                         "\n\t-number of training reads\n\t-number of epochs" + 
-#                         "\n\t-path to validation db\n\t-max length of validation reads")
+    #~ #0. Get input
+    #~ if not len(argv) == 7:
+        #~ raise ValueError("The following arguments should be provided in this order:\n" + 
+                         #~ "\t-network type\n\t-model id\n\t-path to training db" +
+                         #~ "\n\t-number of training reads\n\t-number of epochs" + 
+                         #~ "\n\t-path to validation db\n\t-max length of validation reads")
     
-#    network_type = argv[1]
-#    db_dir_train = argv[2]
-#    training_nr = int(argv[3])      # at start
-#    n_epochs = int(argv[4])         
-#    db_dir_val = argv[5]
-#    max_seq_length = int(argv[6])     
-    network_type = "RNN"
-    db_dir_train = "/mnt/nexenta/thijs030/data/trainingDB/train100/"
-    training_nr = 1469634
-    n_epochs = 1        
-    db_dir_val = "/mnt/nexenta/thijs030/data/trainingDB/val857w34/"
-    max_seq_length = 5000                
+    network_type = argv[1]
+    db_dir_train = argv[2]
+    training_nr = int(argv[3])      # at start
+    n_epochs = int(argv[4])         
+    db_dir_val = argv[5]
+    max_seq_length = int(argv[6])  
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -202,16 +190,15 @@ if __name__ == "__main__":
     print("Started script at {}\n".format(t1))
     
     #1. Train and validate network
-    train_error, val_error, sizes = t_and_v(network_type, db_dir_train, training_nr, 
+    train_error, val_error = t_and_v(network_type, db_dir_train, training_nr, 
                                          n_epochs, db_dir_val, max_seq_length)
-    print("Training: ", train_error)
-    print("Validation: ", val_error)
-    print("Sizes: ", sizes)
+
     
     #~ # 2. Get training and validation curves
     #~ input_file = argv[2]
-    #~ training, validation, sizes = parse_txt(input_file)
+    #~ measure = argv[3]
+    #~ training, validation, sizes = parse_txt(input_file, measure)
     
     #~ #5. Plot learning curve
     #~ img_title = "Learning_curve_{}".format(network_type)
-    #~ draw_learning_curves([training], [validation], sizes, img_title, network_type)
+    #~ draw_learning_curves([training], [validation], sizes, img_title, network_type, measure)
