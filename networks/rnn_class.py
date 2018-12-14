@@ -103,7 +103,7 @@ class RNN(object):
     
     @model_path.setter
     def model_path(self, model_type):
-        cur_dir = "/mnt/nexenta/thijs030/networks"
+        cur_dir = "/mnt/scratch/thijs030/validatenetworks"
         #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                
             
         check_for_dir = True
@@ -193,8 +193,10 @@ class RNN(object):
     def restore_network(self, path=None, ckpnt="latest", meta=None):
             self.sess.run(tf.global_variables_initializer())
             if ckpnt == "latest":
+                print(path)
                 self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
             else:
+                print(0)
                 new_saver.restore(self.sess, path + "/" + ckpnt)
 
             print("Model {} restored\n".format(path.split("/")[-2]))
@@ -212,7 +214,7 @@ class RNN(object):
         self.writer.add_summary(summary, step)  
         
 
-    def test_network(self, test_x, test_y, read_nr, read_name):
+    def test_network(self, test_x, test_y, read_nr, read_name, file_path=model_path):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
         pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
@@ -233,7 +235,7 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        with open(self.model_path + "_output.txt", "a+") as dest:
+        with open(file_path + "_output.txt", "a+") as dest:
             dest.write(read_name)
             dest.write("\n")
             dest.write("* {}".format(list(test_labels)))

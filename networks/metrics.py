@@ -51,6 +51,7 @@ def precision_recall(true_pos, false_pos, false_neg):
     except ZeroDivisionError:
         recall = 0
         print("Recall could not be calculated.")
+    
     return precision, recall
     
 
@@ -123,7 +124,7 @@ def draw_pr(precision, recall, title):
 
 def weighted_f1(precision, recall, n, N):
     """
-    Calculates weighted F1 score for a single class.
+    Calculates balanced (not weighted!) F1 score for a single class.
     
     Args:
         precision -- int
@@ -131,14 +132,15 @@ def weighted_f1(precision, recall, n, N):
         n -- int, number of samples belong to class
         N -- int, total number of samples
     
-    Returns int
+    Returns: f1-score as int
     """
     try:
-        wF1 = 2 * n  / N * (precision * recall) / (precision + recall)
+        f1 = 2 * n  / N * (precision * recall) / (precision + recall)
     except ZeroDivisionError:
         print("Precision, recall or both are zero. Unable of calculating weighted F1.")
-        wF1 = 0
-    return wF1
+        f1 = 0
+    
+    return f1
     
 
 def parse_txt(cprofile, measure):

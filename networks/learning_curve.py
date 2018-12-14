@@ -96,77 +96,9 @@ def compute_lines(samples):
         
     return mean_list, min_list, max_list
 
-
-def parse_txt(infile, measure="accuracy"):
-    """
-    """
-    training = []
-    validation = []
-    sizes = []
-    
-    new_round = True
-    get_size = False
-    with open(infile, "r") as source:
-        for line in source:
-            if new_round:
-                if get_size:
-                    size = int(line.strip())
-                    get_size = False
-                if line.startswith("Training {}".format(measure)):
-                    train_acc = float(line.strip().split(": ")[1])
-                elif line.startswith("Validation {}".format(measure)):
-                    val_acc = float(line.strip().split(": ")[1])
-                    new_round = False
-                if line.startswith("Training loss"):
-                    get_size = True
-            else:
-                training.append(train_acc)
-                validation.append(val_acc)
-                sizes.append(size)
-                new_round = True
-    return training, validation, sizes           
-            
-
-def draw_learning_curves(training_scores, validation_scores, train_sizes, img_title, 
-                         network_type, measure="accuracy"):
-    """
-    Plots learning curve. 
-    
-    Args:
-        training_score -- list of lists of float/ints
-        validation_score -- list of lists of float/ints
-        train_sizes -- list of ints
-        img_title -- str, name and title of figure
-        network_type -- str, type of network: RNN or ResNetRNN
-        measure -- str, 'accuracy' or 'loss' [default: accuracy]
-        
-    """    
-    plt.style.use("seaborn")
-    
-    if network_type == "RNN":
-        c = "darkcyan"
-        c2 = "paleturquoise"
-    if network_type == "ResNetRNN":
-        c = "forestgreen"
-        c2 = "lightgreen"
-    
-    train_means, train_mins, train_maxs = compute_lines(training_scores)
-    val_means, val_mins, val_maxs = compute_lines(validation_scores)
-    
-    plt.plot(train_sizes, train_means, label = 'Training', color=c)
-    plt.plot(train_sizes, val_means, label = 'Validation', color=c2)
-    plt.fill_between(train_sizes, train_mins, train_maxs, alpha=0.3)
-    plt.fill_between(train_sizes, val_mins, val_maxs, alpha=0.3)
-
-    plt.ylabel(measure, fontsize = 14)
-    plt.xlabel('number of training examples', fontsize = 14)
-    title = "Learning curve"
-    plt.title(title, fontsize = 18, y = 1.03)
-    plt.legend()
-    plt.ylim(0.0, 1.0)
-    plt.savefig("{}-{}.png".format(img_title, measure[:2]), bbox_inches="tight")
-    plt.close()
-    #~ plt.show()
+     
+# moved def parse_txt to draw_curves.py
+# moved def draw_learning_curve to draw_curves.py
 
 
 if __name__ == "__main__":
