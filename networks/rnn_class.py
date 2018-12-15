@@ -48,7 +48,7 @@ class RNN(object):
         self.optimizer = self.optimizer_choice
         self.model_path = self.model_type
         self.save_info()
-        self.saver = tf.train.Saver(max_to_keep=1000)
+        self.saver = tf.train.Saver(max_to_keep=1000, save_relative_paths=True)
         self.summary = self.activate_tensorboard()
         
         # saving test performance
@@ -197,7 +197,7 @@ class RNN(object):
                 self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
             else:
                 print(0)
-                new_saver.restore(self.sess, path + "/" + ckpnt)
+                self.saver.restore(self.sess, path + "/" + ckpnt)
 
             print("Model {} restored\n".format(path.split("/")[-2]))
 

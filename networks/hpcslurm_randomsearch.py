@@ -131,7 +131,7 @@ if __name__ == "__main__":
         model = build_model(network_type, **hpm_dict)
         #~ model.restore_network("/lustre/scratch/WUR/BIOINF/thijs030/networks/{}/checkpoints".format(trained_network))
         try:
-            model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000.data-00000-of-00001 ")
+            model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
             t2 = datetime.datetime.now()  
             m2 = p.memory_full_info().pss
             print("\nMemory after building model is ", m2)
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             print("Memory use at end is ", m4)
             print("Validated model in {}".format(t4 - t3))
         except:
-            print("No 10000th checkpoint")
+            print("No 10000th checkpoint for {}".format(trained_network))
             tf.reset_default_graph()
             continue
 

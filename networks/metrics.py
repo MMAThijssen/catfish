@@ -61,6 +61,7 @@ def calculate_accuracy(true_pos, false_pos, true_neg, false_neg):
     except ZeroDivisionError:
         accuracy = 0
     return accuracy
+    
 
 def calculate_auc(true_labels, predicted_scores, pos_label=1):
     """
@@ -93,6 +94,81 @@ def compute_auc(tpr, fpr):
     return sklmet.auc(fpr, tpr)
 
 
+def draw_roc_t(tpr, fpr, roc_auc, title, thresholds=[0.5]):
+    colors = set_sns_style()
+    
+    plt.title("Receiver Operator Characteristic")
+    for t in range(len(thresholds)):
+        plt.plot(fpr[t], tpr[t], "b", label="AUC {} = {:.2f}".format(thresholds[t], roc_auc[t]), c=colors[t])
+    plt.legend(loc="lower right")
+    plt.plot([0, 1], [0, 1],'r--', c="r")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.savefig("ROC_{}-t.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
+    
+def draw_pr_t(precision, recall, title, thresholds=[0.5]):
+    """
+    Plots precision recall curve.
+    
+    Args:
+        precision -- list of floats, precision
+        recall -- list of floats, precision
+        title -- str, name of plot
+        thresholds -- list of floats, threshold for positive label [default: [0.5]]
+        
+    Returns: None
+    """
+    colors = set_sns_style()
+    
+    plt.title("Precision Recall Curve")
+    for t in range(len(thresholds)):
+        plt.plot(precision[t], recall[t], c=colors[t], label=thresholds[t])
+    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('Precision')
+    plt.xlabel('Recall')
+    plt.legend()
+    plt.savefig("PR_{}-t.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
+    
+    return None
+    
+
+def class_from_threshold(predicted_scores, threshold):
+    """
+    Assigns classes on input based on given threshold.
+    
+    Args:
+        predicted_scores -- list of floats, scores outputted by neural network
+        threshold -- float, threshold
+    
+    Returns: list of class labels (ints)
+    """
+    return [1 if y >= threshold else 0 for y in predicted_scores]
+    
+
+def set_sns_style():
+    plt.style.use("seaborn")
+    c1 = "hotpink"
+    c2 = "turquoise"
+    c3 = "mintcream"
+    c4 = "springgreen"
+    c5 = "orange"
+    c6 = "mediumvioletred"
+    c7 = "midnightblue"
+    c8 = "maroon"
+    c9 = "gold"
+    colors = [c1, c2, c3, c4, c5, c6, c7, c8, c9]
+    
+    return colors
+    
+    
 def draw_roc(tpr, fpr, roc_auc, title):
     plt.style.use("seaborn")
     plt.title("Receiver Operator Characteristic")
@@ -120,8 +196,9 @@ def draw_pr(precision, recall, title):
     plt.savefig("PR_{}.png".format(title), bbox_inches="tight")
 #    plt.show()
     plt.close()
-    
 
+    
+    
 def weighted_f1(precision, recall, n, N):
     """
     Calculates balanced (not weighted!) F1 score for a single class.
@@ -243,6 +320,7 @@ def plot_networks_on_metric(network_list, metric):
     plt.title(metric, loc="center")
     plt.legend(loc="lower right")
     plt.savefig("{}.png".format(metric), bbox_inches="tight")
+    plt.close()
     #~ plt.show()
 
 
@@ -255,12 +333,12 @@ def generate_heatmap(predicted_list, label_list, title):
     plt.close()
 
 
-def draw_roc_and_pr_from_file(predout_file, name_of_roc, name_of_pr):
+def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
     """
     Args:
         predout_file -- str, file outputted after validation
-        name_of_roc -- str, name of image
-        name_of_pr -- str, name of precision recall curve
+        name_network -- str, name of network
+        thresholds -- list of floats, thresholds [default: 0.5]
         
     Returns: None
     """
@@ -277,15 +355,60 @@ def draw_roc_and_pr_from_file(predout_file, name_of_roc, name_of_pr):
             elif line.startswith("@"):
                 preds = line.strip()[3:-1].split(", ")
                 preds = list(map(float, preds))
-                predicted_scores.extend(preds)   
-                        
+                predicted_scores.extend(preds)  
+
     tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
-    draw_roc(tpr, fpr, auc, name_of_roc)
+    draw_roc(tpr, fpr, auc, name_network)
     
     prec, rec, thres = calculate_pr(true_labels, predicted_scores)
-    draw_pr(prec, rec, name_of_pr)
+    draw_pr(prec, rec, name_network)
+
+    plot_pr_threshold(prec, rec, thres, name_network)
+               
+    adjusted_scores = [class_from_threshold(predicted_scores, t) for t in thresholds]
+    tpr_list = []
+    fpr_list = []
+    auc_list = []
+    prec_list = []
+    rec_list = []
+    
+    with open("{}_thresholded.txt".format(name_network), "w") as dest:
+        dest.write("{}\n".format(thresholds))
+        for a in adjusted_scores:                    
+            tpr, fpr, auc = calculate_auc(true_labels, a)
+            tpr_list.append(tpr)
+            fpr_list.append(fpr)
+            auc_list.append(auc)
+            
+            prec, rec, thres = calculate_pr(true_labels, a)
+            prec_list.append(prec)
+            rec_list.append(rec)
+            
+            dest.write("{}\n".format(a))            
+    
+    draw_roc_t(tpr_list, fpr_list, auc_list, name_network, thresholds)
+    draw_pr_t(prec_list, rec_list, name_network, thresholds)
     
     return None
+    
+
+def plot_pr_threshold(precision, recall, thresholds, name_network):
+    """
+    Plots precision and recall against threshold.
+    
+    """
+    plt.style.use("seaborn")
+    c1 = "crimson"
+    c2 = "navajowhite"
+    plt.figure(figsize=(8, 8))
+    plt.title("Precision and recall as a function of threshold")
+    plt.plot(thresholds, precision[:-1], "--", c=c1, label="precision")
+    plt.plot(thresholds, recall[:-1], "-", c=c2, label="recall")
+    plt.ylabel("score")
+    plt.xlabel("decision threshold")
+    plt.legend(loc='best')
+    plt.savefig("PRT_{}.png".format(name_network), bbox_inches="tight")
+    plt.close()
     
 #def draw_pr_curve(in_files, outname):
 #    """
@@ -321,54 +444,14 @@ def draw_roc_and_pr_from_file(predout_file, name_of_roc, name_of_pr):
 ##    plt.show()
 #    plt.close()
 
-
-
-def draw_F1(in_file, outname):
-    plt.style.use("seaborn")
-    matplotlib.rc("image", cmap="Pastel2")
+# for f1 plots: see draw_curves.py
     
-    # get F1
-    f1_list = [0]
-    with open(in_file, "r") as source:
-        for line in source:
-            if line.strip().startswith("Weighed F1"):
-                f1_list.append(float(line.strip()[:-1].split(": ")[1])) # -1 to get rid of %    
-    print(f1_list)
-    # draw plot
-    plt.plot(f1_list, label="F1", c="gold")    
-    plt.title("F1")  
-    plt.ylim(bottom=0)
-    plt.ylabel('F1 score')
-    plt.xlabel("rounds of validation")          # should adjust!
-    plt.savefig("F1_{}.png".format(outname), bbox_inches="tight")
-#    plt.show()   
-    plt.close()
-    
-
-def draw_F1_now(in_file, outname):
-    plt.style.use("seaborn")
-    matplotlib.rc("image", cmap="Pastel2")
-    
-    # get F1
-    fscore = [(0, 0), (1024, 0.001), (2048, 0.002), (3072, 0.003), (4096, 0.004), (5120, 0.006), (6144, 0.007), (7168, 0.008), (8192, 0.009), (9216, 0.01), (10240, 0.011), (10240, 0.001), (11264, 0.013), (12288, 0.014), (13312, 0.016), (14336, 0.017), (15360, 0.019), (16384, 0.021), (17408, 0.023), (18432, 0.025), (19456, 0.026), (20480, 0.028), (20480, 0.003), (21504, 0.03), (22528, 0.031), (23552, 0.033), (24576, 0.035), (25600, 0.037), (26624, 0.039), (27648, 0.04), (28672, 0.042), (29696, 0.044), (30720, 0.046), (30720, 0.005), (31744, 0.048), (32768, 0.05), (33792, 0.052), (34816, 0.054), (35840, 0.056), (36864, 0.057), (37888, 0.059), (38912, 0.061), (39936, 0.063), (40960, 0.065), (40960, 0.007), (41984, 0.067), (43008, 0.069), (44032, 0.071), (45056, 0.073), (46080, 0.075), (47104, 0.077), (48128, 0.079), (49152, 0.081), (50176, 0.082), (51200, 0.084), (51200, 0.008), (52224, 0.086), (53248, 0.088), (54272, 0.09), (55296, 0.092), (56320, 0.094), (57344, 0.096), (58368, 0.098), (59392, 0.1), (60416, 0.102), (61440, 0.104), (61440, 0.01), (62464, 0.106), (63488, 0.108), (71680, 0.013), (81920, 0.015), (92160, 0.017), (102400, 0.002), (102400, 0.019), (112640, 0.021), (122880, 0.023), (133120, 0.026), (143360, 0.028), (153600, 0.03), (163840, 0.032), (174080, 0.035), (184320, 0.037), (194560, 0.039), (204800, 0.004), (204800, 0.041), (215040, 0.044), (225280, 0.046), (235520, 0.048), (245760, 0.05), (256000, 0.053), (266240, 0.055), (276480, 0.057), (286720, 0.06), (296960, 0.062), (307200, 0.006), (307200, 0.064), (317440, 0.066), (327680, 0.069), (337920, 0.071), (348160, 0.073), (358400, 0.076), (368640, 0.078), (378880, 0.08), (389120, 0.083), (399360, 0.085), (409600, 0.009), (409600, 0.088), (419840, 0.09), (430080, 0.092), (440320, 0.095), (450560, 0.097), (460800, 0.099), (471040, 0.102), (481280, 0.104), (491520, 0.107), (501760, 0.109), (512000, 0.011), (512000, 0.111), (522240, 0.114), (532480, 0.116), (542720, 0.119), (552960, 0.121), (563200, 0.123), (573440, 0.126), (583680, 0.128), (593920, 0.131), (604160, 0.133), (614400, 0.014), (614400, 0.135), (716800, 0.016), (819200, 0.018), (921600, 0.021), (1024000, 0.024), (1126400, 0.026), (1228800, 0.029), (1331200, 0.032), (1433600, 0.034), (1536000, 0.037)] # (5120000, 0.003), (10240000, 0.007), (15360000, 0.011)]
-    f1_list = [x[1] for x in fscore]
-    sizes = [x[0] for x in fscore]   
-    
-    # draw plot
-    plt.plot(sizes, f1_list, label="F1", c="gold")    
-    plt.title("F1")  
-    plt.ylim(bottom=0)
-    plt.ylabel('F1 score')
-    plt.xlabel("rounds of validation")          # should adjust!
-    #~ plt.savefig("F1_{}.png".format(outname), bbox_inches="tight")
-    plt.show()   
-    #~ plt.close()
     
                 
 if __name__ == "__main__":
     input_file = argv[1]
     output_name = argv[2]       # usually choose network: eg RNN92
-    #~ draw_roc_and_pr_from_file(input_file, output_name)
-    draw_F1_now(input_file, output_name)
+    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    draw_roc_and_pr_from_file(input_file, output_name, thresholds)
     
 
