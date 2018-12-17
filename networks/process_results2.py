@@ -13,7 +13,7 @@ from sys import argv
 
 # TODO: implement something as max nr to limit number of reads to process,
 # but should also take full file if max nr exceeds number of reads in file.
-def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
+def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -70,7 +70,6 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
     search_read = True
     with open(output_file, "r") as source:
         for line in source:
-            #~ print(line[:5])
             if search_read and not (line.startswith("#") or line.startswith("*") or line.startswith("@")):
                 read_name = line.strip()
                 search_read = False
@@ -78,7 +77,9 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             elif not search_read: 
                 # get belonging predicted labels and true labels
                 if predicted_labels == None:
-                    predicted_labels = list_predicted(line, types="predicted_labels")
+                    predicted_labels = list_predicted(line, types="predicted_scores")
+                    if predicted_labels != None:
+                        predicted_labels = class_from_threshold(predicted_labels, threshold)
                 if true_labels == None:    
                     true_labels = list_predicted(line, types="true_labels")
                 elif predicted_labels != None and true_labels != None:
@@ -178,6 +179,8 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
                     search_read = True
                     predicted_labels = None
                     true_labels = None
+            else:
+                continue
     
     # 6b. Check from TP perspective:                    
     # count how many completely found back
@@ -191,7 +194,7 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
         avg_overright = sum(overright) / complete_st
         perfectcomplete = sum(perfectcomplete)
         
-    # count how many absent
+    # count how many absent == FN:
     absent_st = [1 for st in states if st[0] == "absent"]
     absent_st = sum(absent_st)
     
@@ -207,6 +210,12 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
         median_len_inters = median(length_inters)
     
         # TODO: something with positions of interruptions?
+        
+    true_negs = [1 for st in neg_states if st[0] == "complete"]
+    true_negs = sum(true_negs)
+    
+    false_poss = [1 for st in neg_states if st[0] == "absent"]
+    false_poss = sum(false_poss)
     
     all_seq_list = dict_to_ordered_list(all_count_seq)
     all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
@@ -303,7 +312,7 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             dest.write("{}\n".format(all_count_tppositions))  
 
         if all_fppositions != []:
-            dest.write("\nFalse positives: {}\n".format("TODO: compute from fake_states"))
+            dest.write("\nFalse positives: {}\n".format(false_poss))
             dest.write("\tLength of FP in measurements\n")
             dest.write("{}\n".format(all_count_fptrue))
             dest.write("\tLength of FP in bases\n")
@@ -314,6 +323,7 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             dest.write("{}\n".format(all_count_fppositions))  
 
         if all_fnpositions:
+            dest.write("\nFalse negatives: {}\n".format(absent_st))
             dest.write("\tLength of FN in measurements\n")
             dest.write("{}\n".format(all_count_fntrue))
             dest.write("\tLength of FN in bases\n")
@@ -324,6 +334,7 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             dest.write("{}\n".format(all_count_fnpositions))
             
         if all_tnpositions != 0:
+            dest.write("\nTrue negatives: {}\n".format(true_negs))
             dest.write("\tLength of TN in measurements\n")
             dest.write("{}\n".format(all_count_tntrue))
             dest.write("\tLength of TN in bases\n")
@@ -356,6 +367,19 @@ def main(output_file, main_dir, npz_dir, out_name, max_nr=12255):
             dest.write("\nSaved plots on prevalences.\n")
 
     return all_tppositions, all_fppositions, all_fnpositions, all_tnpositions
+  
+  
+def class_from_threshold(predicted_scores, threshold):
+    """
+    Assigns classes on input based on given threshold.
+    
+    Args:
+        predicted_scores -- list of floats, scores outputted by neural network
+        threshold -- float, threshold
+    
+    Returns: list of class labels (ints)
+    """
+    return [1 if y >= threshold else 0 for y in predicted_scores]
     
 
 def list_predicted(line, types="predicted_labels"):
@@ -385,7 +409,8 @@ def list_predicted(line, types="predicted_labels"):
         predicted = None
 
     return predicted
-    
+  
+
     
     
 def list_basenew(pred_file, read_name, types="bases"):
@@ -623,9 +648,9 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
     inter_list = []
     predicted_stretch = predicted_labels[true_hp[0] : true_hp[1] + 1]
     # check if true homopolymer is completely or partly detected
-    if (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(1):
+    if (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(pos):
         state = "complete"
-    elif (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(0):
+    elif (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(neg):
         state = "absent"
         l = None
         r = None
@@ -657,7 +682,7 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
             check_left = True
             while check_left:
                 position = true_hp[0] + l - 1
-                if position != 0 and predicted_labels[position] == pos:
+                if (not position <= 0 and predicted_labels[position] == pos):
                     l -= 1
                 else:
                     check_left = False
@@ -666,7 +691,7 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
             check_right = True
             while check_right:
                 position = true_hp[1] + r + 1
-                if position != len(predicted_labels) and predicted_labels[position] == pos:
+                if (not position >= len(predicted_labels) and predicted_labels[position] == pos):
                     r += 1
                 else:
                     check_right = False
@@ -676,7 +701,7 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
             check_left = True
             while check_left:
                 position = true_hp[0] + l
-                if position != len(predicted_labels) and predicted_labels[position] == neg:
+                if (not position >= len(predicted_labels) and predicted_labels[position] == neg):
                     l += 1
                 else:
                     check_left = False
@@ -684,7 +709,7 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
             check_right = True
             while check_right:
                 position = true_hp[1] + r
-                if position != len(predicted_labels) and predicted_labels[position] == neg:
+                if (not position >= len(predicted_labels) and predicted_labels[position] == neg):
                     r -= 1
                 else:
                     check_right = False    
@@ -772,21 +797,57 @@ def reduce_dict(hp_dict, read_states, types):
     return hp_dict
     
     
-def cut_from_output():
-    reads = 856
-    lines = 4
-    rounds = 14
-
+def cut_from_output(sourcefile, destfile, rounds, reads=856, lines=4):
     counter = 0
-    with open(destfile, "a") as dest:
+    with open(destfile, "w") as dest:
         with open(sourcefile, "r") as source:
             for line in source:
-               counter += 1
-               if counter == (14 * lines * reads + 1):
-    #           if counter in list(range(13 * lines * reads, 14 * lines * reads)):
+                if counter in list(range(rounds * lines * reads, (rounds + 1) * lines * reads + 1)):
                    dest.write(line)
+                counter += 1
                    
     print("Finished writing")
+    
+    
+def thresholded_labels(thres_file, thres):
+    """
+    Gets labels according to given threshold.
+    
+    Args:
+        thres_file -- str, path to thresholded file
+        thres -- float, threshold
+    
+    Returns: list of labels (ints)
+    """
+    # check for threshold in file
+    get_thres = True
+    with open(thres_file, "r") as source:
+        for line in source:
+            if get_thres:
+                thresholds = line.strip()[1:-1].split(", ")
+                thresholds = list(map(float, thresholds))
+                print(thresholds)
+                get_thres = False
+                line_counter = 0
+                for i in range(len(thresholds)):
+                    if thresholds[i] == thres:
+                        number = i
+                        print("number is: ", number)
+                    elif thres not in thresholds:
+                        raise ValueError("Given threshold not in file.")
+            # return belonging labels
+            elif not get_thres:
+                if line_counter == number:
+                    print("line used is: ", line_counter)
+                    labels = line.strip()[1:-1].split(", ")
+                    labels = list(map(int, labels))
+                    print(len(labels))
+                    break
+                else:
+                    line_counter += 1
+    
+    return labels
+    
     
 def kmeans_clustering(x, n):
     # https://jakevdp.github.io/PythonDataScienceHandbook/05.11-k-means.html
@@ -848,12 +909,26 @@ def LATER():
 
     
 if __name__ == "__main__":
+    #~ # Get correct output file:
+    #~ in_file = argv[1]
+    #~ out_file = argv[2]
+    #~ rounds = int(argv[3])
+    #~ cut_from_output(in_file, out_file, rounds)
+    
+    #~ # Thresholded labels:
+    #~ in_file = argv[1]
+    #~ threshold = float(argv[2])
+    #~ new_labels = thresholded_labels(in_file, threshold)
+    
+    # Output results:
     read_file = argv[1]
     main_fast5_dir = argv[2]
     main_npz_dir = argv[3]
     output_name = argv[4]
+    threshold = float(argv[5])
     max_number = 12255
-    if len(argv) > 5:
-        max_number = int(argv[5])
-    tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, max_number)
+    #if len(argv) > 5:
+        #max_number = int(argv[5])
+    tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
+                          threshold, max_number)
 

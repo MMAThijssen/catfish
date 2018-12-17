@@ -103,7 +103,8 @@ def validate(network, squiggles, max_seq_length, file_path):
     whole_f1 = metrics.weighted_f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
     
     # averaged performance:  
-    with open(file_path + ".txt", "w") as dest: 
+    with open(file_path + "_validate.txt", "w") as dest: 
+        print("Save validation to: ".format(file_path + "_validate.txt"))
         dest.write("\nNEXT EPOCH")
         dest.write("\nAverage performance of validation set:\n")
         dest.write("\tAccuracy: {:.2%}\n".format(accuracy / valid_reads))

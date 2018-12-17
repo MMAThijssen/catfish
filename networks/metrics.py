@@ -372,19 +372,15 @@ def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
     prec_list = []
     rec_list = []
     
-    with open("{}_thresholded.txt".format(name_network), "w") as dest:
-        dest.write("{}\n".format(thresholds))
-        for a in adjusted_scores:                    
-            tpr, fpr, auc = calculate_auc(true_labels, a)
-            tpr_list.append(tpr)
-            fpr_list.append(fpr)
-            auc_list.append(auc)
-            
-            prec, rec, thres = calculate_pr(true_labels, a)
-            prec_list.append(prec)
-            rec_list.append(rec)
-            
-            dest.write("{}\n".format(a))            
+    for a in adjusted_scores:                    
+        tpr, fpr, auc = calculate_auc(true_labels, a)
+        tpr_list.append(tpr)
+        fpr_list.append(fpr)
+        auc_list.append(auc)
+        
+        prec, rec, thres = calculate_pr(true_labels, a)
+        prec_list.append(prec)
+        rec_list.append(rec)           
     
     draw_roc_t(tpr_list, fpr_list, auc_list, name_network, thresholds)
     draw_pr_t(prec_list, rec_list, name_network, thresholds)
