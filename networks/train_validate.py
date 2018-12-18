@@ -73,6 +73,8 @@ def train(network, db, training_nr, squiggles, max_seq_length):
     
     step = 0
     positives = 0
+    
+    db.set_ranges(1)
 
     for b in range(n_batches):
         # load batch sized training examples:
@@ -154,7 +156,7 @@ def validate(network, squiggles, max_seq_length):
             set_y = reshape_input(labels, network.window, network.n_outputs)
             
             t3 = datetime.datetime.now()
-            sgl_acc, sgl_loss  = network.test_network(set_x, set_y, valid_reads, read_name)
+            sgl_acc, sgl_loss  = network.test_network(set_x, set_y, valid_reads, read_name, network.model_path)
             t4 = datetime.datetime.now()
             
             #~ if valid_reads % network.saving_step == 0:

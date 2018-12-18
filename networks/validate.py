@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import datetime
 import helper_functions
-import metrics
 import numpy as np
 import os
 import psutil
@@ -48,7 +47,77 @@ def build_model(network_type, **kwargs):
         network = ResNetRNN(**kwargs)
                         
     return network   
+
+def train(network, db, training_nr, squiggles, max_seq_length):
+    """
+    Training on windows
+    
+    Args:
+        db -- str, ZODB database
+        training_nr -- int, number of training examples
+        n_epochs -- str, number of epochs
+    
+    Returns: training accuracy (float)
+    """
+    saving = True
+    print(datetime.datetime.now())
+        
+    # 2. train network
+    n_examples = training_nr // network.batch_size * network.batch_size
+    n_batches = n_examples // network.batch_size
+    print("\nTraining on {} examples in {} batches\n".format(n_examples, n_batches))
+    with open(network.model_path + ".txt", "a") as dest:
+        dest.write("Training on {} examples in {} batches\n".format(n_examples, n_batches))
+    
+    step = 0
+    positives = 0
+
+    for b in range(n_batches):
+        # load batch sized training examples:
+        data, labels, pos = db.get_training_set(network.batch_size)  
+        positives += pos
+        
+        set_x = reshape_input(data, network.window, network.n_inputs)
+        set_y = reshape_input(labels, network.window, network.n_outputs)
+        
+        # train on batch:
+        step += 1                                                           # step is per batch
+        network.train_network(set_x, set_y, step)
+        
+        if step % 1 == 0:   
+            network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
+            print("Saved checkpoint at step ", step)
+            train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+            print("Training accuracy: ", train_acc)
+            print("Training loss: ", train_loss)
+        
+            print(step * network.batch_size)
+            print(datetime.datetime.now())
+            
+            val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
+            print("Validation precision: ", whole_precision)
+            print("Validation recall: ", whole_recall)
+            network.tp = 0
+            network.fp = 0
+            network.tn = 0
+            network.fn = 0
+    
+    try:
+        train_hp = positives / (network.window * n_examples)  
+    except ZeroDivisionError:
+        train_hp = 0
+    print("Training set had {:.2%} HPs".format(train_hp))
+        
+    network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step)
+    print("\nSaved final checkpoint at step ", step, "\n")
+    train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+    print("Training accuracy: ", train_acc)
+    print("Training loss: ", train_loss)
+    
+    print("\nFinished training!")
   
+    return train_acc        # also return step?
+    
     
 def validate(network, squiggles, max_seq_length, file_path):
     """
@@ -100,7 +169,7 @@ def validate(network, squiggles, max_seq_length, file_path):
     
     whole_accuracy = metrics.calculate_accuracy(network.tp, network.fp, network.tn, network.fn)
     whole_precision, whole_recall = metrics.precision_recall(network.tp, network.fp, network.fn)
-    whole_f1 = metrics.weighted_f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
+    whole_f1 = metrics.f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
     
     # averaged performance:  
     with open(file_path + "_validate.txt", "w") as dest: 
@@ -135,13 +204,16 @@ def validate(network, squiggles, max_seq_length, file_path):
 
 if __name__ == "__main__":
     # get input
-    if not len(argv) == 7:
+    if not len(argv) == 6:
         raise ValueError("The following arguments should be provided in this order:\n" + 
                          "\t-network type" +
                          "\n\t-path to validation db\n\t-max length of validation reads")
     network_type = argv[1]
-    db_dir_val = argv[2]
-    max_seq_length = int(argv[3])
+    db_dir_train = argv[2]
+    training_nr = int(argv[3])
+    n_epochs = 1
+    db_dir_val = argv[4]
+    max_seq_length = int(argv[5])
     
 
     p = psutil.Process(os.getpid())
@@ -151,6 +223,7 @@ if __name__ == "__main__":
     # build model
     print("Started script at ", datetime.datetime.now())
     t1 = datetime.datetime.now()
+    hpm_dict = {"batch_size":256, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res":11}
     network = build_model(network_type, **hpm_dict)
     t2 = datetime.datetime.now()
     m2 = p.memory_full_info().pss
@@ -173,11 +246,8 @@ if __name__ == "__main__":
     print("Extra memory use after loading db is", m4 - m3)
     print("Loaded db in {}".format(t4 - t3))
     
-    #~ print("Loading validation database..")
-    #~ squiggles = helper_functions.load_squiggles(db_dir_val)
-    
     t5 = datetime.datetime.now()
-    train(network, db_train, training_nr, n_epochs)
+    train(network, db_train, training_nr, n_epochs, max_seq_length)
     t6 = datetime.datetime.now()
     m5 = p.memory_full_info().pss
     print("Extra memory use after training is", m5 - m4)

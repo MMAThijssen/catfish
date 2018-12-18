@@ -111,11 +111,10 @@ if __name__ == "__main__":
     print("\nMemory use at start is", m1)  
     print("Started script at {}\n".format(t1))
     
-    number_list = list(range(9,21))
-    number_list.extend(list(range(22, 41)))
-    number_list.extend(list(range(42, 46)))
-    number_list.extend(list(range(47, 53)))
-    #~ number_list = [89]
+    number_list = [18, 47]
+    number_list.extend(list(range(43, 46)))
+
+
     
     main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
 

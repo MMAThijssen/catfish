@@ -3,8 +3,10 @@
 import metrics
 import numpy as np
 import os
+import os.path
+from prepare_projector import write_metadata
 import tensorflow as tf
-
+from tensorflow.contrib.tensorboard.plugins import projector
 
 class RNN(object):
 #    def __init__(self):
@@ -37,7 +39,8 @@ class RNN(object):
         
         self.cell_type = "GRU"
         self.model_type = self.cell_type
-        self.sess = tf.Session()          
+        self.sess = tf.Session()    
+             
         
         # build network and additionals
         self.input_layer()
@@ -134,11 +137,21 @@ class RNN(object):
             self.writer = tf.summary.FileWriter(self.model_path + "/tensorboard")
             self.writer.add_graph(tf.get_default_graph())
             
+            # summaries
             loss_summ = tf.summary.scalar("loss", self.loss)
             acc_summ = tf.summary.scalar("accuracy", self.accuracy)
         
             all_summs = tf.summary.merge_all()
             
+            #~ # projector
+            #~ self.path_metadata = os.path.join(self.model_path, "metadata.tsv")
+            
+            #~ config = projector.ProjectorConfig()
+            #~ embedding = config.embeddings.add()
+            #~ embedding.tensor_name = embedding_var.name
+            #~ embedding.metadata_path = self.path_metadata
+            #~ projector.visualize_embeddings(self.writer, config)
+                
             return all_summs
         
 
@@ -161,7 +174,7 @@ class RNN(object):
         with tf.name_scope("data"):
             self.x = tf.placeholder(tf.float32, shape=[None, self.window, self.n_inputs])
             self.y = tf.placeholder(tf.float32, shape=[None, self.window, self.n_outputs])
-            
+        
         self.p_dropout = tf.placeholder(dtype=tf.float32, shape=[], name="dropout")
 
             
@@ -176,10 +189,18 @@ class RNN(object):
         stacked_rnn_output = tf.reshape(self.rnn_output, [-1, self.layer_size * 2])           # 2 cause bidirectional    
         
         return stacked_rnn_output
-        
+            #~ fc1 = tf.layers.dense(x_input, self.layer_size, name="fc1")
+            #~ stacked_rnn_output = tf.reshape(fc1, [-1, self.layer_size])
+            
+            #~ tensor_shape = (x_input.shape[0], fc1.get_shape()[1].value)
+            #~ embedding_var = tf.Variable(tf.zeros(tensor_shape), name="fc1_embed")
+            #~ embedding_assign = embedding_var.assign(fc1)
+            
+            #~ return(stacked_rnn_output)
     
     def output_layer(self, stacked_rnn_output):
         stacked_outputs = tf.layers.dense(stacked_rnn_output, self.n_outputs, name="final_fully_connected")
+        
         final_output = tf.reshape(stacked_outputs, [-1, self.window, self.n_outputs]) 
             
         return final_output
@@ -214,9 +235,12 @@ class RNN(object):
         self.writer.add_summary(summary, step)  
         
 
-    def test_network(self, test_x, test_y, read_nr, read_name, file_path=model_path):
+    def test_network(self, test_x, test_y, read_nr, read_name, file_path):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
+        #~ write_metadata(self.path_metadata, test_y)
+        #~ x_test_ffc = self.sess.run(embedding_assign, feed_dict={})
+        
         pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
         pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
         
