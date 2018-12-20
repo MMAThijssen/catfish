@@ -142,15 +142,6 @@ class RNN(object):
             acc_summ = tf.summary.scalar("accuracy", self.accuracy)
         
             all_summs = tf.summary.merge_all()
-            
-            #~ # projector
-            #~ self.path_metadata = os.path.join(self.model_path, "metadata.tsv")
-            
-            #~ config = projector.ProjectorConfig()
-            #~ embedding = config.embeddings.add()
-            #~ embedding.tensor_name = embedding_var.name
-            #~ embedding.metadata_path = self.path_metadata
-            #~ projector.visualize_embeddings(self.writer, config)
                 
             return all_summs
         
@@ -189,14 +180,7 @@ class RNN(object):
         stacked_rnn_output = tf.reshape(self.rnn_output, [-1, self.layer_size * 2])           # 2 cause bidirectional    
         
         return stacked_rnn_output
-            #~ fc1 = tf.layers.dense(x_input, self.layer_size, name="fc1")
-            #~ stacked_rnn_output = tf.reshape(fc1, [-1, self.layer_size])
-            
-            #~ tensor_shape = (x_input.shape[0], fc1.get_shape()[1].value)
-            #~ embedding_var = tf.Variable(tf.zeros(tensor_shape), name="fc1_embed")
-            #~ embedding_assign = embedding_var.assign(fc1)
-            
-            #~ return(stacked_rnn_output)
+        
     
     def output_layer(self, stacked_rnn_output):
         stacked_outputs = tf.layers.dense(stacked_rnn_output, self.n_outputs, name="final_fully_connected")
@@ -214,10 +198,8 @@ class RNN(object):
     def restore_network(self, path=None, ckpnt="latest", meta=None):
             self.sess.run(tf.global_variables_initializer())
             if ckpnt == "latest":
-                print(path)
                 self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
             else:
-                print(0)
                 self.saver.restore(self.sess, path + "/" + ckpnt)
 
             print("Model {} restored\n".format(path.split("/")[-2]))
@@ -238,8 +220,6 @@ class RNN(object):
     def test_network(self, test_x, test_y, read_nr, read_name, file_path):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
-        #~ write_metadata(self.path_metadata, test_y)
-        #~ x_test_ffc = self.sess.run(embedding_assign, feed_dict={})
         
         pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
         pred_vals = np.reshape(pred_vals, (-1)).astype(int)  

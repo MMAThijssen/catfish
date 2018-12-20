@@ -13,8 +13,8 @@ class ExampleDb(object):
         self._db = None
         self.nb_pos = 0
         self.nb_neg = 0
-        self.range_ps = 0
-        self.range_neg = 0
+        #~ self.range_ps = 0
+        #~ self.range_neg = 0
         if not isfile(kwargs['db_name']):
             self.width = kwargs['width']
         self.db_name = kwargs['db_name']
@@ -36,15 +36,15 @@ class ExampleDb(object):
             self.nb_neg += len(neg_examples) 
             conn.root.nb_neg = self.nb_neg 
             
+# takes much memory + time:        
+    #~ def set_ranges(self, seed):
+        #~ random.seed(seed)                                                         # so same samples are used in each epoch
+        #~ self.range_ps = list(range(self.nb_pos))
+        #~ self.range_ns = list(range(self.nb_neg))
+        #~ random.shuffle(self.range_ps)
+        #~ random.shuffle(self.range_ns)  
         
-    def set_ranges(self, seed):
-        random.seed(seed)                                                         # so same samples are used in each epoch
-        self.range_ps = list(range(self.nb_pos))
-        self.range_ns = list(range(self.nb_neg))
-        random.shuffle(self.range_ps)
-        random.shuffle(self.range_ns)  
-        
-        return self.range_ps, self.range_ns      
+        #~ return self.range_ps, self.range_ns      
                 
                 
     def get_training_set(self, size):
@@ -57,12 +57,15 @@ class ExampleDb(object):
 
         nb_pos = size // 2
         nb_neg = size - nb_pos
-
-        ps = self.range_ps[ : nb_pos]
-        ns = self.range_ns[ : nb_neg]
         
-        self.range_ps = self.range_ps[nb_pos : ]
-        self.range_ns = self.range_ns[nb_neg : ]
+        ps = random.sample(range(self.nb_pos), nb_pos)
+        ns = random.sample(range(self.nb_neg), nb_neg)
+
+        #~ ps = self.range_ps[ : nb_pos]
+        #~ ns = self.range_ns[ : nb_neg]
+        
+        #~ self.range_ps = self.range_ps[nb_pos : ]
+        #~ self.range_ns = self.range_ns[nb_neg : ]
 
         with self._db.transaction() as conn:
             examples_pos = [conn.root.pos[n] for n in ps]                       # conn.root.pos[n] is tuple(arrays, labels)         

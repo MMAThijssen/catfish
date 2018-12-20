@@ -465,9 +465,15 @@ def plot_pr_threshold(precision, recall, thresholds, name_network):
     
                 
 if __name__ == "__main__":
-    input_file = argv[1]
-    output_name = argv[2]       # usually choose network: eg RNN92
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    draw_roc_and_pr_from_file(input_file, output_name, thresholds)
-    
+    true_file = argv[1]
+    pred_file = argv[2]
+    threshold = float(argv[3])
+    output_name = argv[4]
+    #~ output_name = argv[2]       # usually choose network: eg RNN92
+    #~ thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #~ draw_roc_and_pr_from_file(input_file, output_name, thresholds)
+    #~ true_labels = 
+    #~ predicted_scores =
+    predicted_labels = class_from_threshold(predicted_scores, threshold)
+    generate_heatmap(predicted_labels, output_name)
 

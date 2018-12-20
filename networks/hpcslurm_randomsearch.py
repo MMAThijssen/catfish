@@ -111,10 +111,8 @@ if __name__ == "__main__":
     print("\nMemory use at start is", m1)  
     print("Started script at {}\n".format(t1))
     
-    number_list = [18, 47]
-    number_list.extend(list(range(43, 46)))
-
-
+    number_list = [13, 15, 17, 25, 28, 30, 32, 36, 40, 43]
+    #~ number_list.extend(list(range(43, 46)))
     
     main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
 
@@ -129,29 +127,30 @@ if __name__ == "__main__":
         hpm_dict = retrieve_hyperparams("{}{}.txt".format(main_dir, trained_network))
         model = build_model(network_type, **hpm_dict)
         #~ model.restore_network("/lustre/scratch/WUR/BIOINF/thijs030/networks/{}/checkpoints".format(trained_network))
-        try:
-            model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
-            t2 = datetime.datetime.now()  
-            m2 = p.memory_full_info().pss
-            print("\nMemory after building model is ", m2)
-            print("Built and initialized model in {}\n".format(t2 - t1))
+        #~ try:
+        model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
+        t2 = datetime.datetime.now()  
+        m2 = p.memory_full_info().pss
+        print("\nMemory after building model is ", m2)
+        print("Built and initialized model in {}\n".format(t2 - t1))
 
-            #~ # 1b. Restore model
-            #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
-            #~ model = build_model(network_type, **hpm_dict)
-            #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
-         
-            
-            #3. Assess performance on validation set
-
-            validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network))
-            t4 = datetime.datetime.now()  
-            m4 = p.memory_full_info().pss
-            print("Memory use at end is ", m4)
-            print("Validated model in {}".format(t4 - t3))
-        except:
-            print("No 10000th checkpoint for {}".format(trained_network))
-            tf.reset_default_graph()
-            continue
+        #~ # 1b. Restore model
+        #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_165.txt")
+        #~ model = build_model(network_type, **hpm_dict)
+        #~ model.restore_network("/mnt/nexenta/thijs030/networks/biGRU-RNN_165/checkpoints")
+     
+        
+        #3. Assess performance on validation set
+        t3 = datetime.datetime.now()
+        validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network))
+        t4 = datetime.datetime.now()  
+        m4 = p.memory_full_info().pss
+        print("Memory use at end is ", m4)
+        print("Validated model in {}".format(t4 - t3))
+        #~ except:
+            #~ print("No 10000th checkpoint for {}".format(trained_network))
+            #~ tf.reset_default_graph()
+            #~ continue
+        tf.reset_default_graph()
 
 

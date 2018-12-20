@@ -68,57 +68,54 @@ def train(network, db, training_nr, squiggles, max_seq_length):
     n_examples = training_nr // network.batch_size * network.batch_size
     n_batches = n_examples // network.batch_size
     print("\nTraining on {} examples in {} batches\n".format(n_examples, n_batches))
-    with open(network.model_path + ".txt", "a") as dest:
+    with open(network.model_path + ".txt", "a+") as dest:
         dest.write("Training on {} examples in {} batches\n".format(n_examples, n_batches))
+        print("Training on {} examples in {} batches\n".format(n_examples, n_batches))
     
-    step = 0
-    positives = 0
-    
-    db.set_ranges(1)
+        step = 0
+        positives = 0
 
-    for b in range(n_batches):
-        # load batch sized training examples:
-        data, labels, pos = db.get_training_set(network.batch_size)  
-        positives += pos
-        
-        set_x = reshape_input(data, network.window, network.n_inputs)
-        set_y = reshape_input(labels, network.window, network.n_outputs)
-        
-        # train on batch:
-        step += 1                                                           # step is per batch
-        network.train_network(set_x, set_y, step)
-        
-        if step % 2 == 0:   
-            network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
-            print("Saved checkpoint at step ", step)
-            train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
-            print("Training accuracy: ", train_acc)
-            print("Training loss: ", train_loss)
-        
-            print(step * network.batch_size)
-            print(datetime.datetime.now())
+        for b in range(n_batches):
+            # load batch sized training examples:
+            data, labels, pos = db.get_training_set(network.batch_size)  
+            positives += pos
             
-            val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
-            print("Validation precision: ", whole_precision)
-            print("Validation recall: ", whole_recall)
-            network.tp = 0
-            network.fp = 0
-            network.tn = 0
-            network.fn = 0
+            set_x = reshape_input(data, network.window, network.n_inputs)
+            set_y = reshape_input(labels, network.window, network.n_outputs)
+            
+            # train on batch:
+            step += 1                                                           # step is per batch
+            network.train_network(set_x, set_y, step)
+            
+            if step % 10000 == 0:   
+                network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
+                dest.write("Saved checkpoint at step {}\n".format(step))
+                print("Saved checkpoint at step {}\n".format(step))
+                train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+                dest.write("Training accuracy: {}\n".format(train_acc))
+                dest.write("Training loss: {}\n".format(train_loss))
+                
+                val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
+                dest.write("Validation precision: {}\n".format(whole_precision))
+                dest.write("Validation recall: {}\n".format(whole_recall))
+                network.tp = 0
+                network.fp = 0
+                network.tn = 0
+                network.fn = 0
     
-    try:
-        train_hp = positives / (network.window * n_examples)  
-    except ZeroDivisionError:
-        train_hp = 0
-    print("Training set had {:.2%} HPs".format(train_hp))
+        try:
+            train_hp = positives / (network.window * n_examples)  
+        except ZeroDivisionError:
+            train_hp = 0
+        dest.write("Training set had {:.2%} HPs\n".format(train_hp))
+            
+        network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step)
+        dest.write("\nSaved final checkpoint at step {}\n".format(step))
+        train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
+        dest.write("Training accuracy: {}\n".format(train_acc))
+        dest.write("Training loss: {}".format(train_loss))
         
-    network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step)
-    print("\nSaved final checkpoint at step ", step, "\n")
-    train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
-    print("Training accuracy: ", train_acc)
-    print("Training loss: ", train_loss)
-    
-    print("\nFinished training!")
+        dest.write("\nFinished training!\n\n")
   
     return train_acc        # also return step?
     
@@ -251,12 +248,12 @@ if __name__ == "__main__":
     
     seed = random.randint(0, 1000000000)
     
-    t0 = datetime.datetime.now()
-    pos_range, neg_range = db_train.set_ranges(seed)
-    print("Set ranges in {}".format(datetime.datetime.now() - t0))
+    #~ t0 = datetime.datetime.now()
+    #~ pos_range, neg_range = db_train.set_ranges(seed)
+    #~ print("Set ranges in {}".format(datetime.datetime.now() - t0))
     for n in range(n_epochs):
-        db_train.range_ps = pos_range
-        db_train.range_ns = neg_range
+        #~ db_train.range_ps = pos_range
+        #~ db_train.range_ns = neg_range
         network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", write_meta_graph=True)
         print("Saved checkpoint at start of epoch {}".format(n))
         t5 = datetime.datetime.now()

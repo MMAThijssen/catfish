@@ -5,6 +5,7 @@ from collections import Counter
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from metrics import generate_heatmap
 import numpy as np
 from reader import load_npz_raw
 from sklearn.cluster import KMeans
@@ -42,6 +43,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     all_count_basetrue = Counter({})
     all_count_seq = Counter({})
     all_count_seqtrue = Counter({})
+    all_truepositions = []
 
     # initialize for TP
     all_count_tptrue = Counter({})
@@ -89,10 +91,11 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     true_hp = hp_loc_dict(true_labels)
                     detected_from_true(predicted_hp, true_hp)
                     
-                    # check all positives:      real positives, predicted positives
+                    # check all positives:      real positives + predicted positives
                     count_truehp, count_basetrue, count_seqtrue = prediction_information(true_hp, bases, new)         
                     count_predictions, count_basehp, count_seq = prediction_information(predicted_hp, bases, new)        
-                  
+                    [all_truepositions.extend(range(k[0], k[1] + 1)) for k in true_hp.values()]
+                    
                     # 6. Check finding back true HP
                     read_states = [check_true_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
                     
@@ -100,34 +103,31 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                         states.extend(read_states)    
                         #~ perfect_positives = [st[3] for st in read_states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
                         
-                        # 6a. Check TP and FN:   
-                        tp_truehp = reduce_dict(true_hp, read_states, types="P")
-                        fn_truehp = reduce_dict(true_hp, read_states, types="N")
-                        if tp_truehp != None:
-                            [all_tppositions.extend(range(k[0], k[1] + 1)) for k in tp_truehp.values()]
-                            count_tptrue, count_tpbasestrue, count_tpseqtrue = prediction_information(true_hp, bases, new)          # true positives
-                        if fn_truehp != None:
-                            [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]                             # check positions
-                            count_fntrue, count_fnbasestrue, count_fnseqtrue = prediction_information(true_hp, bases, new)          # false negatives
+                    # 6a. Check TP and FN:   
+                    tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
+                    fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
+                    if tp_truehp != 0:
+                        [all_tppositions.extend(range(k[0], k[1] + 1)) for k in tp_truehp.values()]
+                        count_tptrue, count_tpbasestrue, count_tpseqtrue = prediction_information(tp_truehp, bases, new)          # true positives
+                    if fn_truehp != 0:
+                        [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]                             # check positions
+                        count_fntrue, count_fnbasestrue, count_fnseqtrue = prediction_information(fn_truehp, bases, new)          # false negatives
+                           
                     # 6b. To check FP and TN - reverse hp_loc_dict and also for read_states
-                    # predicted_nonhp = hp_loc_dict(predicted_labels, pos=0, neg=1)
                     true_nonhp = hp_loc_dict(true_labels, pos=0, neg=1)
 
-                    fake_states = [check_true_hp(true_nonhp[hp], predicted_labels, hp, pos=0, neg=1) for hp in true_nonhp] 
+                    fake_states = [check_true_hp(true_nonhp[hp], predicted_labels, hp) for hp in true_nonhp] 
                     if fake_states != []:
                         neg_states.extend(fake_states)    
-                        #~ #true_positives = [st[3] for st in read_states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
                         
-                        # 6a. Check TP and FN:   
-                        fp_truehp = reduce_dict(true_nonhp, fake_states, types="P")
-                        tn_truehp = reduce_dict(true_nonhp, fake_states, types="N")
-                        if fp_truehp != None:
-                            count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(true_nonhp, bases, new)         # false positives
-                            [all_fppositions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]
-                        if tn_truehp != None:
-                            [all_tnpositions.extend(range(k[0], k[1] + 1)) for k in tn_truehp.values()]  
-                            count_tntrue, count_tnbasestrue, count_tnseqtrue = prediction_information(true_nonhp, bases, new)          # true negatives
-
+                    fp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=0)
+                    tn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=0)
+                    if fp_truehp != 0:
+                        count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(fp_truehp, bases, new)         # false positives
+                        [all_fppositions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]
+                    if tn_truehp != 0:
+                        [all_tnpositions.extend(range(k[0], k[1] + 1)) for k in tn_truehp.values()]  
+                        count_tntrue, count_tnbasestrue, count_tnseqtrue = prediction_information(tn_truehp, bases, new)          # true negatives
 
                     # TODO: ON SMALLEST SET: CHECK ALL POS FOR EACH CATEGORY. SHOULD NOT OVERLAP - ORDER ; MAKE SET
 
@@ -150,25 +150,25 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     all_count_seqtrue = all_count_seqtrue + count_seqtrue
 
                     # for TP:
-                    if tp_truehp != None: 
+                    if tp_truehp != 0: 
                         all_count_tptrue = all_count_tptrue + count_tptrue
                         all_count_tpbasestrue = all_count_tpbasestrue + count_tpbasestrue
                         all_count_tpseqtrue = all_count_tpseqtrue + count_tpseqtrue
                     
                     # for FN:
-                    if fn_truehp != None: 
+                    if fn_truehp != 0: 
                         all_count_fntrue = all_count_fntrue + count_fntrue
                         all_count_fnbasestrue = all_count_fnbasestrue + count_fnbasestrue
                         all_count_fnseqtrue = all_count_fnseqtrue + count_fnseqtrue
 
                     # for FP:
-                    if fp_truehp != None: 
+                    if fp_truehp != 0: 
                         all_count_fptrue = all_count_fptrue + count_fptrue
                         all_count_fpbasestrue = all_count_fpbasestrue + count_fpbasestrue
                         all_count_fpseqtrue = all_count_fpseqtrue + count_fpseqtrue
                     
                     # for TN:
-                    if tn_truehp != None: 
+                    if tn_truehp != 0: 
                         all_count_tntrue = all_count_tntrue + count_tntrue
                         all_count_tnbasestrue = all_count_tnbasestrue + count_tnbasestrue
                         all_count_tnseqtrue = all_count_tnseqtrue + count_tnseqtrue
@@ -179,6 +179,26 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     search_read = True
                     predicted_labels = None
                     true_labels = None
+                    
+                    #~ print("total measurements: {}".format((sum_dict(all_count_tptrue) + sum_dict(all_count_fntrue) + sum_dict(all_count_tntrue) + sum_dict(all_count_fptrue)) / read_counter))
+                    #~ print("TP ", sum_dict(all_count_tptrue), sum_dict(count_tptrue))
+                    #~ print("FN ", sum_dict(all_count_fntrue), sum_dict(count_fntrue)) 
+                    #~ print("FP ", sum_dict(all_count_fptrue), sum_dict(count_tntrue))
+                    #~ print("TN ", sum_dict(all_count_tntrue), sum_dict(count_fptrue))
+                    #~ total_read = 0
+                    #~ if tp_truehp != 0:
+                        #~ total_read += sum_dict(count_tptrue) 
+                    #~ if fp_truehp != 0:
+                        #~ total_read += sum_dict(count_fptrue) 
+                    #~ if tn_truehp != 0:
+                        #~ total_read += sum_dict(count_tntrue) 
+                    #~ if fn_truehp != 0:
+                        #~ total_read += sum_dict(count_fntrue)
+
+                    #~ print("total read ", total_read) 
+                    #~ check_len = len(set(all_fnpositions + all_tnpositions + all_fppositions + all_tppositions))
+                    #~ if check_len != 4970:
+                        #~ print("\nSomething wrong with read: {}\n".format(read_name))
             else:
                 continue
     
@@ -211,11 +231,10 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     
         # TODO: something with positions of interruptions?
         
-    true_negs = [1 for st in neg_states if st[0] == "complete"]
+    true_negs = [1 for st in neg_states if st[0] == "absent"]
     true_negs = sum(true_negs)
     
-    false_poss = [1 for st in neg_states if st[0] == "absent"]
-    false_poss = sum(false_poss)
+    false_poss = len(neg_states) - true_negs
     
     all_seq_list = dict_to_ordered_list(all_count_seq)
     all_seqtrue_list = dict_to_ordered_list(all_count_seqtrue)
@@ -231,6 +250,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     
     all_tpseqtrue = dict_to_ordered_list(all_count_tpseqtrue)
     all_count_tppositions = dict_to_ordered_list(Counter(all_tppositions))
+    
+    all_count_truepositions = dict_to_ordered_list(Counter(all_truepositions))
         
     if show_plots:
         # plots on all positives:
@@ -240,6 +261,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
         plot_prevalence(all_count_basetrue, name="True_HP_length_bases")            # 4b
         plot_list(all_seq_list, name="Predicted_HP_sequences", rotate=True)              # 5
         plot_list(all_seqtrue_list, name="True_HP_sequences", rotate=True)                            # 5
+        
+        plot_list(all_count_truepositions, name="True positions")
     
         # plots on false negatives:
         if all_fnpositions != []: 
@@ -301,7 +324,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
         
         # part on TP, FP, TN, FN
         if all_tppositions != []:
-            dest.write("\nTrue positives: {}\n".format(complete_st + incomplete_st))
+            dest.write("\nTPs: {}\tTP measurements: {}\n".format(complete_st + incomplete_st, sum_dict(all_count_tptrue)))
             dest.write("\tLength of TP in measurements\n")
             dest.write("{}\n".format(all_count_tptrue))
             dest.write("\tLength of TP in bases\n")
@@ -312,7 +335,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_tppositions))  
 
         if all_fppositions != []:
-            dest.write("\nFalse positives: {}\n".format(false_poss))
+            dest.write("\nFPs: {}\tFP measurements: {}\n".format(false_poss, sum_dict(all_count_fptrue)))
             dest.write("\tLength of FP in measurements\n")
             dest.write("{}\n".format(all_count_fptrue))
             dest.write("\tLength of FP in bases\n")
@@ -323,7 +346,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_fppositions))  
 
         if all_fnpositions:
-            dest.write("\nFalse negatives: {}\n".format(absent_st))
+            dest.write("\nFNs: {}\tFN measurements: {}\n".format(absent_st, sum_dict(all_count_fntrue)))
             dest.write("\tLength of FN in measurements\n")
             dest.write("{}\n".format(all_count_fntrue))
             dest.write("\tLength of FN in bases\n")
@@ -334,7 +357,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_fnpositions))
             
         if all_tnpositions != 0:
-            dest.write("\nTrue negatives: {}\n".format(true_negs))
+            dest.write("\nTNs: {}\tTN measurements: {}\n".format(true_negs, sum_dict(all_count_tntrue)))
             dest.write("\tLength of TN in measurements\n")
             dest.write("{}\n".format(all_count_tntrue))
             dest.write("\tLength of TN in bases\n")
@@ -360,7 +383,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
         dest.write("{}\n".format(dict_to_ordered_list(all_count_basetrue)))
         dest.write("\tTrue HP sequences\n")
         dest.write("{}\n".format(all_seqtrue_list))
-        dest.write("\tPrevalence of bases\n")
+        dest.write("\tPrevalence of true bases\n")
         dest.write("{}\n".format(prev_basestrue))
         #~ dest.write("{}\n".format())
         if show_plots:
@@ -461,10 +484,11 @@ def hp_loc_dict(predicted_labels, pos=1, neg=0):
             is_hp = True
             start = i
             end = i
-        elif is_hp:
+        if is_hp:
             if (i + 1 == len(predicted_labels)):
                 end = i
                 predicted_hp[counter] = (start, end)
+                is_hp = False
             elif predicted_labels[i] == neg: 
                 end = i - 1
                 is_hp = False
@@ -551,12 +575,12 @@ def prediction_information(hp_dict, bases, new):
 
     Returns: length in measurements (dict), length in bases (dict), composition (dict)
     """          
-    count_reduced = get_prevalence(hp_dict)
-    reduced_basedict = base_count_dict(hp_dict, bases, new)
-    count_bases = get_prevalence(reduced_basedict, types="base_lengths")
-    count_seq = get_prevalence(reduced_basedict, "bases")
+    count_measurements = get_prevalence(hp_dict)
+    basedict = base_count_dict(hp_dict, bases, new)
+    count_bases = get_prevalence(basedict, types="base_lengths")
+    count_seq = get_prevalence(basedict, "bases")
 
-    return count_reduced, count_bases, count_seq
+    return count_measurements, count_bases, count_seq
 
 
 def plot_multi_bars(x, bar1, bar2):     # not yet tested
@@ -715,7 +739,45 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
                     check_right = False    
     
     return state, (l, r), inter_list, ids
+   
+   
+def generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1):
+    """
+    Generates dict with specified conditions for predictions and truth.
+    pred:1 - true:1 > TP
+    pred:0 - true:1 > FN
+    pred:1 - true:0 > FP
+    pred:0 - true:0 > TN
     
+    Args:
+        predicted_labels -- list of ints
+        true_labels -- list of ints
+        pred_label -- int, label of predictions to find [default: 1]
+        true_label -- int, label of truth to compare to [default: 1]
+        
+    Returns: dict {id: start, end}
+    """
+    is_target = False
+    pos_dict = {}
+    counter = 0
+    
+    for i in range(len(predicted_labels)):
+        if not is_target and predicted_labels[i] == pred_label and true_labels[i] == true_label:
+                start = i
+                is_target = True
+        if is_target:
+            if ((i + 1) == len(predicted_labels)) or true_labels[i + 1] != true_label or predicted_labels[i + 1] != pred_label:
+                end = i
+                is_target = False
+                pos_dict[counter] = (start, end)
+                counter += 1
+    
+    if not pos_dict:
+        pos_dict = 0
+        
+    return pos_dict
+
+                
 
 #~ def search(predicted, start, direction):
     #~ """
@@ -795,6 +857,18 @@ def reduce_dict(hp_dict, read_states, types):
         hp_dict = None
         
     return hp_dict
+    
+
+def sum_dict(my_dict):
+    """
+    Sums the total length in a dict. 
+    
+    Args:
+        my_dict -- (Counter) dict {length : count}
+        
+    Returs: int
+    """
+    return sum([k * my_dict[k] for k in my_dict])
     
     
 def cut_from_output(sourcefile, destfile, rounds, reads=856, lines=4):
@@ -909,18 +983,18 @@ def LATER():
 
     
 if __name__ == "__main__":
-    #~ # Get correct output file:
-    #~ in_file = argv[1]
-    #~ out_file = argv[2]
-    #~ rounds = int(argv[3])
-    #~ cut_from_output(in_file, out_file, rounds)
+    # Get correct output file:
+    in_file = argv[1]
+    out_file = argv[2]
+    rounds = int(argv[3])
+    cut_from_output(in_file, out_file, rounds)
     
-    #~ # Thresholded labels:
-    #~ in_file = argv[1]
-    #~ threshold = float(argv[2])
-    #~ new_labels = thresholded_labels(in_file, threshold)
+    # Thresholded labels:
+    in_file = argv[1]
+    threshold = float(argv[2])
+    new_labels = thresholded_labels(in_file, threshold)
     
-    # Output results:
+    #~ # Output results:
     read_file = argv[1]
     main_fast5_dir = argv[2]
     main_npz_dir = argv[3]
@@ -931,4 +1005,30 @@ if __name__ == "__main__":
         #max_number = int(argv[5])
     tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
                           threshold, max_number)
+                          
+    #~ network_file = argv[1]
+    #~ threshold = float(argv[2])
+    #~ output_name = argv[3]
+    #~ true_labels = None
+    #~ predicted_labels = None
+    #~ search_read = True
+    #~ with open(network_file, "r") as source:
+        #~ for line in source:
+            #~ if search_read and not (line.startswith("#") or line.startswith("*") or line.startswith("@")):
+                #~ read_name = line.strip()
+                #~ search_read = False
+                #~ print(read_name)
+            #~ elif not search_read: 
+                #~ # get belonging predicted labels and true labels
+                #~ if predicted_labels == None:
+                    #~ predicted_scores = list_predicted(line, types="predicted_scores")
+                    #~ if predicted_scores != None:
+                        #~ predicted_labels = class_from_threshold(predicted_scores, threshold)
+                #~ if true_labels == None:    
+                    #~ true_labels = list_predicted(line, types="true_labels")
+                #~ elif predicted_labels != None and true_labels != None:
+                    #~ break
+    #~ print(len(predicted_labels), len(predicted_scores), len(true_labels))
+    #~ generate_heatmap([predicted_labels, predicted_scores, true_labels],
+                     #~ ["prediction", "scores", "truth"], output_name)
 

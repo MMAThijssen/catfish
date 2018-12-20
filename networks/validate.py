@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import datetime
 import helper_functions
+import metrics
 import numpy as np
 import os
 import psutil
@@ -169,7 +170,7 @@ def validate(network, squiggles, max_seq_length, file_path):
     
     whole_accuracy = metrics.calculate_accuracy(network.tp, network.fp, network.tn, network.fn)
     whole_precision, whole_recall = metrics.precision_recall(network.tp, network.fp, network.fn)
-    whole_f1 = metrics.f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
+    whole_f1 = metrics.f1(whole_precision, whole_recall)
     
     # averaged performance:  
     with open(file_path + "_validate.txt", "w") as dest: 

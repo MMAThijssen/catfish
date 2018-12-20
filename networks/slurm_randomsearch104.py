@@ -114,20 +114,44 @@ if __name__ == "__main__":
     print("\nMemory use at start is", m1)  
     print("Started script at {}\n".format(t1))
         
-    # 1. Create model
-    hpm_dict = generate_random_hyperparameters(network_type)
+    #~ # 1. Create model
+    #~ hpm_dict = generate_random_hyperparameters(network_type)
+    #~ model = build_model(network_type, **hpm_dict)
+    #~ model.initialize_network()
+    #~ t2 = datetime.datetime.now()  
+    #~ m2 = p.memory_full_info().pss
+    #~ print("\nMemory after building model is ", m2)
+    #~ print("Built and initialized model in {}\n".format(t2 - t1))
+
+    #~ # 1b. Restore model
+    #~ hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3.txt")
+    #~ model = build_model(network_type, **hpm_dict)
+    #~ model.restore_network("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3/checkpoints")
+    
+    # 1c. Extend RNN model
+    #~ hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_5.txt")
+    hpm_dict = retrieve_hyperparams("/lustre/scratch/WUR/BIOINF/thijs030/networks/biGRU-RNN_104.txt")
+    resnet_dict = generate_random_hyperparameters(network_type)
+    hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
+    hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
     model = build_model(network_type, **hpm_dict)
-    model.initialize_network()   
+    model.initialize_network()    
  
     # 2. Train model
     print("Loading training database..")
     db_train = helper_functions.load_db(db_dir_train)
     print("Loading validation database..")
     squiggles = helper_functions.load_squiggles(db_dir_val)
+    t2 = datetime.datetime.now()
     train(model, db_train, training_nr, squiggles, max_seq_length)
-
+    t3 = datetime.datetime.now()  
+    m3 = p.memory_full_info().pss
+    print("\nMemory after training is ", m3)
+    print("Trained model in {}\n".format(t3 - t2))
     
     #3. Assess performance on validation set
+    t3 = datetime.datetime.now() 
+
     validate(model, squiggles, max_seq_length)
     t4 = datetime.datetime.now()  
     m4 = p.memory_full_info().pss
