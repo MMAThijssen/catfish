@@ -69,6 +69,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     all_count_tnseqtrue = Counter({})
     all_tnpositions = []
     
+    n_bases = 0
+    
     search_read = True
     with open(output_file, "r") as source:
         for line in source:
@@ -86,6 +88,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     true_labels = list_predicted(line, types="true_labels")
                 elif predicted_labels != None and true_labels != None:
                     bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
+                    count_basen = [1 for w in new[:4970] if w == "n"]
+                    n_bases += sum(count_basen)
                     # save information to dict
                     predicted_hp = hp_loc_dict(predicted_labels)
                     true_hp = hp_loc_dict(true_labels)
@@ -102,7 +106,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     if read_states != []:
                         states.extend(read_states)    
                         #~ perfect_positives = [st[3] for st in read_states if (st[0] == "complete" and (st[1][0] == 0 and st[1][1] == 0))]
-                        
+                    
                     # 6a. Check TP and FN:   
                     tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
                     fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
@@ -128,15 +132,6 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
                     if tn_truehp != 0:
                         [all_tnpositions.extend(range(k[0], k[1] + 1)) for k in tn_truehp.values()]  
                         count_tntrue, count_tnbasestrue, count_tnseqtrue = prediction_information(tn_truehp, bases, new)          # true negatives
-
-                    # TODO: ON SMALLEST SET: CHECK ALL POS FOR EACH CATEGORY. SHOULD NOT OVERLAP - ORDER ; MAKE SET
-
-                    # #~ # 6b. Check misclassified ones
-                    # fake_states = [check_true_hp(hp, true_labels) for hp in predicted_hp.values()]
-                    # if fake_states != []:    
-                    #     fp_truehp, count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(true_hp, bases, new, fake_states, "N")         # false positives
-                    #     if fp_truehp != None:
-                    #         [all_fppostions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]        
                     
                     # check for the incomplete ones if they are shifted 
                     # so maybe always shifted to the left or right
@@ -204,6 +199,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     
     # 6b. Check from TP perspective:                    
     # count how many completely found back
+    print(len(states), len(neg_states))
+    print(n_bases)
     complete_st = [1 for st in states if st[0] == "complete"]
     complete_st = sum(complete_st)
     if complete_st != 0:
@@ -223,7 +220,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
     list_inters = [len(st[2]) for st in states]
     nr_inters = sum(list_inters)
     if nr_inters != 0:
-        avg_inters = nr_inters / incomplete_st                                      # if less than 0: usually no inters
+        avg_inters = nr_inters / incomplete_st                                 
         median_inters = median(list_inters)  
         length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
         avg_len_inters = sum(length_inters) / nr_inters
@@ -324,7 +321,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
         
         # part on TP, FP, TN, FN
         if all_tppositions != []:
-            dest.write("\nTPs: {}\tTP measurements: {}\n".format(complete_st + incomplete_st, sum_dict(all_count_tptrue)))
+            dest.write("\nTPs: {}\tTP measurements: {}\tTP bases: {}\n".format(complete_st + incomplete_st, sum_dict(all_count_tptrue), sum_dict(all_count_tpbasestrue)))
             dest.write("\tLength of TP in measurements\n")
             dest.write("{}\n".format(all_count_tptrue))
             dest.write("\tLength of TP in bases\n")
@@ -335,7 +332,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_tppositions))  
 
         if all_fppositions != []:
-            dest.write("\nFPs: {}\tFP measurements: {}\n".format(false_poss, sum_dict(all_count_fptrue)))
+            dest.write("\nFPs: {}\tFP measurements: {}\tFP bases: {}\n".format(false_poss, sum_dict(all_count_fptrue), sum_dict(all_count_fpbasestrue)))
             dest.write("\tLength of FP in measurements\n")
             dest.write("{}\n".format(all_count_fptrue))
             dest.write("\tLength of FP in bases\n")
@@ -346,7 +343,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_fppositions))  
 
         if all_fnpositions:
-            dest.write("\nFNs: {}\tFN measurements: {}\n".format(absent_st, sum_dict(all_count_fntrue)))
+            dest.write("\nFNs: {}\tFN measurements: {}\tFN bases: {}\n".format(absent_st, sum_dict(all_count_fntrue), sum_dict(all_count_fnbasestrue)))
             dest.write("\tLength of FN in measurements\n")
             dest.write("{}\n".format(all_count_fntrue))
             dest.write("\tLength of FN in bases\n")
@@ -357,7 +354,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, max_nr=12255):
             dest.write("{}\n".format(all_count_fnpositions))
             
         if all_tnpositions != 0:
-            dest.write("\nTNs: {}\tTN measurements: {}\n".format(true_negs, sum_dict(all_count_tntrue)))
+            dest.write("\nTNs: {}\tTN measurements: {}\tTN bases: {}\n".format(true_negs, sum_dict(all_count_tntrue), sum_dict(all_count_tnbasestrue)))
             dest.write("\tLength of TN in measurements\n")
             dest.write("{}\n".format(all_count_tntrue))
             dest.write("\tLength of TN in bases\n")
@@ -567,7 +564,6 @@ def plot_list(count_list, name="Prevalence", rotate=False):
     
 
 def prediction_information(hp_dict, bases, new):
-    # first for dict  based on true HPs: FN or TP  -- what i can do because i have all the positions. The pos ones in pred_dict but not in true_dict are FP; else TN
     """
     Args:
         read_states -- list, based on true HPs (FN, TP); assumes containing only positive examples
@@ -605,9 +601,9 @@ def get_bases(base_seq, new_seq, hp_start, hp_end):
         
     Returns: base sequence (str)
     """
-    first_base = [base_seq[hp_start]]
-    bases = [base_seq[i] for i in range(hp_start + 1, hp_end + 1) if new_seq[i] == "n"]
-    bases = first_base + bases
+    #~ first_base = [base_seq[hp_start]]
+    bases = [base_seq[i] for i in range(hp_start, hp_end + 1) if new_seq[i] == "n"]
+    #~ bases = first_base + bases
     
     return "".join(bases)
     
@@ -777,29 +773,6 @@ def generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1):
         
     return pos_dict
 
-                
-
-#~ def search(predicted, start, direction):
-    #~ """
-    #~ Helper function for check_true_hp
-    
-    #~ direction -- direction to search in: "l" or "r"
-    #~ """
-    #~ s = 0
-    #~ if direction == "l":
-        #~ sign = -
-    #~ elif direction == "r":
-        #~ sign = +
-    #~ if predicted[start] == 1:
-        #~ check_side = True
-        #~ while check_side:
-            #~ position = start + s sign 1
-            #~ if position != 0 and predicted[position] == 1:
-                #~ s sign= 1
-            #~ else:
-                #~ check_side = False
-    
-    #~ return s
     
 def count_bases(counter_tuple):
     """
@@ -984,17 +957,17 @@ def LATER():
     
 if __name__ == "__main__":
     # Get correct output file:
-    in_file = argv[1]
-    out_file = argv[2]
-    rounds = int(argv[3])
-    cut_from_output(in_file, out_file, rounds)
+    #~ in_file = argv[1]
+    #~ out_file = argv[2]
+    #~ rounds = int(argv[3])
+    #~ cut_from_output(in_file, out_file, rounds)
     
-    # Thresholded labels:
-    in_file = argv[1]
-    threshold = float(argv[2])
-    new_labels = thresholded_labels(in_file, threshold)
+    #~ # Thresholded labels:
+    #~ in_file = argv[1]
+    #~ threshold = float(argv[2])
+    #~ new_labels = thresholded_labels(in_file, threshold)
     
-    #~ # Output results:
+    # Output results:
     read_file = argv[1]
     main_fast5_dir = argv[2]
     main_npz_dir = argv[3]
