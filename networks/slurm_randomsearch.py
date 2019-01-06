@@ -128,6 +128,7 @@ if __name__ == "__main__":
 
     
     #3. Assess performance on validation set
+    t3 = datetime.datetime.now()
     validate(model, squiggles, max_seq_length)
     t4 = datetime.datetime.now()  
     m4 = p.memory_full_info().pss

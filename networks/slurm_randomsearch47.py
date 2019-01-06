@@ -129,8 +129,8 @@ if __name__ == "__main__":
     #~ model.restore_network("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3/checkpoints")
     
     # 1c. Extend RNN model
-    #~ hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_5.txt")
-    hpm_dict = retrieve_hyperparams("/lustre/scratch/WUR/BIOINF/thijs030/networks/biGRU-RNN_47.txt")
+    hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/hpcnetworks/biGRU-RNN_47.txt")
+    #~ hpm_dict = retrieve_hyperparams("/lustre/scratch/WUR/BIOINF/thijs030/networks/biGRU-RNN_47.txt")
     resnet_dict = generate_random_hyperparameters(network_type)
     hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
     hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]

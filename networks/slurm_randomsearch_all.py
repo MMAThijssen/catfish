@@ -129,8 +129,4 @@ if __name__ == "__main__":
     
     #3. Assess performance on validation set
     validate(model, squiggles, max_seq_length)
-    t4 = datetime.datetime.now()  
-    m4 = p.memory_full_info().pss
-    print("Memory use at end is ", m4)
-    print("Validated model in {}".format(t4 - t3))
 
