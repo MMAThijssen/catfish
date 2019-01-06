@@ -143,6 +143,8 @@ def validate(network, squiggles, max_seq_length):
         t2 = datetime.datetime.now()
 
         if len(data_sq) >= max_seq_length:
+            # pick random point to start validation from:
+            #~ random.randint(0, len(data_sq) - max_seq_length)                 # did not implement yet because positions do not change for process_Results! think of this first or just try some random spots but know so you can adjust this in process_results
             labels = labels_sq[: max_seq_length] 
             data = data_sq[: max_seq_length]
             
