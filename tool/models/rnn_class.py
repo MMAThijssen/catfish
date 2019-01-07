@@ -10,7 +10,7 @@ class RNN(object):
 #    def __init__(self):
     #~ def __init__(self, batch_size, layer_size, n_layers, 
                    #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
-    def __init__(self, **kwargs):
+    def __init__(self, save=True, **kwargs):
 
         #~ tf.set_random_seed(16)
         
@@ -47,10 +47,11 @@ class RNN(object):
         self.loss = self.compute_loss()
         self.accuracy = self.compute_accuracy()
         self.optimizer = self.optimizer_choice
-        self.model_path = self.model_type
-        self.save_info()
+        if save:
+            self.model_path = self.model_type
+            self.save_info()
+            self.summary = self.activate_tensorboard()
         self.saver = tf.train.Saver(max_to_keep=1000, save_relative_paths=True)
-        self.summary = self.activate_tensorboard()
         
         # saving test performance
         self.tp = 0
@@ -105,7 +106,7 @@ class RNN(object):
     @model_path.setter
     def model_path(self, model_type):
         cur_dir = "/mnt/scratch/thijs030/validatenetworks"
-        #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                
+        #~ cur_dir = os.getcwd()               
             
         check_for_dir = True
         number = 0

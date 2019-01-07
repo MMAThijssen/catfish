@@ -20,7 +20,15 @@ def main(fast5_file, hdf_path="Analyses/Basecall_1D_000", network_type="ResNetRN
         window_size -- int, size of window used to train network
     
     Returns: list of classes
-    """
+    """       
+    # load network
+    # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
+    #~ #hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3.txt")
+    hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
+                "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
+    model = build_model(network_type, **hpm_dict)
+    model.restore_network("/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3/checkpoints")
+
     # open FAST5
     if not os.path.exists(fast5_file):
         raise ValueError("path to FAST5 is not correct.")
@@ -30,14 +38,6 @@ def main(fast5_file, hdf_path="Analyses/Basecall_1D_000", network_type="ResNetRN
         print("Length of raw signal: ", len(raw))
         raw = raw[: 1000]   # VERANDEREN!
         print(len(raw))
-        
-    # load network
-    # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
-    #~ #hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3.txt")
-    hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
-                "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
-    model = build_model(network_type, **hpm_dict)
-    model.restore_network("/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3/checkpoints")
         
     # pad if needed
     if not (len(raw) / window_size).is_integer():
@@ -93,7 +93,7 @@ def normalize_raw_signal(raw, norm_method):
 
 
 # 3. Restore network
-def build_model(network_type, **kwargs):
+def build_model(network_type, saving=False, **kwargs):
     """
     Constructs neural network
     
@@ -103,10 +103,10 @@ def build_model(network_type, **kwargs):
     Returns: network object
     """
     if network_type == "RNN":
-        network = RNN(**kwargs)
+        network = RNN(save=saving, **kwargs)
     
     elif network_type == "ResNetRNN":                   
-        network = ResNetRNN(**kwargs)
+        network = ResNetRNN(save=saving, **kwargs)
                         
     return network  
 
