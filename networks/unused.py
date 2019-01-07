@@ -1,3 +1,8 @@
+## TOOL ##
+    #~ scores = np.zeros(shape=(n_batches, window_size))
+    #~ for n in range(n_batches):
+        #~ raw_in = raw[n * window_size : (n + 1) * window_size]
+
 # process_tp
                     #~ for hp in true_hp.values():
                         #~ state, estimate, inter = check_true_hp(hp, predicted_labels)  

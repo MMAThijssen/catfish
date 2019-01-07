@@ -4,9 +4,7 @@ import metrics
 import numpy as np
 import os
 import os.path
-from prepare_projector import write_metadata
 import tensorflow as tf
-from tensorflow.contrib.tensorboard.plugins import projector
 
 class RNN(object):
 #    def __init__(self):

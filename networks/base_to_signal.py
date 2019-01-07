@@ -124,8 +124,7 @@ def save_base_signal(fast5, out_file):
         dest.write("\n")
         dest.write("! {}".format("".join(new)))
         dest.write("\n")
-
-
+    
 if __name__ == "__main__":
     sgl_folder = argv[1]
     outname = argv[2]
