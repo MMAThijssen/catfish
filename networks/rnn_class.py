@@ -10,7 +10,7 @@ class RNN(object):
 #    def __init__(self):
     #~ def __init__(self, batch_size, layer_size, n_layers, 
                    #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
-    def __init__(self, **kwargs):
+    def __init__(self, save=False, **kwargs):
 
         #~ tf.set_random_seed(16)
         
@@ -47,10 +47,11 @@ class RNN(object):
         self.loss = self.compute_loss()
         self.accuracy = self.compute_accuracy()
         self.optimizer = self.optimizer_choice
-        self.model_path = self.model_type
-        self.save_info()
+        if save:
+            self.model_path = self.model_type
+            self.save_info()
+            self.summary = self.activate_tensorboard()
         self.saver = tf.train.Saver(max_to_keep=1000, save_relative_paths=True)
-        self.summary = self.activate_tensorboard()
         
         # saving test performance
         self.tp = 0
@@ -105,7 +106,7 @@ class RNN(object):
     @model_path.setter
     def model_path(self, model_type):
         cur_dir = "/mnt/scratch/thijs030/validatenetworks"
-        #~ cur_dir = "/lustre/scratch/WUR/BIOINF/thijs030/networks"                
+        #~ cur_dir = os.getcwd()               
             
         check_for_dir = True
         number = 0
@@ -193,14 +194,14 @@ class RNN(object):
         print("\nNot yet initialized: ", self.sess.run(tf.report_uninitialized_variables()), "\n")
 
 
-    def restore_network(self, path=None, ckpnt="latest", meta=None):
-            self.sess.run(tf.global_variables_initializer())
-            if ckpnt == "latest":
-                self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
-            else:
-                self.saver.restore(self.sess, path + "/" + ckpnt)
+    def restore_network(self, path, ckpnt="latest", meta=None):
+        self.sess.run(tf.global_variables_initializer())
+        if ckpnt == "latest":
+            self.saver.restore(self.sess, tf.train.latest_checkpoint(path))
+        else:
+            self.saver.restore(self.sess, path + "/" + ckpnt)
 
-            print("Model {} restored\n".format(path.split("/")[-2]))
+        print("Model {} restored\n".format(path.split("/")[-2]))
 
     
     def train_network(self, train_x, train_y, step):        
@@ -213,6 +214,15 @@ class RNN(object):
         summary = self.sess.run(self.summary, feed_dict=feed_dict)
 
         self.writer.add_summary(summary, step)  
+    
+    
+    def infer(self, input_x):
+        feed_dict_pred = {self.x: input_x, self.p_dropout: self.keep_prob_test}
+        
+        confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
+        confidences = np.reshape(confidences, (-1)).astype(float) 
+        
+        return(confidences)        
         
 
     def test_network(self, test_x, test_y, read_nr, read_name, file_path):
@@ -237,19 +247,19 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        with open(file_path + "_output.txt", "a+") as dest:
-            dest.write(read_name)
-            dest.write("\n")
-            dest.write("* {}".format(list(test_labels)))
-            dest.write("\n")
-            dest.write("# {}".format(list(pred_vals)))
-            dest.write("\n")
-            dest.write("@ {}".format(list(confidences)))
-            dest.write("\n")
+        #~ with open(file_path + "_outputfinal.txt", "a+") as dest:
+            #~ dest.write(read_name)
+            #~ dest.write("\n")
+            #~ dest.write("* {}".format(list(test_labels)))
+            #~ dest.write("\n")
+            #~ dest.write("# {}".format(list(pred_vals)))
+            #~ dest.write("\n")
+            #~ dest.write("@ {}".format(list(confidences)))
+            #~ dest.write("\n")
                     
-        if read_nr % self.saving_step == 0:
-            metrics.generate_heatmap([pred_vals, confidences, test_labels], 
-                                     ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
+        #~ if read_nr % self.saving_step == 0:
+            #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
+                                     #~ ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
         return test_acc, test_loss
 
     

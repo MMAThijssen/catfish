@@ -49,3 +49,5 @@ Maybe include test to check if installation went well
 add network checkpoint to folder data
 
 maybe remove dependence of metrics or take only those parts that you need
+
+ask as input: path_to_network - or get abs path yourself. > create dirs like that in tool

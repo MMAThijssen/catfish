@@ -77,9 +77,9 @@ def retrieve_hyperparams(model_file, split_on=": "):
                 hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
             elif line.startswith("learning_rate"):
                 hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
-            elif line.startswith("layer_size"):
+            elif line.startswith("layer_size:"):
                 hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
-            elif line.startswith("n_layers"):
+            elif line.startswith("n_layers:"):
                 hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
             elif line.startswith("keep_prob"):
                 hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
@@ -112,19 +112,24 @@ if __name__ == "__main__":
     print("Started script at {}\n".format(t1))
     
     if network_type == "RNN":
-        number_list = list(range(10, 21))
-        number_list.extend([22, 24, 25])
-        number_list.extend(list(range(28, 34)))
-        number_list.extend(list(range(35, 41)))
-        number_list.extend([47, 48, 49])
-        print(number_list)
-    
-        main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
-        main_dir_hp = "/mnt/scratch/thijs030/hpc_hyperparams/"
+        #~ number_list = list(range(12, 21))
+        #~ number_list.extend([22, 24, 25])
+        #~ number_list.extend(list(range(28, 34)))
+        #~ number_list.extend(list(range(35, 41)))
+        #~ number_list = [42, 43]
+        #~ number_list.extend([47, 48, 49])
+        #~ print(number_list)
+        
+        #~ main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
+        #~ main_dir_hp = "/mnt/scratch/thijs030/hpc_hyperparams/"
+        
+        number_list = [104]
+        main_dir = main_dir_hp = "/mnt/nexenta/thijs030/networks/"
     
     elif network_type == "ResNetRNN":
-        number_list = list(range(10, 32))
-        number_list.extend(list(range(5, 10)))
+        #~ number_list = list(range(10, 32))
+        number_list = [3]
+        #~ number_list.extend(list(range(5, 10)))
         print(number_list)
         
         main_dir = "/mnt/scratch/thijs030/actualnetworks/"
@@ -145,6 +150,8 @@ if __name__ == "__main__":
         hpm_dict = retrieve_hyperparams("{}{}.txt".format(main_dir_hp, trained_network))
         model = build_model(network_type, **hpm_dict)
         try:
+            #~ #for 104:
+            #~ model.restore_network("{}{}/checkpoints".format(main_dir, trained_network))
             model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
             t2 = datetime.datetime.now()  
             m2 = p.memory_full_info().pss
@@ -163,6 +170,3 @@ if __name__ == "__main__":
             print("No 10000th checkpoint for {}".format(trained_network))
             tf.reset_default_graph()
             continue
-        
-
-

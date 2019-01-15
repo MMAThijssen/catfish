@@ -10,7 +10,7 @@ import h5py
 import numpy as np
 import os
 import statistics
-import sys
+from sys import argv
 
 def Process(fast5_path, runname):
     # Collate the attribute list
@@ -50,12 +50,22 @@ def compute_on_length(fast5_file, stat):
         hdf_events_path = '{hdf_path}BaseCalled_template/Events'.format(hdf_path=hdf_path)
         event_lengths = hdf[hdf_events_path]["length"]
         if stat == "median":
-            return statistics.median(event_lengths)
+            avg = sum(event_lengths) / len(event_lengths)
+            return avg, statistics.median(event_lengths), min(event_lengths), max(event_lengths)
         elif stat == "min":
-            return min(event_lengths)
+            return min(event_lengths), max(event_lengths)
         else:
             raise ValueError("Could not compute. Choose: 'median' or 'min'.")
-            
+        
+def write_to_file(output_name, averages, minimals, maximals, medians):
+    with open(output_name, "a+") as dest:
+        dest.write("Median of averages: {}\n".format(statistics.median(averages)))
+        dest.write("Average of averages: {}\n".format(sum(averages) / len(averages)))
+        dest.write("Minimal length of event: {}\n".format(min(minimals)))
+        dest.write("Maximal length of event: {}\n".format(max(maximals)))
+        dest.write("Median of medians: {}\n".format(statistics.median(medians)))
+        dest.write("Average of medians: {}\n".format(sum(medians) / len(medians)))
+        dest.write("------------------------------------------------\n")
 
 if __name__ == '__main__':
     #~ if len(sys.argv) < 3:
@@ -67,22 +77,36 @@ if __name__ == '__main__':
     #~ runname, fast5_path = sys.argv[1:]
     #~ Process(fast5_path, runname)
 
-    main_dir = argv[1]              
+    main_dir = argv[1]   
+    file_out = argv[2]           
     folder_list = os.listdir(main_dir)
-    n_folders = 0
+    averages = []
     medians = []
     minimals = []
+    maximals = []
     for folder in folder_list:
-        path_to_folder = "{}/{}".format(folder_all, folder)
+        path_to_folder = "{}/{}".format(main_dir, folder)
         print("Started on folder {}".format(folder))
         for f in os.listdir(path_to_folder):
             f = path_to_folder + "/" + f
-            n_folders += 1
-            median = compute_on_length(f, "median")
+            avg, median, minimal, maximal = compute_on_length(f, "median")
+            averages.append(avg)
             medians.append(median)
-            minimal = compute_on_length(f, "min")
-            minimals.append(minimal))
-            
+            #~ minimal = compute_on_length(f, "min")
+            minimals.append(minimal)
+            maximals.append(maximal)
+        write_to_file(file_out, averages, minimals, maximals, medians)
+        print("Median of averages: ", statistics.median(averages))
+        print("Average of averages: ", sum(averages) / len(averages))
+        print("Minimal length of event: ", min(minimals))
+        print("Maximal length of event: ", max(maximals))
+        print("Median of medians: ", statistics.median(medians))
+        print("Average of medians: ", sum(medians) / len(medians))
+    
+    print("TAKEN OVER ALL FOLDERS:")        # will be the same as last print statement before
+    print("Median of averages: ", statistics.median(averages))
+    print("Average of averages: ", sum(averages) / len(averages))
     print("Minimal length of event: ", min(minimals))
+    print("Maximal length of event: ", max(maximals))
     print("Median of medians: ", statistics.median(medians))
-    print("Average of medians: ", sum(medians) / n_folders)
+    print("Average of medians: ", sum(medians) / len(medians))

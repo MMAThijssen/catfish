@@ -2,33 +2,64 @@
 
 import h5py
 import numpy as np
-import os.path
+import os
 from models.resnet_class import ResNetRNN
 from models.rnn_class import RNN
 from sys import argv
 
 ### FOR INFERING:       # start with input as a single file > work towards directory
 
-def main(fast5_file, hdf_path="Analyses/Basecall_1D_000", network_type="ResNetRNN", window_size=35):
+def infer(fast5_dir, output_file, threshold=0.5, network_path="/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3", network_type="ResNetRNN"):
+    """
+    Infers classes for every raw signal in directory.
+    
+    Args:
+        fast5_dir -- str, path to directory containing FAST5 files
+        output_file -- str, name of output file to write predictions to
+        threshold -- float, threshold for assigning classes
+        network_path -- str, path to network to be loaded
+        network_type -- str, type of network to be loaded
+        
+    Returns: None
+    """
+    # load model
+    model = load_network(network_type, network_path)
+    
+    # infer for every file in dir
+    abs_fast5dir = os.path.abspath(fast5_dir)
+    input_files = os.listdir(abs_fast5dir)
+    with open(output_file, "w") as dest:
+        #~ scores_all = [infer_class_from_signal("{}/{}".format(abs_fast5dir, fast5_file), model) for fast5_file in input_files]
+        #~ print(len(scores_all))
+        #~ print(len(input_files) * 36)
+        #~ [dest.write("{}, ".format(s)) for scores in scores_all for s in scores]
+        #~ dest.write("\n")
+        for fast5_file in input_files:
+            scores = infer_class_from_signal("{}/{}".format(abs_fast5dir, fast5_file), model)
+            #~ classes = class_from_threshold(scores, threshold)
+            dest.write("{}\n".format(fast5_file))
+            [dest.write("{}, ".format(s)) for s in scores]
+            dest.write("\n")
+    
+    print("Finished inference.")
+
+    #~ scores = np.zeros(shape=(n_batches, window_size))
+    #~ for n in range(n_batches):
+        #~ raw_in = raw[n * window_size : (n + 1) * window_size]
+
+def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_000", window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
     
     Args:
-        fast5_file -- str, path to file
+        fast5_file -- str, path to FAST5 file
+        model -- RNN object, network model
         hdf_path -- str, path in FAST5 leading to signal
         network_type -- str, type of network [default: ResNetRNN]
         window_size -- int, size of window used to train network
     
     Returns: list of classes
-    """       
-    # load network
-    # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
-    #~ #hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3.txt")
-    hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
-                "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
-    model = build_model(network_type, **hpm_dict)
-    model.restore_network("/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3/checkpoints")
-
+    """           
     # open FAST5
     if not os.path.exists(fast5_file):
         raise ValueError("path to FAST5 is not correct.")
@@ -36,14 +67,13 @@ def main(fast5_file, hdf_path="Analyses/Basecall_1D_000", network_type="ResNetRN
         # process signal
         raw = process_signal(fast5)
         print("Length of raw signal: ", len(raw))
-        raw = raw[: 1000]   # VERANDEREN!
+        raw = raw[: 36]   # VERANDEREN!
         print(len(raw))
         
     # pad if needed
     if not (len(raw) / window_size).is_integer():
         # pad
         padding_size = window_size - (len(raw) - (len(raw) // window_size * window_size))
-        print(padding_size)
         padding = np.array(padding_size * [0])
         raw = np.hstack((raw, padding))
     
@@ -57,9 +87,51 @@ def main(fast5_file, hdf_path="Analyses/Basecall_1D_000", network_type="ResNetRN
     scores = scores[: -padding_size]
     
     return scores
-    
 
-#2. Extract raw signal from file
+# TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
+# 1. Load network
+def load_network(network_type, path_to_network):
+    #~ hpm_dict = retrieve_hyperparams(path_to_network + ".txt")                # CHANGE later!
+    hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
+                "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
+    model = build_model(network_type, **hpm_dict)
+    model.restore_network(path_to_network + "/checkpoints")
+
+    return model
+    
+def retrieve_hyperparams(model_file, split_on=": "):
+    """
+    Retrieve hyperparameters from model file.
+    
+    Args:
+        model_file -- str, path to file on model created by train_validate.build_model
+        split_on -- str, combination of characters to split on [default: ": "]
+    
+    Returns: dict of hyperparameters
+    """
+    hpm_dict = {}
+    with open(model_file, "r") as source:
+        for line in source:
+            if line.startswith("batch_size"):
+                hpm_dict["batch_size"] = int(line.strip().split(split_on)[1])
+            if line.startswith("optimizer_choice"):
+                hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
+            if line.startswith("learning_rate"):
+                hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
+            if line.startswith("layer_size"):
+                hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
+            if line.startswith("n_layers"):
+                hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
+            if line.startswith("keep_prob"):
+                hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
+            if line.startswith("layer_size_res"):
+                hpm_dict["layer_size_res"] = int(line.strip().split(split_on)[1])
+            if line.startswith("n_layers_res"):   
+                hpm_dict["n_layers_res"] = int(line.strip().split(split_on)[1])
+                
+    return hpm_dict
+
+# 2. Extract raw signal from file
 def process_signal(fast5_file, normalization="median"):
     """
     Process raw signal by trimming start and normalizing the signal.
@@ -128,3 +200,16 @@ def reshape_input(data, window, n_inputs):
         print(len(data))
         print(len(data[0]))
     return data 
+
+
+def class_from_threshold(predicted_scores, threshold):
+    """
+    Assigns classes on input based on given threshold.
+    
+    Args:
+        predicted_scores -- list of floats, scores outputted by neural network
+        threshold -- float, threshold
+    
+    Returns: list of class labels (ints)
+    """
+    return [1 if y >= threshold else 0 for y in predicted_scores]

@@ -29,13 +29,13 @@ def read_quality(reads, ref_fasta, output):
         'insertions': 0,
         'mapping_quality': []}
         
-    aligner = mp.Aligner(ref_fasta)
+    aligner = mp.Aligner(ref_fasta)                                             # constructor that indexes reference
 
-    for name, seq, qual in mp.fastx_read(reads):
+    for name, seq, qual in mp.fastx_read(reads):                                # generator that open FAST5 and yiels name, seq, qual
         nb_hits = 0
-        for hit in aligner.map(seq):
-            if hit.is_primary:
-                matches_mismatches = sum([c[0] for c in hit.cigar if c[1] == 0])
+        for hit in aligner.map(seq):                                            # aligns seq against index (generates Alignment object that describe alignment)
+            if hit.is_primary:                                                  # usually best and first              
+                matches_mismatches = sum([c[0] for c in hit.cigar if c[1] == 0])    # from CIGAR
                 result_dict['matches'] += hit.mlen
                 result_dict['mismatches'] += matches_mismatches - hit.mlen
                 result_dict['insertions'] += sum([c[0] for c in hit.cigar if c[1] == 1])

@@ -6,6 +6,7 @@ Retrieves information on homopolymers from FASTA or txt file.
 @author: Marijke Thijssen
 """
 
+from statistics import median
 from sys import argv
 
 
@@ -124,7 +125,7 @@ def len_hp(hp_dict):
     
     return sorted(set(size_list))
     
-
+    
 def get_hp_count(hp_loc_dict):
     """
     Orders homopolymers on prevalence. 
@@ -248,7 +249,7 @@ if __name__ == "__main__":
             extra = False
         else:
             extra = True
-
     main(fasta_file, extra)
+    
 
 
