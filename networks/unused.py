@@ -1,3 +1,69 @@
+    bases, new = get_base_new_signal(read)
+    bases = bases[start: start + length]
+    new = new[start: start + length]
+    print(len(bases))
+    print(len(new))
+    
+    # 1. Do majority voting per event
+    for n in range(len(new)):
+        if new[n] == "n":
+            first_n = n
+        elif new[n] == "n":
+            second_n = n
+
+                 #~ if not found_start and summed_len <= start:
+                    #~ start_len = summed_len
+                #~ summed_len += event_lengths[n]                   
+                #~ if not found_start and summed_len >= start:
+                    #~ found_start = True
+                    #~ start_event = n                
+                #~ if found_start and summed_len >= (start + length):
+                    #~ final_event = n 
+                    #~ break    
+            
+            #~ event_lengths = event_lengths[start_event: final_event + 1]
+            #~ event_bases = event_bases[start_event: final_event + 1]
+# correctiondef get_bases_events(fast5, start=30000, length=4970, use_tombo=True):
+    """
+    Returns events and bases measured in certain stretch.
+    
+    Args:
+        fast5 - str, path to FAST5
+        start -- int, start point in read
+        length -- int, length to correct output / length of read from start
+        use_tombo -- bool, use of corrected or uncorrected reads [default: True]
+                
+    Returns: bases, events
+    """
+    with h5py.File(fast5, "r") as hdf:
+        hdf_path = "Analyses/RawGenomeCorrected_000/"
+        hdf_events_path = '{}BaseCalled_template/Events'.format(hdf_path)
+        # get list of event lengths:
+        event_lengths = hdf[hdf_events_path]["length"]                         # indicates number of measurements belong to base/event
+        if use_tombo:
+            # get list of base sequence:
+            event_bases = hdf[hdf_events_path]["base"].astype(str)
+            
+            # start at correct point:
+            summed_len = 0
+            found_start = False
+            for n in range(len(event_lengths)):
+                summed_len += event_lengths[n]
+                if not found_start and summed_len >= start:
+                    found_start = True
+                    start_event = n
+                if found_start and summed_len >= (start + length):
+                    final_event = n 
+                    break    
+            
+            event_lengths = event_lengths[start_event: final_event + 1]
+            event_bases = event_bases[start_event: final_event + 1]
+            
+        else:
+            raise Exception("Not yet implemented for uncorrected reads")
+    
+    return event_bases, event_lengths
+
 ## TOOL ##
     #~ scores = np.zeros(shape=(n_batches, window_size))
     #~ for n in range(n_batches):

@@ -11,7 +11,8 @@ from sys import argv
 
 def infer(fast5_dir, output_file, threshold=0.5, network_path="/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3", network_type="ResNetRNN"):
     """
-    Infers classes for every raw signal in directory.
+    Infers scores for every raw signal in directory.
+    Can be adjusted easily to infer classes for given threshold.
     
     Args:
         fast5_dir -- str, path to directory containing FAST5 files
