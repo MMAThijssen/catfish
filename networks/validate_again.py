@@ -112,24 +112,25 @@ if __name__ == "__main__":
     print("Started script at {}\n".format(t1))
     
     if network_type == "RNN":
-        #~ number_list = list(range(12, 21))
-        #~ number_list.extend([22, 24, 25])
-        #~ number_list.extend(list(range(28, 34)))
-        #~ number_list.extend(list(range(35, 41)))
-        #~ number_list = [42, 43]
-        #~ number_list.extend([47, 48, 49])
-        #~ print(number_list)
+        number_list = list(range(12, 21))
+        number_list.extend([22, 24, 25])
+        number_list.extend(list(range(28, 34)))
+        number_list.extend(list(range(35, 41)))
+        number_list.extend([42, 43])
+        number_list.extend([47, 48, 49])
+        print(number_list)
         
-        #~ main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
-        #~ main_dir_hp = "/mnt/scratch/thijs030/hpc_hyperparams/"
+        main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
+        main_dir_hp = "/mnt/scratch/thijs030/hpc_hyperparams/"
         
-        number_list = [104]
-        main_dir = main_dir_hp = "/mnt/nexenta/thijs030/networks/"
+        #~ number_list = [104]
+        #~ main_dir = main_dir_hp = "/mnt/nexenta/thijs030/networks/"
     
     elif network_type == "ResNetRNN":
-        #~ number_list = list(range(10, 32))
-        number_list = [3]
-        #~ number_list.extend(list(range(5, 10)))
+        #~ number_list = [14]
+        number_list = list(range(10, 32))
+        number_list.extend([3])
+        number_list.extend(list(range(5, 10)))
         print(number_list)
         
         main_dir = "/mnt/scratch/thijs030/actualnetworks/"
@@ -149,24 +150,24 @@ if __name__ == "__main__":
         # 1. Restore model
         hpm_dict = retrieve_hyperparams("{}{}.txt".format(main_dir_hp, trained_network))
         model = build_model(network_type, **hpm_dict)
-        try:
+        #~ try:
             #~ #for 104:
             #~ model.restore_network("{}{}/checkpoints".format(main_dir, trained_network))
-            model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
-            t2 = datetime.datetime.now()  
-            m2 = p.memory_full_info().pss
-            print("\nMemory after building model is ", m2)
-            print("Built and initialized model in {}\n".format(t2 - t1))
+        model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
+        t2 = datetime.datetime.now()  
+        m2 = p.memory_full_info().pss
+        print("\nMemory after building model is ", m2)
+        print("Built and initialized model in {}\n".format(t2 - t1))
 
-            #3. Assess performance on validation set
-            t3 = datetime.datetime.now()
-            validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network))
-            t4 = datetime.datetime.now()  
-            m4 = p.memory_full_info().pss
-            print("Memory use at end is ", m4)
-            print("Validated model in {}".format(t4 - t3))
-            tf.reset_default_graph()
-        except:
-            print("No 10000th checkpoint for {}".format(trained_network))
-            tf.reset_default_graph()
-            continue
+        #3. Assess performance on validation set
+        t3 = datetime.datetime.now()
+        validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network))
+        t4 = datetime.datetime.now()  
+        m4 = p.memory_full_info().pss
+        print("Memory use at end is ", m4)
+        print("Validated model in {}".format(t4 - t3))
+        tf.reset_default_graph()
+        #~ except:
+            #~ print("No 10000th checkpoint for {}".format(trained_network))
+            #~ tf.reset_default_graph()
+            #~ continue

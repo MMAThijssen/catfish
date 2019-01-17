@@ -227,7 +227,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
     if nr_inters != 0:
         avg_inters = nr_inters / incomplete_st                                 
         median_inters = median(list_inters)  
-        length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]
+        length_inters = [(st[2][0][1] - st[2][0][0] + 1) for st in states if st[2] != []]       # only take interruptions into account
         avg_len_inters = sum(length_inters) / nr_inters
         median_len_inters = median(length_inters)
     

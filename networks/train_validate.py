@@ -87,7 +87,7 @@ def train(network, db, training_nr, squiggles, max_seq_length):
             step += 1                                                           # step is per batch
             network.train_network(set_x, set_y, step)
             
-            if step % 10000 == 0:   
+            if step % 10000 == 0:                                               # network.saving_step
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 dest.write("Saved checkpoint at step {}\n".format(step))
                 print("Saved checkpoint at step {}\n".format(step))

@@ -73,19 +73,19 @@ def retrieve_hyperparams(model_file, split_on=": "):
         for line in source:
             if line.startswith("batch_size"):
                 hpm_dict["batch_size"] = int(line.strip().split(split_on)[1])
-            if line.startswith("optimizer_choice"):
+            elif line.startswith("optimizer_choice"):
                 hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
-            if line.startswith("learning_rate"):
+            elif line.startswith("learning_rate"):
                 hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
-            if line.startswith("layer_size"):
+            elif line.startswith("layer_size:"):
                 hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
-            if line.startswith("n_layers"):
+            elif line.startswith("n_layers:"):
                 hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
-            if line.startswith("keep_prob"):
+            elif line.startswith("keep_prob"):
                 hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
-            if line.startswith("layer_size_res"):
+            elif line.startswith("layer_size_res"):
                 hpm_dict["layer_size_res"] = int(line.strip().split(split_on)[1])
-            if line.startswith("n_layers_res"):   
+            elif line.startswith("n_layers_res"):   
                 hpm_dict["n_layers_res"] = int(line.strip().split(split_on)[1])
                 
     return hpm_dict
@@ -123,19 +123,18 @@ if __name__ == "__main__":
     #~ print("\nMemory after building model is ", m2)
     #~ print("Built and initialized model in {}\n".format(t2 - t1))
 
-    #~ # 1b. Restore model
-    #~ hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3.txt")
-    #~ model = build_model(network_type, **hpm_dict)
-    #~ model.restore_network("/mnt/scratch/thijs030/validatenetworks/biGRU-RNN_3/checkpoints")
+    # 1b. Restore model
+    hpm_dict = retrieve_hyperparams("/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_14.txt")
+    model = build_model(network_type, save=True, **hpm_dict)
+    model.restore_network("/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_14/checkpoints")
     
     # 1c. Extend RNN model
-    hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_104.txt")
-    #~ hpm_dict = retrieve_hyperparams("/lustre/scratch/WUR/BIOINF/thijs030/networks/biGRU-RNN_104.txt")
-    resnet_dict = generate_random_hyperparameters(network_type)
-    hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
-    hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
-    model = build_model(network_type, **hpm_dict)
-    model.initialize_network()    
+    #~ hpm_dict = retrieve_hyperparams("/mnt/nexenta/thijs030/networks/biGRU-RNN_104.txt")
+    #~ resnet_dict = generate_random_hyperparameters(network_type)
+    #~ hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
+    #~ hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
+    #~ model = build_model(network_type, **hpm_dict)
+    #~ model.initialize_network()    
  
     # 2. Train model
     print("Loading training database..")

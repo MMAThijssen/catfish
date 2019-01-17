@@ -105,7 +105,7 @@ class RNN(object):
     
     @model_path.setter
     def model_path(self, model_type):
-        cur_dir = "/mnt/scratch/thijs030/validatenetworks"
+        cur_dir = "/mnt/scratch/thijs030/actualnetworks"
         #~ cur_dir = os.getcwd()               
             
         check_for_dir = True
@@ -185,7 +185,7 @@ class RNN(object):
         stacked_outputs = tf.layers.dense(stacked_rnn_output, self.n_outputs, name="final_fully_connected")
         
         final_output = tf.reshape(stacked_outputs, [-1, self.window, self.n_outputs]) 
-            
+        
         return final_output
         
     
@@ -228,10 +228,9 @@ class RNN(object):
     def test_network(self, test_x, test_y, read_nr, read_name, file_path):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
-        
-        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
+        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                
         pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
-        
+
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
         
@@ -247,7 +246,7 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        #~ with open(file_path + "_outputfinal.txt", "a+") as dest:
+        #~ with open(file_path + "_outputall.txt", "a+") as dest:
             #~ dest.write(read_name)
             #~ dest.write("\n")
             #~ dest.write("* {}".format(list(test_labels)))

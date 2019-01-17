@@ -9,7 +9,7 @@ from sys import argv
 
 ### FOR INFERING:       # start with input as a single file > work towards directory
 
-def infer(fast5_dir, output_file, threshold=0.5, network_path="/mnt/scratch/thijs030/validatenetworks/ResNet-RNN_3", network_type="ResNetRNN"):
+def infer(fast5_dir, output_file, threshold=0.5, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_14", network_type="ResNetRNN"):
     """
     Infers scores for every raw signal in directory.
     Can be adjusted easily to infer classes for given threshold.
@@ -68,7 +68,7 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
         # process signal
         raw = process_signal(fast5)
         print("Length of raw signal: ", len(raw))
-        raw = raw[: 36]   # VERANDEREN!
+        #~ raw = raw[: 36]                                                         # VERANDEREN!                                              
         print(len(raw))
         
     # pad if needed
@@ -92,9 +92,9 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
 # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
 # 1. Load network
 def load_network(network_type, path_to_network):
-    #~ hpm_dict = retrieve_hyperparams(path_to_network + ".txt")                # CHANGE later!
-    hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
-                "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
+    hpm_dict = retrieve_hyperparams(path_to_network + ".txt")                # CHANGE later!
+    #~ hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
+                #~ "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
     model = build_model(network_type, **hpm_dict)
     model.restore_network(path_to_network + "/checkpoints")
 
@@ -115,19 +115,19 @@ def retrieve_hyperparams(model_file, split_on=": "):
         for line in source:
             if line.startswith("batch_size"):
                 hpm_dict["batch_size"] = int(line.strip().split(split_on)[1])
-            if line.startswith("optimizer_choice"):
+            elif line.startswith("optimizer_choice"):
                 hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
-            if line.startswith("learning_rate"):
+            elif line.startswith("learning_rate"):
                 hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
-            if line.startswith("layer_size"):
+            elif line.startswith("layer_size:"):
                 hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
-            if line.startswith("n_layers"):
+            elif line.startswith("n_layers:"):
                 hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
-            if line.startswith("keep_prob"):
+            elif line.startswith("keep_prob"):
                 hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
-            if line.startswith("layer_size_res"):
+            elif line.startswith("layer_size_res"):
                 hpm_dict["layer_size_res"] = int(line.strip().split(split_on)[1])
-            if line.startswith("n_layers_res"):   
+            elif line.startswith("n_layers_res"):   
                 hpm_dict["n_layers_res"] = int(line.strip().split(split_on)[1])
                 
     return hpm_dict

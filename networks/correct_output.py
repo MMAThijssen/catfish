@@ -4,6 +4,10 @@ from base_to_signal import get_base_new_signal
 import h5py
 from sys import argv
 
+# IDEAS
+# * convert all consecutive measurements that are HP and less than 35 in length
+# * bridge gaps that are less than certain length
+
 # 1. Implement majority voting to work back to corrected read and improve further
 def correct_events(read, scores, start=30000, length=4970, use_tombo=True):
     """

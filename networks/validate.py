@@ -137,30 +137,34 @@ def validate(network, squiggles, max_seq_length, file_path):
 
     # per squiggle:
     #~ max_number = 1000
-    random.shuffle(squiggles)
-    with open(file_path + "_testresults.txt", "w") as dest: 
+    #~ random.shuffle(squiggles)
+    with open(file_path + "_validateall.txt", "w") as dest: 
         for squig in squiggles:
             t1 = datetime.datetime.now()
             data_sq, labels_sq = reader.load_npz(squig)
             t2 = datetime.datetime.now()
+             
+            #~ # OR specify start val:          
+            #~ start_val = 30000
+            #~ if len(data_sq) >= start_val + max_seq_length:           
 
+            #~ # get random start val:
             if len(data_sq) >= max_seq_length:
                 start_val = random.randint(0, len(data_sq) - max_seq_length)
-                dest.write("\nStart validation at point: {}".format(start_val))
-            
+                #~ dest.write("\nStart validation at point: {}".format(start_val)) 
                 labels = labels_sq[start_val: start_val + max_seq_length] 
                 data = data_sq[start_val: start_val + max_seq_length]
-
+                    
                 read_name = os.path.basename(squig).split(".npz")[0]
                 valid_reads += 1
-        
+                
                 set_x = reshape_input(data, network.window, network.n_inputs)
                 set_y = reshape_input(labels, network.window, network.n_outputs)
                 
                 t3 = datetime.datetime.now()
                 sgl_acc, sgl_loss  = network.test_network(set_x, set_y, valid_reads, read_name, file_path)
                 t4 = datetime.datetime.now()
-                   
+                
                 accuracy += sgl_acc
                 loss += sgl_loss
             
