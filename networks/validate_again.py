@@ -127,12 +127,13 @@ if __name__ == "__main__":
         #~ main_dir = main_dir_hp = "/mnt/nexenta/thijs030/networks/"
     
     elif network_type == "ResNetRNN":
-        remove_list = [14, 3, 16, 30, 15, 19, 21, 12]
-        number_list = list(range(10, 32))
-        number_list.extend([3])
-        number_list.extend(list(range(5, 10)))
-        for r in remove_list:
-            number_list.remove(r)
+        number_list = [14]
+        #~ remove_list = [14, 3, 16, 30, 15, 19, 21, 12]
+        #~ number_list = list(range(10, 32))
+        #~ number_list.extend([3])
+        #~ number_list.extend(list(range(5, 10)))
+        #~ for r in remove_list:
+            #~ number_list.remove(r)
         
         print(number_list)
         

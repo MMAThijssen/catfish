@@ -225,7 +225,7 @@ class RNN(object):
         return(confidences)        
         
 
-    def test_network(self, test_x, test_y, read_nr, read_name, file_path):
+    def test_network(self, test_x, test_y, read_nr, read_name, file_path, threshold=0.5):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
         #~ pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                
@@ -234,8 +234,8 @@ class RNN(object):
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
         
-        threshold = 0.8
         pred_vals = [1 if c >= threshold else 0 for c in confidences]
+        pred_vals = correct_short(pred_vals)
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -249,15 +249,15 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        #~ with open(file_path + "_threshold8.txt", "a+") as dest:
-            #~ dest.write(read_name)
-            #~ dest.write("\n")
-            #~ dest.write("* {}".format(list(test_labels)))
-            #~ dest.write("\n")
-            #~ dest.write("# {}".format(list(pred_vals)))
-            #~ dest.write("\n")
-            #~ dest.write("@ {}".format(list(confidences)))
-            #~ dest.write("\n")
+        with open(file_path + "_corrected.txt", "a+") as dest:
+            dest.write(read_name)
+            dest.write("\n")
+            dest.write("* {}".format(list(test_labels)))
+            dest.write("\n")
+            dest.write("# {}".format(list(pred_vals)))
+            dest.write("\n")
+            dest.write("@ {}".format(list(confidences)))
+            dest.write("\n")
                     
         #~ if read_nr % self.saving_step == 0:
             #~ metrics.generate_heatmap([pred_vals, confidences, test_labels], 
@@ -272,3 +272,29 @@ class RNN(object):
                       self.batch_size, self.optimizer_choice, self.learning_rate))
             dest.write("layer_size: {}\nn_layers: {}\nkeep_prob: {}\n".format(
                       self.layer_size, self.n_layers, self.keep_prob))
+
+# from Carlos:                      
+def correct_short(predictions, threshold=15):
+    """
+    Corrects class prediction to negative label if positive stretch is shorter than threshold.
+    
+    Args:
+        predictions -- list of int, predicted class labels
+        threshold -- int, threshold to correct stretch [default: 15]
+    
+    Returns: corrected predictions
+    """
+    compressed_predictions = [[predictions[0],0]]
+
+    for p in predictions:
+        if p == compressed_predictions[-1][0]:
+            compressed_predictions[-1][1] += 1
+        else:
+            compressed_predictions.append([p, 1])
+
+    for pred_ci, pred_c, in enumerate(compressed_predictions):
+        if pred_c[0] != 0 and pred_c[1] < threshold:
+
+            compressed_predictions[pred_ci][0] = 0
+            
+    return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])

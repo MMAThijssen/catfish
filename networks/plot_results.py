@@ -31,7 +31,7 @@ def scatterplot(x, y, clr, df, xlabel, ylabel, plot_name):
     use_colors = {unique[u]: colors[u] for u in range(len(unique))}
     clr_column = [use_colors[i] for i in df[clr]]
     plt.scatter(df[x], df[y], c=clr_column, alpha=0.7)
-    plt.plot([85.00, 85.00], [-0.01, 0.26], color="grey", linewidth=1, alpha=0.7)
+    #~ plt.plot([85.00, 85.00], [-0.01, 0.26], color="grey", linewidth=1, alpha=0.7)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(plot_name.replace("_", " "))
@@ -78,10 +78,10 @@ if __name__ == "__main__":
                     #~ xlabel="recall", ylabel="precision", 
                     #~ plot_name="precision_vs_recall_on_{}".format(hp)) 
     
-    # optimizers:
-    #~ scatterplot(x="accuracy", y="F1", clr="optimizer", df=df,
-                #~ xlabel="validation accuracy", ylabel="F1 score", 
-                #~ plot_name="accuracy_vs_F1_on_optimizer") 
+    #~ # optimizers:
+    scatterplot(x="type", y="F1", clr="optimizer", df=df,
+                xlabel="network architecture", ylabel="F1 score", 
+                plot_name="type_vs_F1_on_optimizer") 
     
     #~ # for layers + size:
     #~ scatterplot(x="n_layers", y="layer_size", clr="F1_corrected", df=df,
@@ -91,6 +91,6 @@ if __name__ == "__main__":
     print("Finished all plots")
     
     #~ # validation acc vs f1:
-    scatterplot(x="accuracy", y="F1", clr="type", df=df,
-                xlabel="accuracy", ylabel="F1 score", 
-                plot_name="accuracy_vs_F1_score")
+    #~ scatterplot(x="accuracy", y="F1", clr="type", df=df,
+                #~ xlabel="accuracy", ylabel="F1 score", 
+                #~ plot_name="accuracy_vs_F1_score")
