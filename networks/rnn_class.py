@@ -228,11 +228,14 @@ class RNN(object):
     def test_network(self, test_x, test_y, read_nr, read_name, file_path):
         # get predicted values:
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
-        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                
-        pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
+        #~ pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                
+        #~ pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
 
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
+        
+        threshold = 0.8
+        pred_vals = [1 if c >= threshold else 0 for c in confidences]
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -246,7 +249,7 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        #~ with open(file_path + "_outputall.txt", "a+") as dest:
+        #~ with open(file_path + "_threshold8.txt", "a+") as dest:
             #~ dest.write(read_name)
             #~ dest.write("\n")
             #~ dest.write("* {}".format(list(test_labels)))

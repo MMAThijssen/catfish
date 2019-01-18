@@ -136,21 +136,21 @@ def validate(network, squiggles, max_seq_length, file_path):
     valid_reads = 0
 
     # per squiggle:
-    #~ max_number = 1000
-    #~ random.shuffle(squiggles)
-    with open(file_path + "_validateall.txt", "w") as dest: 
+    max_number = 856
+    random.shuffle(squiggles)
+    with open(file_path + "_threshold8.txt", "w") as dest: 
         for squig in squiggles:
             t1 = datetime.datetime.now()
             data_sq, labels_sq = reader.load_npz(squig)
             t2 = datetime.datetime.now()
              
-            #~ # OR specify start val:          
-            #~ start_val = 30000
-            #~ if len(data_sq) >= start_val + max_seq_length:           
+            # OR specify start val:          
+            start_val = 30000
+            if len(data_sq) >= start_val + max_seq_length:           
 
-            #~ # get random start val:
-            if len(data_sq) >= max_seq_length:
-                start_val = random.randint(0, len(data_sq) - max_seq_length)
+            # get random start val:
+            #~ if len(data_sq) >= max_seq_length:
+                #~ start_val = random.randint(0, len(data_sq) - max_seq_length)
                 #~ dest.write("\nStart validation at point: {}".format(start_val)) 
                 labels = labels_sq[start_val: start_val + max_seq_length] 
                 data = data_sq[start_val: start_val + max_seq_length]
@@ -169,8 +169,8 @@ def validate(network, squiggles, max_seq_length, file_path):
                 loss += sgl_loss
             
             #~ # for 104:    
-            #~ if valid_reads >= max_number:
-                #~ break
+            if valid_reads >= max_number:
+                break
             
             else:
                 continue
