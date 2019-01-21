@@ -56,6 +56,13 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start
                     count_basen = [1 for w in new if w == "n"]           # TODO!
                     n_bases += sum(count_basen)
                     
+                    # generate heatmap
+                    generate_heatmap([predicted_labels, true_labels], ["predicted", "truth"],
+                                        "Comparison_{}".format(read_name))
+
+                    generate_heatmap([correct_short(predicted_labels), true_labels], ["predicted", "truth"],
+                                        "Comparison_{}_corrected".format(read_name))                    
+                    
                     # save information to dict
                     predicted_hp = hp_loc_dict(predicted_labels)
                     true_hp = hp_loc_dict(true_labels)
@@ -83,13 +90,16 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
     Returns: None
     """
     show_plots = False
-    is_confusion = True
+    is_confusion = True         # was on measurements
+    on_measurements = False
+    on_hps = True
     predicted_labels = None
     true_labels = None
     
     read_counter = 0
     
     states = []
+    false_states = []
     neg_states = []
 
     # initialize for all predicted and true positives                                              # TODO: do not calculate but take TP + FP together for this / TP + FN
@@ -140,6 +150,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                 if predicted_labels == None:
                     predicted_labels = list_predicted(line, types="predicted_scores")
                     if predicted_labels != None:
+                        #~ predicted_scores = predicted_labels
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
                 if true_labels == None:    
                     true_labels = list_predicted(line, types="true_labels")
@@ -148,7 +159,15 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                     bases = bases[start: start + length]
                     new = new[start: start + length]
                     count_basen = [1 for w in new if w == "n"]           # TODO!
-                    n_bases += sum(count_basen)
+                    n_bases += sum(count_basen)   
+
+                    predicted_labels = list(correct_short(predicted_labels))
+                    # generate heatmap
+                    #~ generate_heatmap([predicted_labels, true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                        #~ "Comparison_{}".format(read_name))
+
+                    #~ generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                        #~ "Comparison_{}_corrected".format(read_name)) 
                     
                     # save information to dict
                     predicted_hp = hp_loc_dict(predicted_labels)
@@ -156,16 +175,34 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                     detected_from_true(predicted_hp, true_hp)
                     
                     # check all positives:      real positives + predicted positives
-                    count_truehp, count_basetrue, count_seqtrue = prediction_information(true_hp, bases, new)         
-                    count_predictions, count_basehp, count_seq = prediction_information(predicted_hp, bases, new)        
-                    [all_truepositions.extend(range(k[0], k[1] + 1)) for k in true_hp.values()]
+                    if true_hp:
+                        count_truehp, count_basetrue, count_seqtrue = prediction_information(true_hp, bases, new)         
+                        [all_truepositions.extend(range(k[0], k[1] + 1)) for k in true_hp.values()]
+                    if predicted_hp:
+                        count_predictions, count_basehp, count_seq = prediction_information(predicted_hp, bases, new)        
                     
                     # check finding back true HP
                     #~ read_states = [check_true_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
                     read_states = [check_true_hp(predicted_hp[hp], true_labels, hp) for hp in predicted_hp] 
+                    #~ print(read_states)
                     
                     if read_states != []:
                         states.extend(read_states)    
+                        
+                        tp_truehp = create_confdict(predicted_hp, read_states, "tp")
+                        fp_truehp = create_confdict(predicted_hp, read_states, "fp")
+                        
+                    # find false negatives:
+                        # by searching for true pos in predicted non-hps
+                    fn_states = [check_true_hp(true_hp[hp], predicted_labels, hp, pos=0, neg=1) for hp in true_hp]
+                    # has much overlap with TP
+                        # maybe remove ones that have overlap, but compute average overlap
+                    if fn_states != []:
+                        false_states.extend(fn_states)
+                        
+                        fn_truehp = create_confdict(true_hp, fn_states, "fn")
+                        
+                    # check if FN immediately next to TP
                     
                     # check all true negatives:
                     #~ true_nonhp = hp_loc_dict(true_labels, pos=0, neg=1)
@@ -184,30 +221,62 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                     all_count_seqtrue = all_count_seqtrue + count_seqtrue
                     
                     if is_confusion:
+                        if on_measurements:
                         # generate dicts that contain only TP, FN, TN, FN:   
-                        tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
-                        fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
-                        tn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=0)
-                        fp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=0)
-
-                        #~ tp_truehp = generate_dict(true_labels, predicted_labels, pred_label=1, true_label=1)
-                        #~ fn_truehp = generate_dict(true_labels, predicted_labels, pred_label=0, true_label=1)
-                        #~ tn_truehp = generate_dict(true_labels, predicted_labels, pred_label=0, true_label=0)
-                        #~ fp_truehp = generate_dict(true_labels, predicted_labels, pred_label=1, true_label=0)
+                            #~ tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
+                            #~ fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
+                            #~ fp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=0)
+                            tn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=0)
+                            
+                        if on_hps:                                   
+                            #~ tp_truehp = create_confdict(predicted_hp, read_states, "tp")
+                            #~ fn_truehp = create_confdict(predicted_nonhp, fake_states, "fn")
+                            tn_truehp = create_confdict(predicted_nonhp, fake_states, "tn")
+                            #~ fp_truehp = create_confdict(predicted_hp, read_states, "fp")
                         
                         # calculate lengths, composition and positions
                         if tp_truehp != 0:
                             [all_tppositions.extend(range(k[0], k[1] + 1)) for k in tp_truehp.values()]
                             count_tptrue, count_tpbasestrue, count_tpseqtrue = prediction_information(tp_truehp, bases, new)          # true positives
+                            #~ print(count_tpseqtrue)
+                            #~ print(tp_truehp)
+                            
                         if fn_truehp != 0:
                             [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]                             # check positions
                             count_fntrue, count_fnbasestrue, count_fnseqtrue = prediction_information(fn_truehp, bases, new)          # false negatives
+                            # probably very slow -- maybe use set?
+                            if tp_truehp != 0:
+                                stretches = []
+                                remove = []
+                                for tp in tp_truehp:
+                                    stretches.extend(list(range(tp_truehp[tp][0], tp_truehp[tp][1] + 1)))
+                                for fn in fn_truehp:
+                                    stretch = list(range(fn_truehp[fn][0], fn_truehp[fn][1] + 1))
+                                    search = True
+                                    for s in stretch:                                
+                                        if s in stretches:
+                                            remove.append(fn)
+                                            break
+                                for r in remove:
+                                    del fn_truehp[r]
+                            
+                            #~ print(count_fnseqtrue)
+                            #~ st = 790
+                            #~ ed = 850
+                            #~ if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch148_read1772_strand":
+                            #~ print(true_labels[st:ed])
+                            #~ print(predicted_labels[st:ed])
+                            #~ bases = bases[st:ed]
+                            #~ new = new[st:ed]
+                            #~ print(sum([1 for n in new if n == "n"]))
                         if fp_truehp != 0:
                             count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(fp_truehp, bases, new)         # false positives
                             [all_fppositions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]
+                            #~ print(count_fpseqtrue)
                         if tn_truehp != 0:
                             [all_tnpositions.extend(range(k[0], k[1] + 1)) for k in tn_truehp.values()]  
                             count_tntrue, count_tnbasestrue, count_tnseqtrue = prediction_information(tn_truehp, bases, new)          # true negatives
+                            #~ print(count_tnseqtrue)
 
                         # add to dictionaries to make common:
                        
@@ -736,8 +805,6 @@ def detected_from_true_wrong(predicted_hp, true_hp, read_name):
         print("Found {}, but no true measurements present in read {}.".format(count_tp, read_name))
     
 
-
-
 def dict_to_ordered_list(dict_in, sort_on=0):
     """
     Creates list of keys and values ordered.
@@ -1011,36 +1078,60 @@ def thresholded_labels(thres_file, thres):
     
     return labels
     
-    
-def kmeans_clustering(x, n):
-    # https://jakevdp.github.io/PythonDataScienceHandbook/05.11-k-means.html
+def create_confdict(predicted_hp, states, confusion):
     """
-    K-means clustering.
+    Creates dict like confusion matrix.
     
     Args:
-        x -- array, input
-        n -- int, number of clusters
-    
-    Returns: list of cluster to which input belongs (list of ints)
+        predicted_hp -- dict
+        states -- list
+        confusion -- choose "tp", "fp", "tn", "fn"
+        
+    Returns: reduced dict
     """
-    # perform k-means clustering:
-    kmeans = KMeans(n_clusters=n)
-    kmeans.fit(x)
-    y_kmeans = kmeans.predict(x)
+    hpdict = {}
+    if confusion == "tp" or confusion == "fn":
+        for i in range(len(states)):
+            if states[i][0] != "absent":
+                hpdict[states[i][3]] = predicted_hp[states[i][3]]
+        #~ hpdict = {[states[i][3]] : predicted_hp[states[i][3]] 
+                    #~ for i in range(len(states)) if states[i][0] != "absent"}
+    elif confusion == "tn" or confusion == "fp":
+        for i in range(len(states)):
+            if states[i][0] == "absent":
+                hpdict[states[i][3]] = predicted_hp[states[i][3]]
     
-    # visualize:
-    plt.style.use("seaborn")
-    plt.scatter(x, x, c=y_kmeans, s=50)
-    centers = kmeans.cluster_centers_
-    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-    plt.show()
+    if not hpdict:
+        hpdict = 0
+    #~ print(hpdict)
+    return hpdict
+
+
+# from Carlos:                      
+def correct_short(predictions, threshold=15):
+    """
+    Corrects class prediction to negative label if positive stretch is shorter than threshold.
     
-    return kmeans.labels_
+    Args:
+        predictions -- list of int, predicted class labels
+        threshold -- int, threshold to correct stretch [default: 15]
     
-    #~ # Then get the indices of points for each cluster
-    #~ {i: np.where(estimator.labels_ == i)[0] for i in range(estimator.n_clusters)}
-    #~ # If you want to use array of points in X as values rather than the array of indices:
-    #~ {i: X[np.where(estimator.labels_ == i)] for i in range(estimator.n_clusters)}
+    Returns: corrected predictions
+    """
+    compressed_predictions = [[predictions[0],0]]
+
+    for p in predictions:
+        if p == compressed_predictions[-1][0]:
+            compressed_predictions[-1][1] += 1
+        else:
+            compressed_predictions.append([p, 1])
+
+    for pred_ci, pred_c, in enumerate(compressed_predictions):
+        if pred_c[0] != 0 and pred_c[1] < threshold:
+
+            compressed_predictions[pred_ci][0] = 0
+            
+    return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])    
     
     
 
@@ -1083,8 +1174,8 @@ if __name__ == "__main__":
     main_npz_dir = argv[3]
     output_name = argv[4]
     threshold = float(argv[5])
-    start = 30000
-    max_seq_length = 4970
+    start = 0 #30000
+    max_seq_length = 4970   #9975 
     max_number = 12255
     #if len(argv) > 5:
         #max_number = int(argv[5])

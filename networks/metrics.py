@@ -345,6 +345,12 @@ def plot_networks_on_metric(network_list, metric):
 
 
 def generate_heatmap(predicted_list, label_list, title):
+    """
+    Args:
+        predicted_list -- list of lists, predicted values to depict, eg "predicted label", "true label"
+        label_list -- list of str, names of predicted lists
+        title -- str, name of plot
+    """
     sns.heatmap(predicted_list, vmin=0.0, vmax=1.0, cmap="GnBu",      # PiYG - YlGnBu
                  xticklabels=False, yticklabels=label_list, 
                  cbar_kws={"orientation": "horizontal"})
@@ -408,23 +414,7 @@ def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
     return None
     
 
-def plot_pr_threshold(precision, recall, thresholds, name_network):
-    """
-    Plots precision and recall against threshold.
-    
-    """
-    plt.style.use("seaborn")
-    c1 = "crimson"
-    c2 = "navajowhite"
-    plt.figure(figsize=(8, 8))
-    plt.title("Precision and recall as a function of threshold")
-    plt.plot(thresholds, precision[:-1], "--", c=c1, label="precision")
-    plt.plot(thresholds, recall[:-1], "-", c=c2, label="recall")
-    plt.ylabel("score")
-    plt.xlabel("decision threshold")
-    plt.legend(loc='best')
-    plt.savefig("PRT_{}.png".format(name_network), bbox_inches="tight")
-    plt.close()
+
     
 #def draw_pr_curve(in_files, outname):
 #    """

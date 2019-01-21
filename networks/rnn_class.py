@@ -235,7 +235,7 @@ class RNN(object):
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
         
         pred_vals = [1 if c >= threshold else 0 for c in confidences]
-        pred_vals = correct_short(pred_vals)
+        #~ pred_vals = correct_short(pred_vals)
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -249,7 +249,7 @@ class RNN(object):
         self.tn += true_neg
         self.fn += false_neg
 
-        with open(file_path + "_corrected.txt", "a+") as dest:
+        with open(file_path + "_checkpoint20000_c.txt", "a+") as dest:
             dest.write(read_name)
             dest.write("\n")
             dest.write("* {}".format(list(test_labels)))

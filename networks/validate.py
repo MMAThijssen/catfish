@@ -136,9 +136,9 @@ def validate(network, squiggles, max_seq_length, file_path):
     valid_reads = 0
 
     # per squiggle:
-    #~ max_number = 856
+    max_number = 856
     #~ random.shuffle(squiggles)
-    with open(file_path + "_correctval.txt", "w") as dest: 
+    with open(file_path + "_checkpoint20000.txt", "a+") as dest: 
         for squig in squiggles:
             t1 = datetime.datetime.now()
             data_sq, labels_sq = reader.load_npz(squig)
@@ -169,8 +169,8 @@ def validate(network, squiggles, max_seq_length, file_path):
                 loss += sgl_loss
             
             #~ # for 104:    
-            #~ if valid_reads >= max_number:
-                #~ break
+            if valid_reads >= max_number:
+                break
             
             else:
                 continue
