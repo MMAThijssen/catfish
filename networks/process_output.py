@@ -46,6 +46,7 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start
                 if predicted_labels == None:
                     predicted_labels = list_predicted(line, types="predicted_scores")
                     if predicted_labels != None:
+                        confidences = predicted_labels
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
                 if true_labels == None:    
                     true_labels = list_predicted(line, types="true_labels")
@@ -57,10 +58,10 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start
                     n_bases += sum(count_basen)
                     
                     # generate heatmap
-                    generate_heatmap([predicted_labels, true_labels], ["predicted", "truth"],
+                    generate_heatmap([predicted_labels, true_labels, confidences], ["predicted", "truth", "confidences"],
                                         "Comparison_{}".format(read_name))
 
-                    generate_heatmap([correct_short(predicted_labels), true_labels], ["predicted", "truth"],
+                    generate_heatmap([correct_short(predicted_labels), true_labels, confidences], ["predicted", "truth", "confidences"],
                                         "Comparison_{}_corrected".format(read_name))                    
                     
                     # save information to dict
@@ -161,7 +162,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                     count_basen = [1 for w in new if w == "n"]           # TODO!
                     n_bases += sum(count_basen)   
 
-                    predicted_labels = list(correct_short(predicted_labels))
+                    #~ predicted_labels = list(correct_short(predicted_labels))
                     # generate heatmap
                     #~ generate_heatmap([predicted_labels, true_labels, predicted_scores], ["predicted", "truth", "confidences"],
                                         #~ "Comparison_{}".format(read_name))
@@ -182,50 +183,53 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                         count_predictions, count_basehp, count_seq = prediction_information(predicted_hp, bases, new)        
                     
                     # check finding back true HP
-                    #~ read_states = [check_true_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
-                    read_states = [check_true_hp(predicted_hp[hp], true_labels, hp) for hp in predicted_hp] 
+                    read_states = [check_true_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
+                    #~ read_states = [check_true_hp(predicted_hp[hp], true_labels, hp) for hp in predicted_hp] 
                     #~ print(read_states)
-                    
                     if read_states != []:
                         states.extend(read_states)    
                         
                         tp_truehp = create_confdict(predicted_hp, read_states, "tp")
-                        fp_truehp = create_confdict(predicted_hp, read_states, "fp")
+                        fn_truehp = create_confdict(predicted_hp, read_states, "fn")
+                        #~ tp_truehp = create_confdict(predicted_hp, read_states, "tp")
+                        #~ fp_truehp = create_confdict(predicted_hp, read_states, "fp")
                         
                     # find false negatives:
                         # by searching for true pos in predicted non-hps
-                    fn_states = [check_true_hp(true_hp[hp], predicted_labels, hp, pos=0, neg=1) for hp in true_hp]
-                    # has much overlap with TP
-                        # maybe remove ones that have overlap, but compute average overlap
-                    if fn_states != []:
-                        false_states.extend(fn_states)
+                    #~ fn_states = [check_true_hp(true_hp[hp], predicted_labels, hp, pos=0, neg=1) for hp in true_hp]
+                    #~ # has much overlap with TP
+                        #~ # maybe remove ones that have overlap, but compute average overlap
+                    #~ if fn_states != []:
+                        #~ false_states.extend(fn_states)
                         
-                        fn_truehp = create_confdict(true_hp, fn_states, "fn")
+                        #~ fn_truehp = create_confdict(true_hp, fn_states, "fn")
                         
                     # check if FN immediately next to TP
                     
                     # check all true negatives:
-                    #~ true_nonhp = hp_loc_dict(true_labels, pos=0, neg=1)
-                    #~ fake_states = [check_true_hp(true_nonhp[hp], predicted_labels, hp) for hp in true_nonhp] 
-                    predicted_nonhp = hp_loc_dict(predicted_labels, pos=0, neg=1)
-                    fake_states = [check_true_hp(predicted_nonhp[hp], true_labels, hp) for hp in predicted_nonhp]
+                    true_nonhp = hp_loc_dict(true_labels, pos=0, neg=1)
+                    fake_states = [check_true_hp(true_nonhp[hp], predicted_labels, hp) for hp in true_nonhp] 
+                    #~ predicted_nonhp = hp_loc_dict(predicted_labels, pos=0, neg=1)
+                    #~ fake_states = [check_true_hp(predicted_nonhp[hp], true_labels, hp) for hp in predicted_nonhp]
                     if fake_states != []:
                         neg_states.extend(fake_states) 
 
                     # 7. Add dictionaries to make common:
-                    all_count_predictions = all_count_predictions + count_predictions
-                    all_count_basehp = all_count_basehp + count_basehp
-                    all_count_truehp = all_count_truehp + count_truehp
-                    all_count_basetrue = all_count_basetrue + count_basetrue
-                    all_count_seq = all_count_seq + count_seq
-                    all_count_seqtrue = all_count_seqtrue + count_seqtrue
+                    if predicted_hp:
+                        all_count_predictions = all_count_predictions + count_predictions
+                        all_count_basehp = all_count_basehp + count_basehp
+                        all_count_seq = all_count_seq + count_seq
+                    if true_hp:
+                        all_count_truehp = all_count_truehp + count_truehp
+                        all_count_basetrue = all_count_basetrue + count_basetrue
+                        all_count_seqtrue = all_count_seqtrue + count_seqtrue
                     
                     if is_confusion:
                         if on_measurements:
-                        # generate dicts that contain only TP, FN, TN, FN:   
-                            #~ tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
-                            #~ fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
-                            #~ fp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=0)
+                        #~ # generate dicts that contain only TP, FN, TN, FN:   
+                            tp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=1)
+                            fn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=1)
+                            fp_truehp = generate_dict(predicted_labels, true_labels, pred_label=1, true_label=0)
                             tn_truehp = generate_dict(predicted_labels, true_labels, pred_label=0, true_label=0)
                             
                         if on_hps:                                   
@@ -851,9 +855,9 @@ def check_true_hp(true_hp, predicted_labels, ids, pos=1, neg=0):
     inter_list = []
     predicted_stretch = predicted_labels[true_hp[0] : true_hp[1] + 1]
     # check if true homopolymer is completely or partly detected
-    if (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(pos):
+    if len(predicted_stretch) == predicted_stretch.count(pos):
         state = "complete"                                                      
-    elif (true_hp[1] - true_hp[0] + 1) == predicted_stretch.count(neg):
+    elif len(predicted_stretch) == predicted_stretch.count(neg):
         state = "absent"
         l = None
         r = None
@@ -1127,11 +1131,16 @@ def correct_short(predictions, threshold=15):
             compressed_predictions.append([p, 1])
 
     for pred_ci, pred_c, in enumerate(compressed_predictions):
-        if pred_c[0] != 0 and pred_c[1] < threshold:
-
-            compressed_predictions[pred_ci][0] = 0
+        if pred_c[0] != 0:
+            if pred_c[1] < threshold:
+                # remove predictions shorter than threshold
+                compressed_predictions[pred_ci][0] = 0
+            #~ else: 
+                #~ # extend predictions longer than threshold
+                #~ compressed_
             
     return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])    
+    
     
     
 
@@ -1174,16 +1183,16 @@ if __name__ == "__main__":
     main_npz_dir = argv[3]
     output_name = argv[4]
     threshold = float(argv[5])
-    start = 0 #30000
+    start = 30000 #0 
     max_seq_length = 4970   #9975 
     max_number = 12255
     #if len(argv) > 5:
         #max_number = int(argv[5])
-    tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
-                          threshold, start, max_seq_length, max_number)
-
-    #~ check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 
+    #~ tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
                           #~ threshold, start, max_seq_length, max_number)
+
+    check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 
+                          threshold, start, max_seq_length, max_number)
                           
     #~ network_file = argv[1]
     #~ threshold = float(argv[2])
