@@ -9,45 +9,6 @@ from sys import argv
 
 ### FOR INFERING:       # start with input as a single file > work towards directory
 
-def infer(fast5_dir, output_file, threshold=0.5, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_14", network_type="ResNetRNN"):
-    """
-    Infers scores for every raw signal in directory.
-    Can be adjusted easily to infer classes for given threshold.
-    
-    Args:
-        fast5_dir -- str, path to directory containing FAST5 files
-        output_file -- str, name of output file to write predictions to
-        threshold -- float, threshold for assigning classes
-        network_path -- str, path to network to be loaded
-        network_type -- str, type of network to be loaded
-        
-    Returns: None
-    """
-    # load model
-    model = load_network(network_type, network_path)
-    
-    # infer for every file in dir
-    abs_fast5dir = os.path.abspath(fast5_dir)
-    input_files = os.listdir(abs_fast5dir)
-    with open(output_file, "w") as dest:
-        #~ scores_all = [infer_class_from_signal("{}/{}".format(abs_fast5dir, fast5_file), model) for fast5_file in input_files]
-        #~ print(len(scores_all))
-        #~ print(len(input_files) * 36)
-        #~ [dest.write("{}, ".format(s)) for scores in scores_all for s in scores]
-        #~ dest.write("\n")
-        for fast5_file in input_files:
-            scores = infer_class_from_signal("{}/{}".format(abs_fast5dir, fast5_file), model)
-            #~ classes = class_from_threshold(scores, threshold)
-            dest.write("{}\n".format(fast5_file))
-            [dest.write("{}, ".format(s)) for s in scores]
-            dest.write("\n")
-    
-    print("Finished inference.")
-
-    #~ scores = np.zeros(shape=(n_batches, window_size))
-    #~ for n in range(n_batches):
-        #~ raw_in = raw[n * window_size : (n + 1) * window_size]
-
 def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_000", window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
@@ -67,9 +28,9 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
     with h5py.File(fast5_file, "r") as fast5:
         # process signal
         raw = process_signal(fast5)
-        print("Length of raw signal: ", len(raw))
+        #~ print("Length of raw signal: ", len(raw))
         #~ raw = raw[: 36]                                                         # VERANDEREN!                                              
-        print(len(raw))
+        #~ print(len(raw))
         
     # pad if needed
     if not (len(raw) / window_size).is_integer():
@@ -78,7 +39,7 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
         padding = np.array(padding_size * [0])
         raw = np.hstack((raw, padding))
     
-    # take per 35 from raw and predict scores
+    # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
     n_input = 1
     n_batches = len(raw) // window_size
     raw_in = reshape_input(raw, window_size, n_input)
@@ -86,8 +47,10 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
     
     # cut padding
     scores = scores[: -padding_size]
+    labels = class_from_threshold(scores)
+    predicted_hps = hp_in_pred(labels)
     
-    return scores
+    return predicted_hps
 
 # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
 # 1. Load network
@@ -203,7 +166,7 @@ def reshape_input(data, window, n_inputs):
     return data 
 
 
-def class_from_threshold(predicted_scores, threshold):
+def class_from_threshold(predicted_scores, threshold=0.5):
     """
     Assigns classes on input based on given threshold.
     
@@ -214,3 +177,26 @@ def class_from_threshold(predicted_scores, threshold):
     Returns: list of class labels (ints)
     """
     return [1 if y >= threshold else 0 for y in predicted_scores]
+    
+                         
+def hp_in_pred(predictions, positive=1):
+    """
+    Get start positions and length of positive label in predicted input.
+    
+    Args:
+        predictions -- list of int, predicted class labels
+        threshold -- int, threshold to correct stretch [default: 15]
+    
+    Returns: list [[length, start position]]
+    """
+    compressed_predictions = [[predictions[0], 0, 0]]
+
+    for p in range(len(predictions)):
+        if predictions[p] == compressed_predictions[-1][0]:
+            compressed_predictions[-1][1] += 1
+        else:
+            compressed_predictions.append([predictions[p], 1, p])
+            
+    positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
+            
+    return positives
