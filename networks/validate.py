@@ -49,7 +49,7 @@ def build_model(network_type, **kwargs):
                         
     return network   
 
-def train(network, db, training_nr, squiggles, max_seq_length):
+def train(network, db, training_nr, squiggles, max_seq_length, file_path):
     """
     Training on windows
     
@@ -67,13 +67,14 @@ def train(network, db, training_nr, squiggles, max_seq_length):
     n_examples = training_nr // network.batch_size * network.batch_size
     n_batches = n_examples // network.batch_size
     print("\nTraining on {} examples in {} batches\n".format(n_examples, n_batches))
-    with open(network.model_path + ".txt", "a") as dest:
+    with open(network.model_path + ".txt", "a+") as dest:
         dest.write("Training on {} examples in {} batches\n".format(n_examples, n_batches))
     
     step = 0
     positives = 0
 
     for b in range(n_batches):
+        print(b)
         # load batch sized training examples:
         data, labels, pos = db.get_training_set(network.batch_size)  
         positives += pos
@@ -85,7 +86,10 @@ def train(network, db, training_nr, squiggles, max_seq_length):
         step += 1                                                           # step is per batch
         network.train_network(set_x, set_y, step)
         
-        if step % 1 == 0:   
+        if step % 1000 == 0:
+            print("At step ", step)
+        
+        if step % 10000 == 0:   
             network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
             print("Saved checkpoint at step ", step)
             train_acc, train_loss = network.sess.run([network.accuracy, network.loss], feed_dict={network.x:set_x, network.y:set_y, network.p_dropout: network.keep_prob})
@@ -95,7 +99,7 @@ def train(network, db, training_nr, squiggles, max_seq_length):
             print(step * network.batch_size)
             print(datetime.datetime.now())
             
-            val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length)
+            val_acc, whole_precision, whole_recall = validate(network, squiggles, max_seq_length, file_path)
             print("Validation precision: ", whole_precision)
             print("Validation recall: ", whole_recall)
             network.tp = 0
@@ -138,19 +142,20 @@ def validate(network, squiggles, max_seq_length, file_path):
     # per squiggle:
     max_number = 856
     #~ random.shuffle(squiggles)
-    with open(file_path + "_checkpoint20000.txt", "a+") as dest: 
+    with open(file_path.split("/")[-1] + "_training.txt", "a+") as dest: 
+        print(file_path, file_path.rsplit("/")[1])
         for squig in squiggles:
             t1 = datetime.datetime.now()
             data_sq, labels_sq = reader.load_npz(squig)
             t2 = datetime.datetime.now()
              
-            # OR specify start val:          
-            start_val = 30000
-            if len(data_sq) >= start_val + max_seq_length:           
+            #~ # OR specify start val:          
+            #~ start_val = 30000
+            #~ if len(data_sq) >= start_val + max_seq_length:           
 
-            # get random start val:
-            #~ if len(data_sq) >= max_seq_length:
-                #~ start_val = random.randint(0, len(data_sq) - max_seq_length)
+            #~ # get random start val:
+            if len(data_sq) >= max_seq_length:
+                start_val = random.randint(0, len(data_sq) - max_seq_length)
                 #~ dest.write("\nStart validation at point: {}".format(start_val)) 
                 labels = labels_sq[start_val: start_val + max_seq_length] 
                 data = data_sq[start_val: start_val + max_seq_length]
@@ -183,7 +188,7 @@ def validate(network, squiggles, max_seq_length, file_path):
         dest.write("\nNEXT EPOCH")
         dest.write("\nAverage performance of validation set:\n")
         dest.write("\tAccuracy: {:.2%}\n".format(accuracy / valid_reads))
-        dest.write("\tLoss: {:.2%}\n".format(loss / valid_reads))
+        dest.write("\tLoss: {:.4f}\n".format(loss / valid_reads))
         
     # over whole set:
         dest.write("\nPerformance over whole set: \n")
