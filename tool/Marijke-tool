@@ -70,9 +70,13 @@ def main(input_dir, output_file, save_dir, threshold=0.5, network_path="/mnt/scr
     subprocess.run("source activate basecall", shell=True)
     subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
                     input_dir, THREADS, save_dir, OUTPUT, FLOW, KIT), shell=True)
-    
     # close conda env
     subprocess.run("source deactivate", shell=True)
+    
+    # skip failed reads from Albacore
+    
+    # polish reads with HPs:
+    
         
         # IDEE: code zo aanpassen dat basecaller het meteen inneemt?
             
@@ -90,7 +94,7 @@ def main(input_dir, output_file, save_dir, threshold=0.5, network_path="/mnt/scr
         #~ failed_reads = []
         #~ dest.write("{}: {}\n".format(e, read_name))            
         
-    #~ print("Successfully basecalled {} of {} reads.".format(successes, len())
+    #~ print("Successfully basecalled {} of {} reads.".format(successes, len()) # is not necessary: albacore splits this up already
     
     return None
 
