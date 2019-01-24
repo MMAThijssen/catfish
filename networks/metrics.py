@@ -218,6 +218,7 @@ def weighted_f1(precision, recall, n, N):
         f1 = 0
     
     return f1
+#~ whole_f1 = metrics.weighted_f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
     
     
 def f1(precision, recall):
