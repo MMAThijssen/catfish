@@ -141,7 +141,6 @@ if __name__ == "__main__":
         main_dir = "/mnt/scratch/thijs030/actualnetworks/"
         main_dir_hp = "/mnt/scratch/thijs030/actualnetworks/"
 
-    
 
     print("Loading validation database..")
     squiggles = helper_functions.load_squiggles(db_dir_val)
@@ -160,8 +159,6 @@ if __name__ == "__main__":
             #~ model.restore_network("{}{}/checkpoints".format(main_dir, trained_network))
         model.restore_network("{}{}/checkpoints".format(main_dir, trained_network), ckpnt="ckpnt-10000")
         t2 = datetime.datetime.now()  
-        m2 = p.memory_full_info().pss
-        print("\nMemory after building model is ", m2)
         print("Built and initialized model in {}\n".format(t2 - t1))
 
         #3. Assess performance on validation set
@@ -169,11 +166,5 @@ if __name__ == "__main__":
         validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network), 
                 validation_start="random", max_number=12256)
         t4 = datetime.datetime.now()  
-        m4 = p.memory_full_info().pss
-        print("Memory use at end is ", m4)
         print("Validated model in {}".format(t4 - t3))
         tf.reset_default_graph()
-        #~ except:
-            #~ print("No 10000th checkpoint for {}".format(trained_network))
-            #~ tf.reset_default_graph()
-            #~ continue
