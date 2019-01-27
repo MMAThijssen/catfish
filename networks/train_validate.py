@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import datetime
-import helper_functions
-import metrics
+import trainingDB.helper_functions
+import trainingDB.metrics
 import numpy as np
 import os
 import psutil

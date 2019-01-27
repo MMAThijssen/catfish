@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 
-import metrics
+import trainingDB.metrics
 import numpy as np
 import os
 import os.path
 import tensorflow as tf
 
 class RNN(object):
-#    def __init__(self):
-    #~ def __init__(self, batch_size, layer_size, n_layers, 
-                   #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
     def __init__(self, save=False, **kwargs):
-
-        #~ tf.set_random_seed(16)
         
         # adjustable parameters
         self.batch_size = kwargs["batch_size"]

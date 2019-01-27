@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import datetime
-import helper_functions
+import trainingDB.helper_functions
 import numpy as np
 import os
 import psutil
