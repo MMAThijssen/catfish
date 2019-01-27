@@ -8,7 +8,7 @@ from resnet_class import ResNetRNN
 from rnn_class import RNN
 from sys import argv
 import tensorflow as tf
-from validate import train, validate, build_model
+from train_validate import train_and_validate, validate, build_model
 
 def generate_random_hyperparameters(network_type,
                                     learning_rate_min=-4,      
@@ -107,6 +107,14 @@ if __name__ == "__main__":
     training_nr = int(argv[5])
     db_dir_val = argv[6]
     max_seq_length = int(argv[7])
+    only_validation = False
+    saving = True
+    if len(argv) == 9:
+        only_validation = True
+        saving = False
+        print("Only validating now, NO training")
+    validation_start = "random"
+    max_number = 856
     #~ db_dir_train = argv[2]
     #~ training_nr = int(argv[3])
     #~ n_epochs = int(argv[4])
@@ -131,7 +139,7 @@ if __name__ == "__main__":
 
     # 1b. Restore model
     hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
-    model = build_model(network_type, save=True, **hpm_dict)
+    model = build_model(network_type, save=saving, **hpm_dict)
     model.restore_network("{}/checkpoints".format(network_path, ckpnt="ckpnt-{}".format(checkpoint)))
     
     # 1c. Extend RNN model
@@ -143,23 +151,27 @@ if __name__ == "__main__":
     #~ model.initialize_network()    
  
     # 2. Train model
-    print("Loading training database..")
-    db_train = helper_functions.load_db(db_dir_train)
-    print("Loading validation database..")
-    squiggles = helper_functions.load_squiggles(db_dir_val)
-    t2 = datetime.datetime.now()
-    train(model, db_train, training_nr, squiggles, max_seq_length, network_path)
-    t3 = datetime.datetime.now()  
-    m3 = p.memory_full_info().pss
-    print("\nMemory after training is ", m3)
-    print("Trained model in {}\n".format(t3 - t2))
-    
-    #3. Assess performance on validation set
-    t3 = datetime.datetime.now() 
+    if not only_validation:
+        file_path = model.model_path
+        print("Saving to information to {} extended".format(file_path))
+        print("Loading training database..")
+        db_train = helper_functions.load_db(db_dir_train)
+        print("Loading validation database..")
+        squiggles = helper_functions.load_squiggles(db_dir_val)
+        t2 = datetime.datetime.now()
+        train_and_validate(model, db_train, training_nr, squiggles, max_seq_length, file_path, validation_start, max_number)
+        t3 = datetime.datetime.now()  
+        m3 = p.memory_full_info().pss
+        print("\nMemory after training is ", m3)
+        print("Trained and validated model in {}\n".format(t3 - t2))
+        
+    if only_validation:
+        file_path = network_path + "_val_"
+        print("Saving to information to {} extended".format(file_path))
+        print("Loading validation database..")
+        squiggles = helper_functions.load_squiggles(db_dir_val)
+        validate(model, squiggles, max_seq_length, file_path, validation_start, max_number)     
 
-    validate(model, squiggles, max_seq_length, file_path=network_path)
-    t4 = datetime.datetime.now()  
-    m4 = p.memory_full_info().pss
-    print("Memory use at end is ", m4)
-    print("Validated model in {}".format(t4 - t3))
+
+
 

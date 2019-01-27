@@ -140,9 +140,9 @@ def validate(network, squiggles, max_seq_length, file_path):
     valid_reads = 0
 
     # per squiggle:
-    max_number = 856
+    #~ max_number = 856
     #~ random.shuffle(squiggles)
-    with open(file_path.split("/")[-1] + "_training.txt", "a+") as dest: 
+    with open(file_path.split("/")[-1] + "_validateall.txt", "a+") as dest: 
         print(file_path, file_path.rsplit("/")[1])
         for squig in squiggles:
             t1 = datetime.datetime.now()
@@ -167,7 +167,7 @@ def validate(network, squiggles, max_seq_length, file_path):
                 set_y = reshape_input(labels, network.window, network.n_outputs)
                 
                 t3 = datetime.datetime.now()
-                sgl_acc, sgl_loss  = network.test_network(set_x, set_y, valid_reads, read_name, file_path)
+                sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path)
                 t4 = datetime.datetime.now()
                 
                 accuracy += sgl_acc

@@ -250,7 +250,7 @@ if __name__ == "__main__":
     if len(argv) == 9:
         validation_path = argv[8]
     if len(argv) == 10:
-        only_validation == True
+        only_validation = True
     
     p = psutil.Process(os.getpid())
     m1 = p.memory_full_info().pss

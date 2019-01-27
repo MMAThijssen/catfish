@@ -8,7 +8,7 @@ from resnet_class import ResNetRNN
 from rnn_class import RNN
 from sys import argv
 import tensorflow as tf
-from validate import validate, build_model
+from train_validate import validate, build_model
 
 def generate_random_hyperparameters(network_type,
                                     learning_rate_min=-4,      
@@ -112,12 +112,13 @@ if __name__ == "__main__":
     print("Started script at {}\n".format(t1))
     
     if network_type == "RNN":
-        number_list = list(range(12, 21))
-        number_list.extend([22, 24, 25])
-        number_list.extend(list(range(28, 34)))
-        number_list.extend(list(range(35, 41)))
-        number_list.extend([42, 43])
-        number_list.extend([47, 48, 49])
+        number_list = [10, 11]
+        #~ number_list = list(range(12, 21))
+        #~ number_list.extend([22, 24, 25])
+        #~ number_list.extend(list(range(28, 34)))
+        #~ number_list.extend(list(range(35, 41)))
+        #~ number_list.extend([42, 43])
+        #~ number_list.extend([47, 48, 49])
         print(number_list)
         
         main_dir = "/mnt/scratch/thijs030/hpcnetworks/"
@@ -165,7 +166,8 @@ if __name__ == "__main__":
 
         #3. Assess performance on validation set
         t3 = datetime.datetime.now()
-        validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network))
+        validate(model, squiggles, max_seq_length, "{}{}".format(main_dir, trained_network), 
+                validation_start="random", max_number=12256)
         t4 = datetime.datetime.now()  
         m4 = p.memory_full_info().pss
         print("Memory use at end is ", m4)
