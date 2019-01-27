@@ -35,6 +35,26 @@ def Process(fast5_path, runname):
     print('{0}'.format('\n'.join(['\t'.join([str(x) for x in item]) for item in attribute])))
 
 
+def get_baselength(fast5, use_tombo=True):
+    """
+    Takes events to extend base sequence per measurement.
+    
+    Args:
+        fast5 - str, path to FAST5
+        use_tombo -- bool, use of corrected or uncorrected reads [default: True]
+        
+    Returns: list of str
+    """
+    # maybe should be in TrainingRead and rebuild val and testdb
+    with h5py.File(fast5, "r") as hdf:
+        hdf_path = "Analyses/RawGenomeCorrected_000/"
+        hdf_events_path = '{}BaseCalled_template/Events'.format(hdf_path)
+        # get list of event lengths:
+        event_bases = hdf[hdf_events_path]["base"].astype(str)
+        
+    return len(event_bases)
+    
+
 def compute_on_length(fast5_file, stat):
     """
     Computes median, average or minimal length of a FAST5 read.
@@ -56,6 +76,7 @@ def compute_on_length(fast5_file, stat):
             return min(event_lengths), max(event_lengths)
         else:
             raise ValueError("Could not compute. Choose: 'median' or 'min'.")
+            
         
 def write_to_file(output_name, averages, minimals, maximals, medians):
     with open(output_name, "a+") as dest:
