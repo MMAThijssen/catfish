@@ -38,11 +38,14 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
         padding_size = window_size - (len(raw) - (len(raw) // window_size * window_size))
         padding = np.array(padding_size * [0])
         raw = np.hstack((raw, padding))
+    else:
+        np.concatenate((raw, [0]), axis=0)
+        padding_size = 1
     
     # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
-    n_input = 1
+    N_INPUT = 1
     n_batches = len(raw) // window_size
-    raw_in = reshape_input(raw, window_size, n_input)
+    raw_in = reshape_input(raw, window_size, N_INPUT)
     scores = model.infer(raw_in)
     
     # cut padding
