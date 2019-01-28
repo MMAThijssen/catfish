@@ -8,7 +8,7 @@ import shutil
 import h5py
 from math import nan
 from statistics import median
-from ExampleDb import ExampleDb
+from trainingDB.ExampleDb import ExampleDb
 
 from bokeh.models import ColumnDataSource, LinearColorMapper, LabelSet, Range1d
 from bokeh.plotting import figure

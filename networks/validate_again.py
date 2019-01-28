@@ -96,9 +96,8 @@ if __name__ == "__main__":
     #0. Get input
     if not len(argv) == 4:
         raise ValueError("The following arguments should be provided in this order:\n" + 
-                         "\t-network type\n\t-model id\n\t-path to training db" +
-                         "\n\t-number of training reads\n\t-number of epochs" + 
-                         "\n\t-path to validation db\n\t-max length of validation reads")
+                         "\t-network type\n\t-path to validation db" +
+                         "\n\t-max length of validation reads")
     
     network_type = argv[1]
     db_dir_val = argv[2]

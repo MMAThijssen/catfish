@@ -63,83 +63,6 @@ def calculate_accuracy(true_pos, false_pos, true_neg, false_neg):
     return accuracy
     
 
-def calculate_auc(true_labels, predicted_scores, pos_label=1):
-    """
-    Calculates the area under the receiver operator curve
-    
-    Args:
-        true_labels -- list of ints (0 - neg, 1 - pos)
-        predicted_scores -- list of floats, confidence of predictions
-        pos_label -- int (0 or 1)
-        
-    Returns: TPR, NPR, AUC
-    """
-    # tpr is recall 
-    tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
-                                            y_score=predicted_scores,
-                                            pos_label=pos_label)
-    roc_auc = sklmet.auc(fpr, tpr)
-    return tpr, fpr, roc_auc
-    
-    
-def calculate_pr(true_labels, predicted_scores, pos_label=1):
-    precision, recall, thresholds = sklmet.precision_recall_curve(true_labels, 
-                                                                  predicted_scores,
-                                                                  pos_label)  
-    return precision, recall, thresholds
-    
-    
-def compute_auc(tpr, fpr):
-    # tpr and fpr should be arrays!
-    return sklmet.auc(fpr, tpr)
-
-
-def draw_roc_t(tpr, fpr, roc_auc, title, thresholds=[0.5]):
-    colors = set_sns_style()
-    
-    plt.title("Receiver Operator Characteristic")
-    for t in range(len(thresholds)):
-        plt.plot(fpr[t], tpr[t], "b", label="AUC {} = {:.2f}".format(thresholds[t], roc_auc[t]), c=colors[t])
-    plt.legend(loc="lower right")
-    plt.plot([0, 1], [0, 1],'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('True Positive Rate')
-    plt.xlabel('False Positive Rate')
-    plt.savefig("ROC_{}-t.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-    
-def draw_pr_t(precision, recall, title, thresholds=[0.5]):
-    """
-    Plots precision recall curve.
-    
-    Args:
-        precision -- list of floats, precision
-        recall -- list of floats, precision
-        title -- str, name of plot
-        thresholds -- list of floats, threshold for positive label [default: [0.5]]
-        
-    Returns: None
-    """
-    colors = set_sns_style()
-    
-    plt.title("Precision Recall Curve")
-    for t in range(len(thresholds)):
-        plt.plot(precision[t], recall[t], c=colors[t], label=thresholds[t])
-    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('Precision')
-    plt.xlabel('Recall')
-    plt.legend()
-    plt.savefig("PR_{}-t.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-    
-    return None
-    
-
 def class_from_threshold(predicted_scores, threshold):
     """
     Assigns classes on input based on given threshold.
@@ -168,37 +91,7 @@ def set_sns_style():
     
     return colors
     
-    
-def draw_roc(tpr, fpr, roc_auc, title):
-    plt.style.use("seaborn")
-    plt.title("Receiver Operator Characteristic")
-    plt.plot(fpr, tpr, "b", label="AUC = {:.2f}".format(roc_auc), c="darkblue")
-    plt.legend(loc="lower right")
-    plt.plot([0, 1], [0, 1],'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('True Positive Rate')
-    plt.xlabel('False Positive Rate')
-    plt.savefig("ROC_{}.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-    
-def draw_pr(precision, recall, title):
-    plt.style.use("seaborn")
-    color = "hotpink"
-    plt.title("Precision Recall Curve")
-    plt.plot(precision, recall, c=color)
-    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('Precision')
-    plt.xlabel('Recall')
-    plt.savefig("PR_{}.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-
-    
-    
+# OLD: replaced by f1()
 def weighted_f1(precision, recall, n, N):
     """
     Calculates balanced  F1 score for a single class.
@@ -241,30 +134,6 @@ def f1(precision, recall):
     
     return f1
 
-def parse_txt(cprofile, measure):
-    """
-    Parses cProfile text files to retrieve values per epoch.
-    
-    Args:
-        cProfile -- str, text file should have "Epoch" on same line as metric
-        measure -- str, either "Accuracy" or "Loss"
-        
-    Returns list
-    """
-    measure_list = []
-    with open(cprofile, "r") as source:
-        for line in source:
-            if line.startswith("Epoch"):
-                line = line.split()
-                for i in range(len(line)):
-                    if measure in line[i]:
-                        if line[i + 1][-1] == "%":
-                            line[i + 1] = line[i + 1][:-1]                   # -1 to lose the % sign
-                        measure_list.append(float(line[i + 1]))       
-        if len(measure_list) == 0:
-            raise ValueError("Given measure has not been found in file.") 
-    return measure_list
-
 
 def plot_squiggle(signal, title):
     plt.figure(figsize=(30, 10)) 
@@ -273,7 +142,6 @@ def plot_squiggle(signal, title):
     plt.xlim(left=0, right=len(signal))
     plt.savefig("{}.png".format(title))
     plt.close()
-    
     
     
 def plot_settings(measure):
@@ -360,6 +228,77 @@ def generate_heatmap(predicted_list, label_list, title):
     plt.close()
 
 
+### OLD - replaced by precision_recall_ROC.py ###
+def calculate_auc(true_labels, predicted_scores, pos_label=1):
+    """
+    Calculates the area under the receiver operator curve
+    
+    Args:
+        true_labels -- list of ints (0 - neg, 1 - pos)
+        predicted_scores -- list of floats, confidence of predictions
+        pos_label -- int (0 or 1)
+        
+    Returns: TPR, FPR, AUC
+    """
+    tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
+                                            y_score=predicted_scores,
+                                            pos_label=pos_label)
+    roc_auc = sklmet.auc(fpr, tpr)
+    return tpr, fpr, roc_auc
+    
+    
+def calculate_pr(true_labels, predicted_scores, pos_label=1):
+    precision, recall, thresholds = sklmet.precision_recall_curve(true_labels, 
+                                                                  predicted_scores,
+                                                                  pos_label)  
+    return precision, recall, thresholds
+    
+    
+def draw_roc_t(tpr, fpr, roc_auc, title, thresholds=[0.5]):
+    colors = set_sns_style()
+    
+    plt.title("Receiver Operator Characteristic")
+    for t in range(len(thresholds)):
+        plt.plot(fpr[t], tpr[t], "b", label="AUC {} = {:.2f}".format(thresholds[t], roc_auc[t]), c=colors[t])
+    plt.legend(loc="lower right")
+    plt.plot([0, 1], [0, 1],'r--', c="r")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.savefig("ROC_{}-t.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
+    
+def draw_pr_t(precision, recall, title, thresholds=[0.5]):
+    """
+    Plots precision recall curve.
+    
+    Args:
+        precision -- list of floats, precision
+        recall -- list of floats, precision
+        title -- str, name of plot
+        thresholds -- list of floats, threshold for positive label [default: [0.5]]
+        
+    Returns: None
+    """
+    colors = set_sns_style()
+    
+    plt.title("Precision Recall Curve")
+    for t in range(len(thresholds)):
+        plt.plot(precision[t], recall[t], c=colors[t], label=thresholds[t])
+    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('Precision')
+    plt.xlabel('Recall')
+    plt.legend()
+    plt.savefig("PR_{}-t.png".format(title), bbox_inches="tight")
+#    plt.show()
+    plt.close()
+    
+    return None
+    
 def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
     """
     Args:
@@ -414,47 +353,7 @@ def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
     
     return None
     
-
-
     
-#def draw_pr_curve(in_files, outname):
-#    """
-#    Draws precision recall curve.
-#    
-#    Args:
-#        in_file -- str, path to file
-#        outname -- str, name of figure
-#        
-#    Returns: list (precision), list (recall)
-#    """
-#    plt.style.use("seaborn")
-#    
-#    # get precision and recall:
-#    precision_list = []
-#    recall_list = []
-#    with open(in_files, "r") as source:
-#        for line in source:
-#            if line.strip().startswith("Precision"):
-#                precision_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %
-#            elif line.strip().startswith("Recall"):
-#                recall_list.append(float(line.strip()[:-1].split(": ")[1]) / 100) # -1 to get rid of %
-#    
-#    # draw plot
-#    color = "hotpink"
-#    plt.plot(precision_list, recall_list, c=color)   
-#    plt.title("Precision Recall Curve")
-#    plt.xlim(left=0)    
-#    plt.ylim([0.0, 1.0])
-#    plt.ylabel('Precision')
-#    plt.xlabel('Recall')
-#    plt.savefig("PR_{}.png".format(outname), bbox_inches="tight")
-##    plt.show()
-#    plt.close()
-
-# for f1 plots: see draw_curves.py
-    
-    
-                
 if __name__ == "__main__":
     #~ true_file = argv[1]
     #~ pred_file = argv[2]

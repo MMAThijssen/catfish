@@ -47,15 +47,14 @@ class ExampleDb(object):
         #~ return self.range_ps, self.range_ns      
                 
                 
-    def get_training_set(self, size):
+    def get_training_set(self, size, ratio=2):
         """
         Return a balanced subset of reads from the DB
         :param size: number of reads to return
-        :param includes: k-mers that should forcefully be included, if available in db
+        :param ratio: 1 / ratio number of positive examples to take
         :return: lists of numpy arrays for training data (x_out) and labels (y_out)
         """
-
-        nb_pos = size // 2
+        nb_pos = size // ratio
         nb_neg = size - nb_pos
         
         ps = random.sample(range(self.nb_pos), nb_pos)

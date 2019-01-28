@@ -126,7 +126,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
 
         for b in range(n_batches):
             # load batch sized training examples:
-            data, labels, pos = db.get_training_set(network.batch_size)  
+            data, labels, pos = db.get_training_set(network.batch_size)
             positives += pos
             
             set_x = reshape_input(data, network.window, network.n_inputs)
@@ -137,7 +137,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % network.saving_step == 0:                                 
+            if step == n_batches or step % network.saving_step == 0:                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))
@@ -225,16 +225,16 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
             break
         
         #~ if valid_reads % network.saving_step == 0:
-            #~ metrics.plot_squiggle(data, "Squiggle_{}_{}".format(os.path.basename(network.model_path), valid_reads))
-            #~ metrics.plot_squiggle(data[2000 : 3001], "Squiggle_{}_{}_middle".format(os.path.basename(network.model_path), valid_reads))
+            #~ trainingDB.metrics.plot_squiggle(data, "Squiggle_{}_{}".format(os.path.basename(network.model_path), valid_reads))
+            #~ trainingDB.metrics.plot_squiggle(data[2000 : 3001], "Squiggle_{}_{}_middle".format(os.path.basename(network.model_path), valid_reads))
             
         accuracy += sgl_acc
         loss += sgl_loss
 
 
-    whole_accuracy = metrics.calculate_accuracy(network.tp, network.fp, network.tn, network.fn)
-    whole_precision, whole_recall = metrics.precision_recall(network.tp, network.fp, network.fn)
-    whole_f1 = metrics.f1(whole_precision, whole_recall)
+    whole_accuracy = trainingDB.metrics.calculate_accuracy(network.tp, network.fp, network.tn, network.fn)
+    whole_precision, whole_recall = trainingDB.metrics.precision_recall(network.tp, network.fp, network.fn)
+    whole_f1 = trainingDB.metrics.f1(whole_precision, whole_recall)
     
      
     with open(file_path + ".txt", "a+") as dest: 
@@ -290,11 +290,11 @@ if __name__ == "__main__":
     max_number = 856
     only_validation = False
     
-    if len(argv) == 7:
+    if len(argv) >= 7:
         validation_start = int(argv[6])
-    if len(argv) == 8:
+    if len(argv) >= 8:
         max_number = int(argv[7])
-    if len(argv) == 9:
+    if len(argv) >= 9:
         validation_path = argv[8]
     if len(argv) == 10:
         only_validation = True
@@ -314,9 +314,9 @@ if __name__ == "__main__":
         
         # train and validate network
         print("Loading training database..")
-        db_train = helper_functions.load_db(db_dir_train)
+        db_train = trainingDB.helper_functions.load_db(db_dir_train)
         print("Loading validation database..")
-        squiggles = helper_functions.load_squiggles(db_dir_val)
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
         t5 = datetime.datetime.now()
         train_and_validate(network, db_train, training_nr, squiggles, max_seq_length,
                             validation_path, validation_start, max_number)
@@ -327,7 +327,7 @@ if __name__ == "__main__":
     if only_validation:
         
         print("Loading validation database..")
-        squiggles = helper_functions.load_squiggles(db_dir_val)
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
         t7 = datetime.datetime.now()
         validate(network, squiggles, max_seq_length, file_path, validation_start, max_number)
         t8 = datetime.datetime.now()

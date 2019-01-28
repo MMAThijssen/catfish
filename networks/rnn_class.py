@@ -235,20 +235,20 @@ class RNN(object):
     
         # evaluate performance:
         test_labels = test_y.reshape(-1)
-        true_pos, false_pos, true_neg, false_neg = metrics.confusion_matrix(test_labels, pred_vals)
+        true_pos, false_pos, true_neg, false_neg = trainingDB.metrics.confusion_matrix(test_labels, pred_vals)
         self.tp += true_pos
         self.fp += false_pos
         self.tn += true_neg
         self.fn += false_neg
 
-        #~ with open(file_path + "_checkpoint20000_c.txt", "a+") as dest:
+        #~ with open(file_path + "_fullvalidation.txt", "a+") as dest:
             #~ dest.write(read_name)
             #~ dest.write("\n")
             #~ dest.write("* {}".format(list(test_labels)))
             #~ dest.write("\n")
-            #~ dest.write("# {}".format(list(pred_vals)))
-            #~ dest.write("\n")
-            #~ dest.write("@ {}".format(list(confidences)))
+            #~ ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
+            #~ ##~ dest.write("\n")
+            #~ dest.write("@ {}".format(list(confidences)))                        # scores
             #~ dest.write("\n")
                     
         return test_acc, test_loss

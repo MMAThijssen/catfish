@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import datetime
-import helper_functions
+import trainingDB.helper_functions
 import numpy as np
 import os
 import psutil
@@ -46,7 +46,7 @@ def retrieve_hyperparams(model_file, split_on=": "):
 
 if __name__ == "__main__":
     #0. Get input
-    if not len(argv) < 8:
+    if not len(argv) >= 8:
         raise ValueError("The following arguments should be provided in this order:\n" + 
                          "\t-network type\n\t-path to saved network\n\t-checkpoint to restore" +
                          "\n\t-path to training db\n\t-number of training reads" + 
@@ -66,8 +66,8 @@ if __name__ == "__main__":
         only_validation = True
         saving = False
         print("Only validating now, NO training")
-    validation_start = "random"
-    max_number = 856                 
+    validation_start = "random" #30000
+    max_number = 856 #12255                 
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -95,9 +95,9 @@ if __name__ == "__main__":
         file_path = model.model_path
         print("Saving to information to {} extended".format(file_path))
         print("Loading training database..")
-        db_train = helper_functions.load_db(db_dir_train)
+        db_train = trainingDB.helper_functions.load_db(db_dir_train)
         print("Loading validation database..")
-        squiggles = helper_functions.load_squiggles(db_dir_val)
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
         t2 = datetime.datetime.now()
         train_and_validate(model, db_train, training_nr, squiggles, max_seq_length, file_path, validation_start, max_number)
         t3 = datetime.datetime.now()  
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         file_path = network_path + "_val_"
         print("Saving to information to {} extended".format(file_path))
         print("Loading validation database..")
-        squiggles = helper_functions.load_squiggles(db_dir_val)
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
         validate(model, squiggles, max_seq_length, file_path, validation_start, max_number)     
 
 

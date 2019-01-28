@@ -5,7 +5,7 @@ Created on Mon Nov 26 13:55:45 2018
 @author: thijs030
 """
 
-import helper_functions
+import trainingDB.helper_functions
 import reader
 import datetime
 import numpy as np
@@ -13,7 +13,7 @@ import statistics
 from sys import argv
 
 t1 = datetime.datetime.now()
-squiggles = helper_functions.load_squiggles(argv[1])
+squiggles = trainingDB.helper_functions.load_squiggles(argv[1])
 t2 = datetime.datetime.now()
 
 print("Loaded squiggels in {}".format(t2 - t1))
