@@ -66,8 +66,8 @@ if __name__ == "__main__":
         only_validation = True
         saving = False
         print("Only validating now, NO training")
-    validation_start = "random" #30000
-    max_number = 856 #12255                 
+    validation_start = "random" #"complete"  #"complete" #0 #30000
+    max_number = 12255            # 856
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     # 1a. Restore model
     hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
     model = build_model(network_type, save=saving, **hpm_dict)
-    model.restore_network("{}/checkpoints".format(network_path, ckpnt="ckpnt-{}".format(checkpoint)))
+    model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
     
     # 1b. Extend RNN model
     #~ hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         print("Trained and validated model in {}\n".format(t3 - t2))
         
     if only_validation:
-        file_path = network_path + "_val_"
+        file_path = network_path + "_"
         print("Saving to information to {} extended".format(file_path))
         print("Loading validation database..")
         squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)

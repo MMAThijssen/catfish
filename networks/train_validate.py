@@ -48,6 +48,21 @@ def build_model(network_type, **kwargs):
         network = ResNetRNN(**kwargs)
                         
     return network   
+    
+def padding(data, window=35, n_input=1):
+    # pad if needed
+    if not (len(data) / window).is_integer():
+        # pad
+        padding_size = window - (len(data) - (len(data) // window * window))
+        padding = np.array(padding_size * [0])
+        data = np.hstack((data, padding))
+    else:
+        padding_size = 0
+    #~ # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
+    n_batches = len(data) // window
+    data = reshape_input(data, window, n_input)
+    
+    return data, padding_size
 
     
 def generate_random_hyperparameters(network_type,
@@ -126,7 +141,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
 
         for b in range(n_batches):
             # load batch sized training examples:
-            data, labels, pos = db.get_training_set(network.batch_size)
+            data, labels, pos = db.get_training_set(network.batch_size, ratio=4)
             positives += pos
             
             set_x = reshape_input(data, network.window, network.n_inputs)
@@ -137,7 +152,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % network.saving_step == 0:                                            
+            if step == n_batches or step % 5000 == 0:                           # network.saving_step                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))
@@ -186,40 +201,52 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
         
     Returns: validation accuracy
     """  
-    max_seq_length = max_seq_length // network.window * network.window
+    total_length = 0
     accuracy = 0
     loss = 0
     valid_reads = 0
-
+    
+    print("Max length is {}".format(max_seq_length))
+    print("Validation start is {}".format(validation_start))
     # per squiggle:
-    random.shuffle(squiggles)                                                   # to assure reads are selected randomly
+    #~ random.shuffle(squiggles)                                                   # to assure reads are selected randomly
     file_path = file_path.split("/")[-1]
     #~ with open(file_path + "_training.txt", "a+") as dest:                    # for saving start pos
     for squig in squiggles:
         data_sq, labels_sq = reader.load_npz(squig)
         
-        if type(validation_start) == int: 
-            if len(data_sq) >= validation_start + max_seq_length: 
-                start_val = validation_start
-            else: 
-                continue
+        #~ # TEMP!
+        if validation_start == "complete":
+            total_length += len(data_sq)
         else:
-            if len(data_sq) >= max_seq_length:
-                # pick random point to start validation from:
-                start_val = random.randint(0, len(data_sq) - max_seq_length)
-            else:
-                continue
-        labels = labels_sq[start_val: start_val + max_seq_length] 
-        data = data_sq[start_val: start_val + max_seq_length]
-        #~ dest.write("\nStart validation at point: {}".format(start_val)) 
+            max_seq_length = max_seq_length // network.window * network.window
+            if type(validation_start) == int: 
+                if len(data_sq) >= validation_start + max_seq_length: 
+                    start_val = validation_start
+                else: 
+                    continue
+            elif validation_start == "random":
+                if len(data_sq) >= max_seq_length:
+                    # pick random point to start validation from:
+                    start_val = random.randint(0, len(data_sq) - max_seq_length)
+                else:
+                    continue
+            labels_sq = labels_sq[start_val: start_val + max_seq_length] 
+            data_sq = data_sq[start_val: start_val + max_seq_length]
+            #~ dest.write("\nStart validation at point: {}".format(start_val))
+            total_length += max_seq_length
+
         
         read_name = os.path.basename(squig).split(".npz")[0]
         valid_reads += 1
+        
+        set_x, padding_size = padding(data_sq, network.window, network.n_inputs)
+        set_y, _ = padding(labels_sq, network.window, network.n_inputs)
 
-        set_x = reshape_input(data, network.window, network.n_inputs)
-        set_y = reshape_input(labels, network.window, network.n_outputs)
+        #~ set_x = reshape_input(data, network.window, network.n_inputs)
+        #~ set_y = reshape_input(labels, network.window, network.n_outputs)
 
-        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path)
+        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path, padding_size)
         
         if valid_reads >= max_number:
             break
@@ -249,16 +276,16 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
         dest.write("\tDetected {} true positives, {} false positives, {} true negatives, {} false negatives in total.\n".
                 format(network.tp, network.fp, network.tn, network.fn))
         dest.write("\tTrue number of HPs: {} \tTrue percentage: {:.2%}\t Predicted percentage HPs: {:.2%}\n".
-                format(network.tp + network.fn, (network.tp + network.fn) / (valid_reads * max_seq_length), (network.tp + network.fp) / (valid_reads * max_seq_length)))
+                format(network.tp + network.fn, (network.tp + network.fn) / (total_length), (network.tp + network.fp) / (total_length)))
         dest.write("\tAccuracy: {:.2%}".format(whole_accuracy))
         dest.write("\n\tPrecision: {:.2%}\n\tRecall: {:.2%}".format(whole_precision, whole_recall))
         dest.write("\t\nF1 score: {0:.4f}".format(whole_f1))
-        dest.write("\nFinished validation of model {} on {} raw signals of length {}.".format(network.model_type, 
+        dest.write("\nFinished validation of model {} on {} raw signals of average length {}.".format(network.model_type, 
                                                                                    valid_reads,
-                                                                                   max_seq_length))    
-    print("\nFinished validation of model {} on {} raw signals of length {}.".format(network.model_type, 
+                                                                                   total_length / valid_reads))    
+    print("\nFinished validation of model {} on {} raw signals of average length {}.".format(network.model_type, 
                                                                                    valid_reads,
-                                                                                    max_seq_length))
+                                                                                   total_length / valid_reads))
     # clean for new round of validation:
     network.tp = 0
     network.fn = 0
@@ -318,7 +345,7 @@ if __name__ == "__main__":
         print("Loading validation database..")
         squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
         t5 = datetime.datetime.now()
-        train_and_validate(network, db_train, training_nr, squiggles, max_seq_length,
+        train_and_validate(network, db_train, training_nr, squiggles, max_seq_length, 
                             validation_path, validation_start, max_number)
         t6 = datetime.datetime.now()
         print("Trained and validated network in {}".format(t6 - t5))

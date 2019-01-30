@@ -220,14 +220,19 @@ class RNN(object):
         return(confidences)        
         
 
-    def test_network(self, test_x, test_y, read_name, file_path, threshold=0.5):
+    def test_network(self, test_x, test_y, read_name, file_path, padding_size, threshold=0.5):
         # get predicted values:
+        #~ test_x, padding_size = padding(test_x, network.window, network.n_inputs)
+        #~ test_y, _ = padding(test_y, network.window, network.n_inputs)
+        
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
 
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
         
         pred_vals = [1 if c >= threshold else 0 for c in confidences]
+        
+        confidences = confidences[: len(confidences) -padding_size]
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -238,10 +243,10 @@ class RNN(object):
         true_pos, false_pos, true_neg, false_neg = trainingDB.metrics.confusion_matrix(test_labels, pred_vals)
         self.tp += true_pos
         self.fp += false_pos
-        self.tn += true_neg
+        self.tn += true_neg - padding_size
         self.fn += false_neg
 
-        #~ with open(file_path + "_fullvalidation.txt", "a+") as dest:
+        #~ with open(file_path + "negatives.txt", "a+") as dest:
             #~ dest.write(read_name)
             #~ dest.write("\n")
             #~ dest.write("* {}".format(list(test_labels)))

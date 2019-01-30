@@ -9,14 +9,13 @@ from sys import argv
 
 ### FOR INFERING:       # start with input as a single file > work towards directory
 
-def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_000", window_size=35):
+def infer_class_from_signal(fast5_file, model, window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
     
     Args:
         fast5_file -- str, path to FAST5 file
         model -- RNN object, network model
-        hdf_path -- str, path in FAST5 leading to signal
         network_type -- str, type of network [default: ResNetRNN]
         window_size -- int, size of window used to train network
     
@@ -28,9 +27,9 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
     with h5py.File(fast5_file, "r") as fast5:
         # process signal
         raw = process_signal(fast5)
-        #~ print("Length of raw signal: ", len(raw))
-        #~ raw = raw[: 36]                                                         # VERANDEREN!                                              
-        #~ print(len(raw))
+        ##~ print("Length of raw signal: ", len(raw))
+        ##~ raw = raw[: 36]                                                         # VERANDEREN!                                              
+        ##~ print(len(raw))
         
     # pad if needed
     if not (len(raw) / window_size).is_integer():
@@ -39,7 +38,7 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
         padding = np.array(padding_size * [0])
         raw = np.hstack((raw, padding))
     else:
-        np.concatenate((raw, [0]), axis=0)
+        raw = np.concatenate((raw, [0]), axis=0)
         padding_size = 1
     
     # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
@@ -57,12 +56,13 @@ def infer_class_from_signal(fast5_file, model, hdf_path="Analyses/Basecall_1D_00
 
 # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
 # 1. Load network
-def load_network(network_type, path_to_network):
+def load_network(network_type, path_to_network, checkpoint):
     hpm_dict = retrieve_hyperparams(path_to_network + ".txt")                # CHANGE later!
     #~ hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
                 #~ "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
     model = build_model(network_type, **hpm_dict)
-    model.restore_network(path_to_network + "/checkpoints")
+    model.restore_network(path_to_network + "/checkpoints", checkpoint)
+    model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
 
     return model
     

@@ -111,26 +111,38 @@ def training_dir(dest_dir, train_set):
     
 if __name__ == "__main__":
     #1. Get a file with the names as in absolute path of the files to sample from
-    my_dir = argv[1]
-    output_file = argv[2]
+    #~ my_dir = argv[1]
+    #~ output_file = argv[2]
     #~ if len(argv) == 4:
         #~ if argv[3] == "True":
             #~ simulated = True
-    all_samples = retrieve_fast5(my_dir, output_file, simulated)
+    #~ all_samples = retrieve_fast5(my_dir, output_file, simulated)
 
-    # 2. Divide reads over sets
-    total_number = int(argv[3])
-    name_traindb = argv[4]
-    name_valdb = argv[5]
-    name_testdb = argv[6]
+    #~ # 2. Divide reads over sets
+    #~ total_number = int(argv[3])
+    #~ name_traindb = argv[4]
+    #~ name_valdb = argv[5]
+    #~ name_testdb = argv[6]
 
-    tr_set, val_set, ts_set = get_sets(all_samples, total_number) 
+    #~ tr_set, val_set, ts_set = get_sets(all_samples, total_number) 
     
-    print(len(tr_set))
-    print(len(val_set))
-    print(len(ts_set))
+    #~ print(len(tr_set))
+    #~ print(len(val_set))
+    #~ print(len(ts_set))
     
     # 3. Make directory for trainingDB with training samples
-    training_dir(name_traindb, tr_set)    
-    training_dir(name_valdb, val_set)
-    training_dir(name_testdb, ts_set)    
+    #~ training_dir(name_traindb, tr_set)    
+    #~ training_dir(name_valdb, val_set)
+    #~ training_dir(name_testdb, ts_set)   
+    
+    # Negative reads only dir:
+    dir_out = argv[1]
+    neg_file = argv[2]
+    
+    with open(neg_file, "r") as source:
+        neg_list = ["{}.fast5".format(line.strip().split("/")[-1].split(".npz")[0])
+                    for line in source]
+    #~ print(len(neg_list[0]))
+    
+    training_dir(dir_out, neg_list)
+            

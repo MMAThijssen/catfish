@@ -75,7 +75,7 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start
                     true_labels = None
 
 
-def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, length=4970, max_nr=12255):
+def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -90,8 +90,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
         max_nr -- int, maximum number of reads to use [default: 12255]
         
     Returns: None
-    """
-    show_plots = True
+    """       
+    show_plots = False
     is_confusion = True                                                         # was on measurements
     on_measurements = False
     if on_measurements:
@@ -159,6 +159,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                     if predicted_labels != None:
                         predicted_scores = predicted_labels
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
+                        length = len(predicted_labels)
                 if true_labels == None:    
                     true_labels = list_predicted(line, types="true_labels")
                 elif predicted_labels != None and true_labels != None:
@@ -170,13 +171,13 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
 
                     predicted_labels = list(correct_short(predicted_labels))
                     
-                    # generate heatmap
-                    if read_counter == 1:
-                        generate_heatmap([predicted_labels, true_labels, predicted_scores], ["predicted", "truth", "confidences"],
-                                            "Comparison_{}".format(read_name))
+                    #~ # generate heatmap
+                    #~ if read_counter == 1:
+                        #~ generate_heatmap([predicted_labels, true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                            #~ "Comparison_{}".format(read_name))
 
-                        generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
-                                            "Comparison_{}_corrected".format(read_name)) 
+                        #~ generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                            #~ "Comparison_{}_corrected".format(read_name)) 
                     
                     # save information to dict
                     predicted_hp = hp_loc_dict(predicted_labels)
@@ -426,8 +427,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                 dest.write("{}\n".format(all_count_tpbasestrue))
                 dest.write("\tTP composition\n")
                 dest.write("{}\n".format(all_count_tpseqtrue))
-                dest.write("\tTP positions\n")
-                dest.write("{}\n".format(all_count_tppositions))  
+                #~ dest.write("\tTP positions\n")
+                #~ dest.write("{}\n".format(all_count_tppositions))     
 
             if all_fppositions != []:
                 dest.write("\nFPs: {}\tFP measurements: {}\tFP bases: {}\n".format(fp, sum_dict(all_count_fptrue), sum_dict(all_count_fpbasestrue)))
@@ -437,8 +438,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                 dest.write("{}\n".format(all_count_fpbasestrue))
                 dest.write("\tFP composition\n")
                 dest.write("{}\n".format(all_count_fpseqtrue))
-                dest.write("\tFP positions\n")
-                dest.write("{}\n".format(all_count_fppositions))  
+                #~ dest.write("\tFP positions\n")
+                #~ dest.write("{}\n".format(all_count_fppositions))  
 
             if all_fnpositions:
                 dest.write("\nFNs: {}\tFN measurements: {}\tFN bases: {}\n".format(fn, sum_dict(all_count_fntrue), sum_dict(all_count_fnbasestrue)))
@@ -448,8 +449,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, lengt
                 dest.write("{}\n".format(all_count_fnbasestrue))
                 dest.write("\tFN composition\n")
                 dest.write("{}\n".format(all_count_fnseqtrue))
-                dest.write("\tFN positions\n")
-                dest.write("{}\n".format(all_count_fnpositions))
+                #~ dest.write("\tFN positions\n")
+                #~ dest.write("{}\n".format(all_count_fnpositions))
 
         # part on all predictions
         dest.write("\nComparison on length and composition        (length / seq, count)\n")
@@ -1070,7 +1071,7 @@ if __name__ == "__main__":
     threshold = float(argv[5])
     max_number = 12255
     max_seq_length = 14980 #4970   #9975 
-    start = 30000 #0 
+    start = 0 #30000
     
     if len(argv) >= 7:
         max_number = int(argv[6])
@@ -1079,7 +1080,7 @@ if __name__ == "__main__":
     if len(argv) >= 9:
         start = int(argv[8])
     tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
-                          threshold, start, max_seq_length, max_number)
+                          threshold, start, max_number)
 
     #~ check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 
                           #~ threshold, start, max_seq_length, max_number)

@@ -14,7 +14,6 @@ def draw_roc_curve(true_labels, predicted_scores, output_name, ts=[0.1, 0.2, 0.3
     auc = roc_auc_score(true_labels, predicted_scores)
     print("AUC: {:.3f}".format(auc))
     fpr, tpr, thresholds = roc_curve(true_labels, predicted_scores)
-    print(len(fpr), len(tpr), len(thresholds))
     plt.title("Receiver Operator Characteristic")
     plt.plot([0, 1], [0, 1],'r--', c="crimson")
     plt.plot(fpr, tpr, "b", label="AUC = {:.3f}".format(auc), c="darkblue")
@@ -117,11 +116,12 @@ def predictions_from_file(in_file):
             elif line.startswith("*"):
                 labels = line.strip()[3:-1].split(", ")
                 labels = list(map(int, labels))
-                true_labels.extend(labels)
             elif line.startswith("@"):
                 preds = line.strip()[3:-1].split(", ")
                 preds = list(map(float, preds))
+                padding = len(labels) - len(preds)
                 predicted_scores.extend(preds)  
+                true_labels.extend(labels[: - padding])
     
     return true_labels, predicted_scores
 
@@ -133,6 +133,8 @@ if __name__ == "__main__":
     
     # 1. Get labels and scores
     labels, scores = predictions_from_file(input_file)
+    print("Length of labels combined: ", len(labels))
+    print("Length of scores combined: ", len(scores))
     
     # 2. Draw curves
     draw_roc_curve(labels, scores, output_name)
