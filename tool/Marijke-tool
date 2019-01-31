@@ -4,6 +4,7 @@
 import click
 import datetime
 import infer
+import neural_network
 import os
 import os.path
 import subprocess
@@ -34,44 +35,60 @@ Main script to run tool from
 @click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
 @click.option("--output-file", "-o", help="Name of output file")
 @click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
-def main(input_dir, output_file, save_dir, threshold=0.5, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_14", network_type="ResNetRNN"):
+def main(input_dir, output_file, save_dir, threshold=0.5, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_33", network_type="ResNetRNN"):
     """
     A tool with a neural network as basis to predict the presence of 
     homopolymers in the raw signal from a MinION sequencer. 
     """
-    # load model
+    # 0. Load model
     t1 = datetime.datetime.now()
-    model = infer.load_network(network_type, network_path)
+    model = neural_network.load_network(network_type, network_path, checkpoint=30000)
     print("Loaded model in {}".format(datetime.datetime.now() - t1))
     
-    # load files in dir
+    # 1. Load files in directory
     input_dir = os.path.abspath(input_dir)
     input_files = os.listdir(input_dir)
 
-    # get predicted HPs for every read:
+    # 2. Get predicted HPs for every read
     print("Checking for homopolymers in raw signal..")
     t2 = datetime.datetime.now()
     all_reads = [[fast5_file, infer.infer_class_from_signal("{}/{}".format(input_dir, fast5_file), model)] 
                 for fast5_file in input_files]
     print("Finished classifications in {}".format(datetime.datetime.now() - t2))
+    
     # save HP regions to dict
     hp_dict = {all_reads[ar][0] : all_reads[ar][1] for ar in range(len(all_reads))
                 if all_reads[ar][1] != []}
     print("In {} out of {} reads at least one HP is detected in total of {}".format(len(hp_dict), len(input_files), datetime.datetime.now() - t2)) # remove later
-
     
-    # basecall all reads with Albacore:
-    THREADS = 4
-    CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"   
-    FLOW = "FLO-MIN106"
-    KIT = "SQK-RAD002"            
-    OUTPUT = "fastq"                            # can be FAST5 or FASTQ or both ; this for testing
-    print("Basecalling with Albacore v2.3.3  ..")
-    subprocess.run("source activate basecall", shell=True)
-    subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
-                    input_dir, THREADS, save_dir, OUTPUT, FLOW, KIT), shell=True)
-    # close conda env
-    subprocess.run("source deactivate", shell=True)
+    print(hp_dict)
+    
+    
+    # 3. Split FAST5 in multiple FAST5s
+        # a. Save which files belong to group HP and to group non-HP
+    
+    # 4. Process each FAST5 belong to HP or non-HP group
+        # a. Register number of failed and number of passes (in total and per group)
+        
+    # 5. Extract FASTAs from FASTQs in passed dir
+    
+    # 6. Check read quality
+    
+    # 7. MAYBE - produce nice graphs on read quality and CPU speed
+    
+    
+    #~ # basecall all reads with Albacore:
+    #~ THREADS = 4
+    #~ CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"   
+    #~ FLOW = "FLO-MIN106"
+    #~ KIT = "SQK-RAD002"            
+    #~ OUTPUT = "fastq"                            # can be FAST5 or FASTQ or both ; this for testing
+    #~ print("Basecalling with Albacore v2.3.3  ..")
+    #~ subprocess.run("source activate basecall", shell=True)
+    #~ subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
+                    #~ input_dir, THREADS, save_dir, OUTPUT, FLOW, KIT), shell=True)
+    #~ # close conda env
+    #~ subprocess.run("source deactivate", shell=True)
     
     # skip failed reads from Albacore
     
@@ -96,7 +113,7 @@ def main(input_dir, output_file, save_dir, threshold=0.5, network_path="/mnt/scr
         
     #~ print("Successfully basecalled {} of {} reads.".format(successes, len()) # is not necessary: albacore splits this up already
     
-    return None
+    #~ return None
 
     
 if __name__ == "__main__":

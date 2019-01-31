@@ -5,6 +5,7 @@ Created on Mon Oct 22 13:37:40 2018
 @author: thijs030
 """
 import numpy as np
+from sys import argv
 
 def load_npz(npz_file):
     """
@@ -47,3 +48,7 @@ def load_npz_raw(npz_file):
     with np.load(npz_file) as npz:
         raw = npz["raw"]
     return raw
+
+
+if __name__ == "__main__":
+    print(load_npz_raw(argv[1]))

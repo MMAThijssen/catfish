@@ -67,7 +67,7 @@ if __name__ == "__main__":
         saving = False
         print("Only validating now, NO training")
     validation_start = "random" #"complete"  #"complete" #0 #30000
-    max_number = 12255            # 856
+    max_number = 856 #12255            # 856
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     print("\nMemory use at start is", m1)  
     print("Started script at {}\n".format(t1))
 
-    # 1a. Restore model
+    #~ # 1a. Restore model
     hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
     model = build_model(network_type, save=saving, **hpm_dict)
     model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     #~ resnet_dict = generate_random_hyperparameters(network_type)
     #~ hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
     #~ hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
-    #~ model = build_model(network_type, **hpm_dict)
+    #~ model = build_model(network_type, save=True, **hpm_dict)
     #~ model.initialize_network() 
 
  

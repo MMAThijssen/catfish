@@ -1002,7 +1002,7 @@ def create_confdict(predicted_hp, states, confusion):
     return hpdict
 
 
-# from Carlos:                      
+# adapted from Carlos:                      
 def correct_short(predictions, threshold=15):
     """
     Corrects class prediction to negative label if positive stretch is shorter than threshold.

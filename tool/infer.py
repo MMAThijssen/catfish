@@ -7,8 +7,7 @@ from models.resnet_class import ResNetRNN
 from models.rnn_class import RNN
 from sys import argv
 
-### FOR INFERING:       # start with input as a single file > work towards directory
-
+# Inference
 def infer_class_from_signal(fast5_file, model, window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
@@ -49,56 +48,13 @@ def infer_class_from_signal(fast5_file, model, window_size=35):
     
     # cut padding
     scores = scores[: -padding_size]
-    labels = class_from_threshold(scores)
+    labels = correct_short(class_from_threshold(scores))
     predicted_hps = hp_in_pred(labels)
     
     return predicted_hps
 
-# TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
-# 1. Load network
-def load_network(network_type, path_to_network, checkpoint):
-    hpm_dict = retrieve_hyperparams(path_to_network + ".txt")                # CHANGE later!
-    #~ hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
-                #~ "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
-    model = build_model(network_type, **hpm_dict)
-    model.restore_network(path_to_network + "/checkpoints", checkpoint)
-    model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
 
-    return model
-    
-def retrieve_hyperparams(model_file, split_on=": "):
-    """
-    Retrieve hyperparameters from model file.
-    
-    Args:
-        model_file -- str, path to file on model created by train_validate.build_model
-        split_on -- str, combination of characters to split on [default: ": "]
-    
-    Returns: dict of hyperparameters
-    """
-    hpm_dict = {}
-    with open(model_file, "r") as source:
-        for line in source:
-            if line.startswith("batch_size"):
-                hpm_dict["batch_size"] = int(line.strip().split(split_on)[1])
-            elif line.startswith("optimizer_choice"):
-                hpm_dict["optimizer_choice"] = line.strip().split(split_on)[1]
-            elif line.startswith("learning_rate"):
-                hpm_dict["learning_rate"] = float(line.strip().split(split_on)[1])
-            elif line.startswith("layer_size:"):
-                hpm_dict["layer_size"] = int(line.strip().split(split_on)[1])
-            elif line.startswith("n_layers:"):
-                hpm_dict["n_layers"] = int(line.strip().split(split_on)[1])
-            elif line.startswith("keep_prob"):
-                hpm_dict["keep_prob"] = float(line.strip().split(split_on)[1])
-            elif line.startswith("layer_size_res"):
-                hpm_dict["layer_size_res"] = int(line.strip().split(split_on)[1])
-            elif line.startswith("n_layers_res"):   
-                hpm_dict["n_layers_res"] = int(line.strip().split(split_on)[1])
-                
-    return hpm_dict
-
-# 2. Extract raw signal from file
+# Raw signal
 def process_signal(fast5_file, normalization="median"):
     """
     Process raw signal by trimming start and normalizing the signal.
@@ -117,10 +73,10 @@ def process_signal(fast5_file, normalization="median"):
     
     return raw_signal
 
-# from Carlos             
-def normalize_raw_signal(raw, norm_method):
+          
+def normalize_raw_signal(raw, norm_method):                                     # from Carlos
     """
-    Normalize the raw DAC values
+    Normalize the raw DAC values. 
     """
     # Median normalization, as done by nanoraw (see nanoraw_helper.py)
     if norm_method == 'median':
@@ -131,25 +87,6 @@ def normalize_raw_signal(raw, norm_method):
     return (raw - shift) / scale
 
 
-# 3. Restore network
-def build_model(network_type, saving=False, **kwargs):
-    """
-    Constructs neural network
-    
-    Args:
-        network_type -- str, type of network: "RNN" or "ResNetRNN"
-        
-    Returns: network object
-    """
-    if network_type == "RNN":
-        network = RNN(save=saving, **kwargs)
-    
-    elif network_type == "ResNetRNN":                   
-        network = ResNetRNN(save=saving, **kwargs)
-                        
-    return network  
-
-# 4. Infer 
 def reshape_input(data, window, n_inputs):
     """
     Reshapes input to fit input tensor
@@ -169,6 +106,7 @@ def reshape_input(data, window, n_inputs):
     return data 
 
 
+# Classified output
 def class_from_threshold(predicted_scores, threshold=0.5):
     """
     Assigns classes on input based on given threshold.
@@ -203,3 +141,33 @@ def hp_in_pred(predictions, positive=1):
     positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
             
     return positives
+
+                    
+def correct_short(predictions, threshold=15):                                   # adapted from Carlos
+    """
+    Corrects class prediction to negative label if positive stretch is shorter than threshold.
+    
+    Args:
+        predictions -- list of int, predicted class labels
+        threshold -- int, threshold to correct stretch [default: 15]
+    
+    Returns: corrected predictions
+    """
+    compressed_predictions = [[predictions[0],0]]
+
+    for p in predictions:
+        if p == compressed_predictions[-1][0]:
+            compressed_predictions[-1][1] += 1
+        else:
+            compressed_predictions.append([p, 1])
+
+    for pred_ci, pred_c, in enumerate(compressed_predictions):
+        if pred_c[0] != 0:
+            if pred_c[1] < threshold:
+                # remove predictions shorter than threshold
+                compressed_predictions[pred_ci][0] = 0
+            #~ else: 
+                #~ # extend predictions longer than threshold
+                #~ compressed_
+            
+    return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])    

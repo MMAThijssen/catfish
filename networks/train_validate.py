@@ -141,7 +141,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
 
         for b in range(n_batches):
             # load batch sized training examples:
-            data, labels, pos = db.get_training_set(network.batch_size, ratio=4)
+            data, labels, pos = db.get_training_set(network.batch_size, ratio=3)
             positives += pos
             
             set_x = reshape_input(data, network.window, network.n_inputs)

@@ -31,7 +31,10 @@ def read_quality(reads, ref_fasta, output):
         
     aligner = mp.Aligner(ref_fasta)                                             # constructor that indexes reference
 
-    for name, seq, qual in mp.fastx_read(reads):                                # generator that open FAST5 and yiels name, seq, qual
+    for name, seq, qual in mp.fastx_read(reads):                                # generator that open FASTA/Q and yiels name, seq, qual
+        print(name)
+        print(seq)
+        
         nb_hits = 0
         for hit in aligner.map(seq):                                            # aligns seq against index (generates Alignment object that describe alignment)
             if hit.is_primary:                                                  # usually best and first              

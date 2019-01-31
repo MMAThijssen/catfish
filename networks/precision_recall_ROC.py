@@ -1,3 +1,4 @@
+import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from trainingDB.metrics import set_sns_style
 import numpy as np
@@ -14,9 +15,10 @@ def draw_roc_curve(true_labels, predicted_scores, output_name, ts=[0.1, 0.2, 0.3
     auc = roc_auc_score(true_labels, predicted_scores)
     print("AUC: {:.3f}".format(auc))
     fpr, tpr, thresholds = roc_curve(true_labels, predicted_scores)
-    plt.title("Receiver Operator Characteristic")
+    
     plt.plot([0, 1], [0, 1],'r--', c="crimson")
     plt.plot(fpr, tpr, "b", label="AUC = {:.3f}".format(auc), c="darkblue")
+    plt.title("Receiver Operator Characteristic")
     for t in range(len(ts)):
         #~ adjusted_predictions = class_from_threshold(predicted_scores, t)
         close_point = np.argmin(np.abs(thresholds - ts[t]))
@@ -116,12 +118,14 @@ def predictions_from_file(in_file):
             elif line.startswith("*"):
                 labels = line.strip()[3:-1].split(", ")
                 labels = list(map(int, labels))
+                #~ true_labels.extend(labels)
             elif line.startswith("@"):
                 preds = line.strip()[3:-1].split(", ")
                 preds = list(map(float, preds))
                 padding = len(labels) - len(preds)
+                print(padding)
                 predicted_scores.extend(preds)  
-                true_labels.extend(labels[: - padding])
+                true_labels.extend(labels[: len(labels) - padding])
     
     return true_labels, predicted_scores
 
