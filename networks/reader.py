@@ -51,4 +51,4 @@ def load_npz_raw(npz_file):
 
 
 if __name__ == "__main__":
-    print(load_npz_raw(argv[1]))
+    print(load_npz_labels(argv[1])[11341:112402])

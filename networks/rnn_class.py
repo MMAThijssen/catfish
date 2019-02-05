@@ -246,15 +246,15 @@ class RNN(object):
         self.tn += true_neg - padding_size
         self.fn += false_neg
 
-        #~ with open(file_path + "negatives.txt", "a+") as dest:
-            #~ dest.write(read_name)
-            #~ dest.write("\n")
-            #~ dest.write("* {}".format(list(test_labels)))
-            #~ dest.write("\n")
-            #~ ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
-            #~ ##~ dest.write("\n")
-            #~ dest.write("@ {}".format(list(confidences)))                        # scores
-            #~ dest.write("\n")
+#        with open(file_path + "fullvalidation.txt", "a+") as dest:
+#            dest.write(read_name)
+#            dest.write("\n")
+#            dest.write("* {}".format(list(test_labels)))
+#            dest.write("\n")
+            ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
+            ##~ dest.write("\n")
+#            dest.write("@ {}".format(list(confidences)))                        # scores
+#            dest.write("\n")
                     
         return test_acc, test_loss
 

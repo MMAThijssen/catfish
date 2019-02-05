@@ -6,17 +6,18 @@ from shutil import copyfile
 from sys import argv
 
 
-def split_signal(input_file, splits):
+def split_signal(input_file, splits, temp_dir):
     """
     Splits raw signal of FAST5 file on specified entries. All other groups are copied.
     
     Args:
         input_file -- str, path to input file
-        splits -- list of tuple, start and end value to split on; end is inclusive
+        splits -- list of tuple, start and end value to split on, and label; end is exclusive
     
-    Returns: list of new file names
+    Returns: list of new file names for positives and for negatives
     """
-    new_files = []
+    new_files_pos = []
+    new_files_neg = []
     
     # get signal
     try:
@@ -34,10 +35,10 @@ def split_signal(input_file, splits):
     index = 0
     # split signal          # ADJUST TO IMMEDIATELY MAKE NEW FILE
     for s in splits:
-        new_signal = signal_dset[s[0] : s[1] + 1]
+        new_signal = signal_dset[s[0] : s[1]]
         
         # make file
-        dest_name = "{}_{}.fast5".format(os.path.basename(input_file).split(".")[0], index)
+        dest_name = "{}/{}_{}.fast5".format(temp_dir, os.path.basename(input_file).split(".")[0], index)
         copyfile(input_file, dest_name)     # TODO: change dest_name to path within dest dir
         dest = h5py.File(dest_name, "r+")
         raw_reads = dest["Raw"]["Reads"][read_name]
@@ -48,9 +49,14 @@ def split_signal(input_file, splits):
                                  compression="gzip",compression_opts=9)
         dest.close()
         index += 1
-        new_files.append(dest_name)
+        if s[2] == 1:
+            new_files_pos.append(dest_name)
+        elif s[2] == 0:
+            new_files_neg.append(dest_name)
+        else:
+            raise KeyError("Label must be either 0 or 1.")
     
-    return new_files
+    return new_files_pos, new_files_neg
 
     
 if __name__ == "__main__":

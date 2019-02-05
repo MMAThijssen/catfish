@@ -141,7 +141,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
 
         for b in range(n_batches):
             # load batch sized training examples:
-            data, labels, pos = db.get_training_set(network.batch_size, ratio=3)
+            data, labels, pos = db.get_training_set(network.batch_size, ratio=2)
             positives += pos
             
             set_x = reshape_input(data, network.window, network.n_inputs)
@@ -152,7 +152,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % 5000 == 0:                           # network.saving_step                                            
+            if step == n_batches or step % network.saving_step == 0:                           # network.saving_step                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))
@@ -301,7 +301,7 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
 
 if __name__ == "__main__":
     # get input
-    if len(argv) < 7:
+    if len(argv) < 6:
         raise ValueError("The following arguments should be provided in this order:\n" + 
                          "\t-network type\n\t-path to training db" +
                          "\n\t-number of training reads\n\t-path to validation db" + 

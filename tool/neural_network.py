@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from models.resnet_class import ResNetRNN
+from models.rnn_class import RNN
+
 # TODO: adjust this to correct model! -- also network_type in second line  -- make default hpm_dict -- change path to point to be dependent on user
 
 def build_model(network_type, saving=False, **kwargs):

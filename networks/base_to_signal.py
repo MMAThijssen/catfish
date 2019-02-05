@@ -97,8 +97,11 @@ def get_base_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
             new = []
             for i in range(len(event_lengths)):
                 bases.extend(event_lengths[i] * [event_bases[i],])
+                half_event = event_lengths[i] // 2
+                otherhalf_event = event_lengths[i] - half_event - 1             # -1 for "n"
+                new.extend(half_event * [same_base,])
                 new.extend([new_base,])
-                new.extend((event_lengths[i] - 1) * [same_base,])
+                new.extend(otherhalf_event * [same_base,])
         else:
             raise Exception("Not yet implemented for uncorrected reads")
             bases = None
@@ -126,14 +129,15 @@ def save_base_signal(fast5, out_file):
         dest.write("\n")
     
 if __name__ == "__main__":
-    sgl_folder = argv[1]
-    outname = argv[2]
-    count = 0
-    sgl_files = os.listdir(os.path.abspath(sgl_folder))
-    os.chdir(sgl_folder)
-    for sgl in sgl_files:
-        save_base_signal(sgl, argv[2])
-        if count % 100 == 0:
-            print("Saved {} sgls to file".format(count))
-        count += 1
+    get_base_new_signal(argv[1])
+    #~ sgl_folder = argv[1]
+    #~ outname = argv[2]
+    #~ count = 0
+    #~ sgl_files = os.listdir(os.path.abspath(sgl_folder))
+    #~ os.chdir(sgl_folder)
+    #~ for sgl in sgl_files:
+        #~ save_base_signal(sgl, argv[2])
+        #~ if count % 100 == 0:
+            #~ print("Saved {} sgls to file".format(count))
+        #~ count += 1
 

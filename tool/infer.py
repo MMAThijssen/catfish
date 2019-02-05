@@ -8,7 +8,7 @@ from models.rnn_class import RNN
 from sys import argv
 
 # Inference
-def infer_class_from_signal(fast5_file, model, window_size=35):
+def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
     
@@ -49,7 +49,7 @@ def infer_class_from_signal(fast5_file, model, window_size=35):
     # cut padding
     scores = scores[: -padding_size]
     labels = correct_short(class_from_threshold(scores))
-    predicted_hps = hp_in_pred(labels)
+    predicted_hps = hp_in_pred(labels, label)
     
     return predicted_hps
 
@@ -120,15 +120,15 @@ def class_from_threshold(predicted_scores, threshold=0.5):
     return [1 if y >= threshold else 0 for y in predicted_scores]
     
                          
-def hp_in_pred(predictions, positive=1):
+def hp_in_pred(predictions, label=1):
     """
     Get start positions and length of positive label in predicted input.
     
     Args:
         predictions -- list of int, predicted class labels
-        threshold -- int, threshold to correct stretch [default: 15]
+        label -- int, labeled positions to extract [default: 1]
     
-    Returns: list [[length, start position]]
+    Returns: list [(start position, end position, label)]
     """
     compressed_predictions = [[predictions[0], 0, 0]]
 
@@ -137,9 +137,21 @@ def hp_in_pred(predictions, positive=1):
             compressed_predictions[-1][1] += 1
         else:
             compressed_predictions.append([predictions[p], 1, p])
-            
-    positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
-            
+    
+    #~ positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1])  for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
+    #~ positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1] # KEEP: can be use to calculate average distance between pos and neg
+           
+    positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1], compressed_predictions[l][0]) 
+                    for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == label]
+    
+    return positives
+    
+def get_positions(prediction_list):
+    """
+    Args:
+        prediction_list -- list [[label, length, start position]]
+    """
+    positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1])  for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
     return positives
 
                     

@@ -11,14 +11,13 @@ from reader import load_npz_raw
 from statistics import median
 from sys import argv
 
-def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, length=4970, max_nr=12255):
+def check_for_neg(output_file, main_dir, out_name, threshold=0.5, start=0, length=4970, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
     Args:
         output_file -- str, file outputted by neural network validation
         main_dir -- str, path to main directory containing FAST5 files
-        npz_dir -- str, path to directory containing .npz files
         out_name -- str, name of file to write output to
         start -- int, start position taken at validation
         length -- int, length of stretch that was validated
@@ -75,14 +74,13 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.5, start
                     true_labels = None
 
 
-def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
+def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
     Args:
         output_file -- str, file outputted by neural network validation
         main_dir -- str, path to main directory containing FAST5 files
-        npz_dir -- str, path to directory containing .npz files
         out_name -- str, name of file to write output to
         threshold -- float, threshold for classification labels [default: 0.5]
         start -- int, start position taken at validation [default: 0]
@@ -91,7 +89,7 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
         
     Returns: None
     """       
-    show_plots = False
+    show_plots = True
     is_confusion = True                                                         # was on measurements
     on_measurements = False
     if on_measurements:
@@ -235,11 +233,22 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                         if fp_truehp != 0:
                             count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(fp_truehp, bases, new)         # false positives
                             [all_fppositions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]
-
+                            #~ print(count_fpseqtrue)
+                            #~ print(fp_truehp)
                         # to check:
                             #~ st = 2522
                             #~ ed = 2554
-                            #~ if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch148_read1772_strand":
+                            if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch194_read5177_strand":
+                                for hp in fp_truehp:
+                                    print(fp_truehp[hp])
+                                    print(true_labels[fp_truehp[hp][0]: fp_truehp[hp][1] + 1])
+                                    print(predicted_labels[fp_truehp[hp][0] : fp_truehp[hp][1] + 1])
+                                    print(bases[fp_truehp[hp][0] : fp_truehp[hp][1] + 1])
+                                    print(new[fp_truehp[hp][0] : fp_truehp[hp][1] +1])
+                                    fake_new = new[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
+                                    fake_bases = bases[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
+                                    seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                    print("".join(seq))
                                 #~ print("states: ", states)
                                 #~ print("true: ", true_labels[st:ed])
                                 #~ print("predicted: ", predicted_labels[st:ed])
@@ -348,43 +357,6 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
         tp = 0
         for a in all_count_tptrue:
             tp += all_count_tptrue[a]
-                            
-    if show_plots:
-        # plots on all positives:
-        plot_prevalence(all_count_predictions, name="Predicted_HP_length_measurements")       # 1
-        plot_prevalence(all_count_basehp, name="Predicted_HP_length_bases")                   # 3
-        plot_prevalence(all_count_truehp, name="True_HP_lengths_measurements")      # 4a
-        plot_prevalence(all_count_basetrue, name="True_HP_length_bases")            # 4b
-        plot_list(all_seq_list, name="Predicted_HP_sequences", rotate=True)              # 5
-        plot_list(all_seqtrue_list, name="True_HP_sequences", rotate=True)                            # 5
-        
-        plot_list(all_count_truepositions, name="True_positions")
-    
-        if is_confusion:
-            # plots on false negatives:
-            if all_fnpositions != []: 
-                plot_prevalence(all_count_fntrue, name="FN_measurements")    
-                plot_prevalence(all_count_fnbasestrue, name="FN_bases")  
-                plot_list(all_count_fnpositions, name="FN_positions")        
-                plot_list(all_fnseqtrue, name="FN_sequences", rotate=True)    
-   
-            # plots on false positives:
-            if all_fppositions != []: 
-                plot_prevalence(all_count_fptrue, name="FP_measurements")    
-                plot_prevalence(all_count_fpbasestrue, name="FP_bases")  
-                plot_list(all_count_fppositions, name="FP_positions")        
-                plot_list(all_fpseqtrue, name="FP_HP_sequences", rotate=True) 
-            
-            # plots on true positives:
-            if all_tppositions != []: 
-                plot_prevalence(all_count_tptrue, name="TP_measurements")    
-                plot_prevalence(all_count_tpbasestrue, name="TP_bases")  
-                plot_list(all_count_tppositions, name="TP_positions")        
-                plot_list(all_tpseqtrue, name="TP_HP_sequences", rotate=True)   
-    
-    # 7. Check surroundings
-        # when do I consider it close?
-            
 
     # 8. Write outputs to file:
     with open("{}.txt".format(out_name), "w") as dest:
@@ -473,6 +445,42 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
         #~ dest.write("{}\n".format())
         if show_plots:
             dest.write("\nSaved plots on prevalences.\n")
+                            
+    if show_plots:
+        # plots on all positives:
+        plot_prevalence(all_count_predictions, name="Predicted_HP_length_measurements")       # 1
+        plot_prevalence(all_count_basehp, name="Predicted_HP_length_bases")                   # 3
+        plot_prevalence(all_count_truehp, name="True_HP_lengths_measurements")      # 4a
+        plot_prevalence(all_count_basetrue, name="True_HP_length_bases")            # 4b
+        plot_list(all_seq_list, name="Predicted_HP_sequences", rotate=True)              # 5
+        plot_list(all_seqtrue_list, name="True_HP_sequences", rotate=True)                            # 5
+        
+        plot_list(all_count_truepositions, name="True_positions")
+    
+        if is_confusion:
+            # plots on false negatives:
+            if all_fnpositions != []: 
+                plot_prevalence(all_count_fntrue, name="FN_measurements")    
+                plot_prevalence(all_count_fnbasestrue, name="FN_bases")  
+                plot_list(all_count_fnpositions, name="FN_positions")        
+                plot_list(all_fnseqtrue, name="FN_sequences", rotate=True)    
+   
+            # plots on false positives:
+            if all_fppositions != []: 
+                plot_prevalence(all_count_fptrue, name="FP_measurements")    
+                plot_prevalence(all_count_fpbasestrue, name="FP_bases")  
+                plot_list(all_count_fppositions, name="FP_positions")        
+                plot_list(all_fpseqtrue, name="FP_HP_sequences", rotate=True) 
+            
+            # plots on true positives:
+            if all_tppositions != []: 
+                plot_prevalence(all_count_tptrue, name="TP_measurements")    
+                plot_prevalence(all_count_tpbasestrue, name="TP_bases")  
+                plot_list(all_count_tppositions, name="TP_positions")        
+                plot_list(all_tpseqtrue, name="TP_HP_sequences", rotate=True)   
+    
+    # 7. Check surroundings
+        # when do I consider it close?
 
     return all_tppositions, all_fppositions, all_fnpositions, all_tnpositions
   
@@ -1058,7 +1066,7 @@ def LATER():
     
 if __name__ == "__main__":   
     # Output results:
-    if len(argv) < 6:
+    if len(argv) < 5:
         print("Required input is:\n\t-file containing true labels and predicted scores" +
               "\n\t-directory containing original FAST5 files\n\t-directory containing .npz files" +
               "\n\t-name of output file\n\t-threshold\nOPTIONAL:\n\t-maximum number of validation reads" +
@@ -1066,11 +1074,10 @@ if __name__ == "__main__":
     
     read_file = argv[1]
     main_fast5_dir = argv[2]
-    main_npz_dir = argv[3]
-    output_name = argv[4]
-    threshold = float(argv[5])
+    output_name = argv[3]
+    threshold = float(argv[4])
     max_number = 12255
-    max_seq_length = 14980 #4970   #9975 
+    #~ max_seq_length = 14980 #4970   #9975 
     start = 0 #30000
     
     if len(argv) >= 7:
@@ -1079,7 +1086,7 @@ if __name__ == "__main__":
         max_seq_length = int(argv[7])
     if len(argv) >= 9:
         start = int(argv[8])
-    tp, fp, fn, tn = main(read_file, main_fast5_dir, main_npz_dir, output_name, 
+    tp, fp, fn, tn = main(read_file, main_fast5_dir, output_name, 
                           threshold, start, max_number)
 
     #~ check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 
