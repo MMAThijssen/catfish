@@ -92,6 +92,10 @@ def get_base_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
         if use_tombo:
             # get list of base sequence:
             event_bases = hdf[hdf_events_path]["base"].astype(str)
+            #~ print("".join(event_bases).find("AAAAAAG")) #1430
+            #~ print(len(event_lengths[:1430])) #13055
+            #~ print(event_lengths[1430:1437])
+            #~ print(event_bases[1430:1437])
             # make a base list by copying the base the times of the event length
             bases = []
             new = []
@@ -105,6 +109,13 @@ def get_base_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
         else:
             raise Exception("Not yet implemented for uncorrected reads")
             bases = None
+    start = 10250
+    end = 10379
+    fake_new = new[start : end]
+    fake_bases = bases[start: end]
+    seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+    print("".join(seq))
+    print(len(bases))
     return bases, new
  
 

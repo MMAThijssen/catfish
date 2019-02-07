@@ -132,6 +132,7 @@ class TrainingRead(Persistent):
             # retrieve complete base sequence:
             event_states_sl = self.hdf[hdf_events_path]["base"]
             event_states_sl = event_states_sl.astype(str)
+            #~ print("".join(event_states_sl)[:10000]) #[1430:1437])
             # creates event list from base sequences: 
             kmer_overhang = self.kmer_size // 2     # append Ns to get middle of event from start
             event_states_sl = np.insert(event_states_sl, 0, ['N'] * kmer_overhang)
@@ -192,6 +193,7 @@ class TrainingRead(Persistent):
         self.condensed_events = list(zip(event_list,  
                                          start_idx_list,
                                          event_raw_list))
+        #~ print(self.condensed_events)
         self._event_length_list = event_length_list
 
     @classified.setter
@@ -203,11 +205,20 @@ class TrainingRead(Persistent):
         """
         Return event labels as specified by encoding_type.
         """
-        kmers, _, _ = zip(*self.condensed_events)
+        kmers, _, _ = zip(*self.condensed_events)                               
+        print("Length kmers: ", len(kmers))
+        start = 13055 #6982
+        end = 13114 #7034
+        print(kmers[start:end])
+        print("".join([k[2] for k in kmers[start:end]]))
         try:
             class_numbers = [training_encodings.hp_class_number(km) for km in kmers]
+            print("Length class numbers: ", len(class_numbers))
+            print(class_numbers[start:end])
             extended_classes = training_encodings.extend_classification(class_numbers)
+            print(extended_classes[start:end])
             labels = self.label_raws(extended_classes)
+            print("Labels: ", labels[117300: 117792])
         except IndexError:
             print("IndexError: likely due to empty k-mer")
             return None    
@@ -218,7 +229,9 @@ class TrainingRead(Persistent):
         """
         Assign label to raw data points belonging to a classified event.
         """
+        print("summed ", sum([len(ev[2]) for ev in self.condensed_events[:13114]]))
         labels = [classified_events[ev] for ev in range(len(self.condensed_events)) for p in self.condensed_events[ev][2]]
+        print(len(labels))
         return labels
             
 

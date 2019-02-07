@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from trainingDB.metrics import generate_heatmap
 import numpy as np
-from reader import load_npz_raw
+from reader import load_npz_labels
 from statistics import median
 from sys import argv
 
@@ -74,7 +74,7 @@ def check_for_neg(output_file, main_dir, out_name, threshold=0.5, start=0, lengt
                     true_labels = None
 
 
-def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
+def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -89,7 +89,7 @@ def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
         
     Returns: None
     """       
-    show_plots = True
+    show_plots = False
     is_confusion = True                                                         # was on measurements
     on_measurements = False
     if on_measurements:
@@ -159,15 +159,24 @@ def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
                         length = len(predicted_labels)
                 if true_labels == None:    
-                    true_labels = list_predicted(line, types="true_labels")
+                    #~ true_labels = list_predicted(line, types="true_labels")
+                    true_labels = list(load_npz_labels("{}/{}.npz".format(npz_dir, read_name)))
+                    #~ print(true_labels)
                 elif predicted_labels != None and true_labels != None:
                     bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
                     bases = bases[start: start + length]
                     new = new[start: start + length]
                     count_basen = [1 for w in new if w == "n"]
-                    n_bases += sum(count_basen)   
+                    n_bases += sum(count_basen) 
 
+                    true_labels = true_labels[start: start + length]
                     predicted_labels = list(correct_short(predicted_labels))
+
+                    st_hp = 6102
+                    end_hp = 6124
+                    print(true_labels[st_hp:end_hp])
+                    print(predicted_scores[st_hp: end_hp])  
+                    print(predicted_labels[st_hp : end_hp])
                     
                     #~ # generate heatmap
                     #~ if read_counter == 1:
@@ -225,11 +234,31 @@ def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
                         if tp_truehp != 0:
                             [all_tppositions.extend(range(k[0], k[1] + 1)) for k in tp_truehp.values()]
                             count_tptrue, count_tpbasestrue, count_tpseqtrue = prediction_information(tp_truehp, bases, new)          # true positives
-                            
+                            for hp in tp_truehp:
+                                print(tp_truehp[hp])
+                                print(true_labels[tp_truehp[hp][0]: tp_truehp[hp][1] + 1])
+                                print(predicted_labels[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
+                                print(bases[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
+                                print(new[tp_truehp[hp][0] : tp_truehp[hp][1] +1])
+                                fake_new = new[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
+                                fake_bases = bases[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
+                                seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                print("".join(seq))
+                                    
                         if fn_truehp != 0:
                             [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]                             # check positions
                             count_fntrue, count_fnbasestrue, count_fnseqtrue = prediction_information(fn_truehp, bases, new)          # false negatives
-                            
+                            #~ for hp in fn_truehp:
+                                #~ print(fn_truehp[hp])
+                                #~ print(true_labels[fn_truehp[hp][0]: fn_truehp[hp][1] + 1])
+                                #~ print(predicted_labels[fn_truehp[hp][0] : fn_truehp[hp][1] + 1])
+                                #~ print(bases[fn_truehp[hp][0] : fn_truehp[hp][1] + 1])
+                                #~ print(new[fn_truehp[hp][0] : fn_truehp[hp][1] +1])
+                                #~ fake_new = new[fn_truehp[hp][0] : fn_truehp[hp][1] +1]
+                                #~ fake_bases = bases[fn_truehp[hp][0] : fn_truehp[hp][1] +1]
+                                #~ seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                #~ print("".join(seq))
+                                                            
                         if fp_truehp != 0:
                             count_fptrue, count_fpbasestrue, count_fpseqtrue = prediction_information(fp_truehp, bases, new)         # false positives
                             [all_fppositions.extend(range(k[0], k[1] + 1)) for k in fp_truehp.values()]
@@ -238,20 +267,35 @@ def main(output_file, main_dir, out_name, threshold=0.5, start=0, max_nr=12255):
                         # to check:
                             #~ st = 2522
                             #~ ed = 2554
-                            if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch194_read5177_strand":
-                                for hp in fp_truehp:
+                            #~ if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch194_read5177_strand":
+                                #~ print(fp_truehp)
+                                #~ st_hp = 11341
+                                #~ end_hp = 11401
+                                #~ print(true_labels[st_hp: end_hp])
+                                #~ print(predicted_labels[st_hp : end_hp])
+                                #~ print(bases[st_hp : end_hp])
+                                #~ print(new[st_hp : end_hp])
+                                #~ fake_new = new[st_hp : end_hp]
+                                #~ fake_bases = bases[st_hp : end_hp]
+                                #~ seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                #~ print("".join(seq))
+                                #~ 3/0
+                            for hp in fp_truehp:
+                                fake_new = new[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
+                                fake_bases = bases[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
+                                seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                seq = "".join(seq)
+                                if ("TTTTT" or "CCCCC" or "AAAAA" or "GGGGG") in seq:
+                                    print("FOUND HP")
                                     print(fp_truehp[hp])
+                                    print(seq)
                                     print(true_labels[fp_truehp[hp][0]: fp_truehp[hp][1] + 1])
                                     print(predicted_labels[fp_truehp[hp][0] : fp_truehp[hp][1] + 1])
-                                    print(bases[fp_truehp[hp][0] : fp_truehp[hp][1] + 1])
-                                    print(new[fp_truehp[hp][0] : fp_truehp[hp][1] +1])
-                                    fake_new = new[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
-                                    fake_bases = bases[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
-                                    seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
-                                    print("".join(seq))
-                                #~ print("states: ", states)
-                                #~ print("true: ", true_labels[st:ed])
-                                #~ print("predicted: ", predicted_labels[st:ed])
+                                    3 / 0
+                                #~ #print("states: ", states)
+                                #~ #print("true: ", true_labels[st:ed])
+                                #~ #print("predicted: ", predicted_labels[st:ed])
+                                #~ 3/0
 
                         # add to dictionaries to make common:
                         # for TP:
@@ -1076,17 +1120,19 @@ if __name__ == "__main__":
     main_fast5_dir = argv[2]
     output_name = argv[3]
     threshold = float(argv[4])
+    npz_dir = argv[5]
     max_number = 12255
     #~ max_seq_length = 14980 #4970   #9975 
-    start = 0 #30000
+    start = 0  # 30000
     
-    if len(argv) >= 7:
-        max_number = int(argv[6])
-    if len(argv) >= 8:
-        max_seq_length = int(argv[7])
-    if len(argv) >= 9:
-        start = int(argv[8])
-    tp, fp, fn, tn = main(read_file, main_fast5_dir, output_name, 
+    #~ if len(argv) >= 6:
+        #~ max_number = int(argv[5])
+    #~ if len(argv) >= 7:
+        #~ max_seq_length = int(argv[6])
+    #~ if len(argv) >= 8:
+        #~ start = int(argv[7])
+    print("start at: ", start)
+    tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
                           threshold, start, max_number)
 
     #~ check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 

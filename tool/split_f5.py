@@ -5,7 +5,7 @@ import os.path
 from shutil import copyfile
 from sys import argv
 
-
+# TODO: adjust to leave basecalled information out
 def split_signal(input_file, splits, temp_dir):
     """
     Splits raw signal of FAST5 file on specified entries. All other groups are copied.
@@ -61,8 +61,9 @@ def split_signal(input_file, splits, temp_dir):
     
 if __name__ == "__main__":
     fast5 = argv[1]
-    splits = [(0, 100), (200, 300)]
-    print(split_signal(fast5, splits))
+    splits = [(13000, 13200, 1)]
+    main_dir = "/mnt/scratch/thijs030/wrongread/findwrongout"
+    print(split_signal(fast5, splits, main_dir))
     
     
     

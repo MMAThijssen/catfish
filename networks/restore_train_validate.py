@@ -66,8 +66,8 @@ if __name__ == "__main__":
         only_validation = True
         saving = False
         print("Only validating now, NO training")
-    validation_start = 30000 #"complete"  #"complete" #0 #30000
-    max_number = 12255            # 856
+    validation_start = "random"  #"complete" #0 #30000
+    max_number = 856 #12255            
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -76,50 +76,44 @@ if __name__ == "__main__":
     print("\nMemory use at start is", m1)  
     print("Started script at {}\n".format(t1))
     
-    number_list = [44]
-#    number_list = [46, 47, 48]
-    network_backup = network_path
-    for i in number_list:
-        network_path = network_path + "_" + str(i)
 
-        #~ # 1a. Restore model
-        hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
-        model = build_model(network_type, save=saving, **hpm_dict)
-        model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
+    #~ # 1a. Restore model
+    hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
+    model = build_model(network_type, save=saving, **hpm_dict)
+    #~ model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
+    
+    # 1b. Extend RNN model
+    #~ hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
+    #~ resnet_dict = generate_random_hyperparameters(network_type)
+    #~ hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
+    #~ hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
+    #~ model = build_model(network_type, save=True, **hpm_dict)
+    model.initialize_network() 
+
+ 
+    # 2. Train model
+    if not only_validation:
+        file_path = model.model_path
+        print("Saving to information to {} extended".format(file_path))
+        print("Loading training database..")
+        db_train = trainingDB.helper_functions.load_db(db_dir_train)
+        print("Loading validation database..")
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
+        t2 = datetime.datetime.now()
+        train_and_validate(model, db_train, training_nr, squiggles, max_seq_length, file_path, validation_start, max_number)
+        t3 = datetime.datetime.now()  
+        m3 = p.memory_full_info().pss
+        print("\nMemory after training is ", m3)
+        print("Trained and validated model in {}\n".format(t3 - t2))
         
-        # 1b. Extend RNN model
-        #~ hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
-        #~ resnet_dict = generate_random_hyperparameters(network_type)
-        #~ hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
-        #~ hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
-        #~ model = build_model(network_type, save=True, **hpm_dict)
-        #~ model.initialize_network() 
-
-     
-        # 2. Train model
-        if not only_validation:
-            file_path = model.model_path
-            print("Saving to information to {} extended".format(file_path))
-            print("Loading training database..")
-            db_train = trainingDB.helper_functions.load_db(db_dir_train)
-            print("Loading validation database..")
-            squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
-            t2 = datetime.datetime.now()
-            train_and_validate(model, db_train, training_nr, squiggles, max_seq_length, file_path, validation_start, max_number)
-            t3 = datetime.datetime.now()  
-            m3 = p.memory_full_info().pss
-            print("\nMemory after training is ", m3)
-            print("Trained and validated model in {}\n".format(t3 - t2))
-            
-        if only_validation:
-            file_path = network_path + "_"
-            print("Saving to information to {} extended".format(file_path))
-            print("Loading validation database..")
-            squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
-            validate(model, squiggles, max_seq_length, file_path, validation_start, max_number)  
-            
-            network_path = network_backup
-        tf.reset_default_graph()
+    if only_validation:
+        file_path = network_path + "_"
+        print("Saving to information to {} extended".format(file_path))
+        print("Loading validation database..")
+        squiggles = trainingDB.helper_functions.load_squiggles(db_dir_val)
+        validate(model, squiggles, max_seq_length, file_path, validation_start, max_number)  
+        
+    tf.reset_default_graph()
 
 
 

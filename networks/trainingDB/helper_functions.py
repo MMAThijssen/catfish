@@ -8,18 +8,7 @@ import shutil
 import h5py
 from math import nan
 from statistics import median
-from trainingDB.ExampleDb import ExampleDb
-
-from bokeh.models import ColumnDataSource, LinearColorMapper, LabelSet, Range1d
-from bokeh.plotting import figure
-# from bokeh.io import show
-
-from math import pi
-
-wur_colors = ['#E5F1E4', '#3F9C35']
-categorical_colors = ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072']
-continuous_colors = ['#ffffff', '#fff7ec', '#fee8c8', '#fdd49e', '#fdbb84',
-                     '#fc8d59', '#ef6548', '#d7301f', '#990000']
+from ExampleDb import ExampleDb
 
 
 def parse_input_path(location):
@@ -72,45 +61,6 @@ def load_squiggles(db_dir):
     return squiggles
 
 
-def set_logfolder(brnn_object, param_base_name, parent_dir, epoch_index):
-    """
-    Create a folder to store tensorflow metrics for tensorboard and set it up for a specific session.
-    Returns a filewriter object, which can be used to write info to tensorboard.
-    """
-    timedate = time.strftime('%y%m%d_%H%M%S')
-    cur_tb_path = parent_dir + '%s_%s_ep%s/' % (
-        timedate,
-        param_base_name,
-        epoch_index)
-    if os.path.isdir(cur_tb_path):
-        shutil.rmtree(cur_tb_path)
-    os.makedirs(cur_tb_path)
-    return tf.summary.FileWriter(cur_tb_path, brnn_object.session.graph)
-
-
-def plot_roc_curve(roc_list):
-    tpr, tnr, epoch = zip(*roc_list)
-    roc_plot = figure(title='ROC')
-    roc_plot.grid.grid_line_alpha = 0.3
-    roc_plot.xaxis.axis_label = 'FPR'
-    roc_plot.yaxis.axis_label = 'TPR'
-
-    col_mapper = LinearColorMapper(palette=categorical_colors, low=1, high=max(epoch))
-    source = ColumnDataSource(dict(
-        TPR=tpr,
-        FPR=[1-cur_tnr for cur_tnr in tnr],
-        epoch=epoch
-    ))
-    roc_plot.scatter(x='FPR', y='TPR',
-                     color={'field': 'epoch',
-                            'transform': col_mapper},
-                     source=source)
-    roc_plot.ray(x=0, y=0, length=1.42, angle=0.25*pi, color='grey')
-    roc_plot.x_range = Range1d(0, 1)
-    roc_plot.y_range = Range1d(0, 1)
-    roc_plot.plot_width = 500
-    roc_plot.plot_height = 500
-    return roc_plot
 
 
 def retrieve_read_properties(raw_read_dir, read_name):
