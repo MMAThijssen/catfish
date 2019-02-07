@@ -7,33 +7,30 @@ Adapted from Carlos.
 """
 
 import mappy as mp
+import os
 import yaml
 from sys import argv
 
-def read_quality(reads, ref_fasta, output):
+def read_quality(read, ref_fasta, output, result_dict={'nb_mappings': [],
+                                                        'matches': 0,
+                                                        'mismatches': 0,
+                                                        'deletions': 0,
+                                                        'insertions': 0,
+                                                        'mapping_quality': []}):
     """
-    Saves read quality of FAST5 reads to file.
+    Saves read quality of FASTQ/A reads to file.
     
     Args:
-        reads -- str, path to folder
+        reads -- str, path to read in FASTA or FAST5 format
         ref_fasta -- str, path to FASTA file containing reference
         output -- str, name of output file
         
     Returns: None
-    """
-    result_dict = {
-        'nb_mappings': [],
-        'matches': 0,
-        'mismatches': 0,
-        'deletions': 0,
-        'insertions': 0,
-        'mapping_quality': []}
-        
+    """        
     aligner = mp.Aligner(ref_fasta)                                             # constructor that indexes reference
 
-    for name, seq, qual in mp.fastx_read(reads):                                # generator that open FASTA/Q and yiels name, seq, qual
+    for name, seq, qual in mp.fastx_read(read):                                # generator that open FASTA/Q and yiels name, seq, qual
         print(name)
-        print(seq)
         
         nb_hits = 0
         for hit in aligner.map(seq):                                            # aligns seq against index (generates Alignment object that describe alignment)
@@ -46,8 +43,16 @@ def read_quality(reads, ref_fasta, output):
                 result_dict['mapping_quality'].append(hit.mapq)
             nb_hits += 1
         result_dict['nb_mappings'].append(nb_hits)
-        
-    with open(output, 'w') as outfile:
+    
+    return result_dict
+
+
+def save_RQ(result_dict1, result_dict2, output):
+   
+    if os.path.isfile(os.path.abspath(output)):
+        print("ATTENTION - read quality file exists already.")
+    
+    with open(output, 'a+') as outfile:
         yaml.dump(result_dict, outfile)
 
 
@@ -55,4 +60,14 @@ if __name__ == "__main__":
     reads = argv[1]
     ref_fasta = argv[2]
     output = argv[3]
-    read_quality(reads, ref_fasta, output)
+
+    result_dict={'nb_mappings': [],
+                 'matches': 0,
+                 'mismatches': 0,
+                 'deletions': 0,
+                 'insertions': 0,
+                 'mapping_quality': []}
+
+    read_list = os.listdir(reads)
+    for r in read_list:
+        result_dict = read_quality("{}/{}".format(reads, r), ref_fasta, output, result_dict)
