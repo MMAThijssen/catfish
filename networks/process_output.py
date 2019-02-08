@@ -11,7 +11,7 @@ from reader import load_npz_labels
 from statistics import median
 from sys import argv
 
-def check_for_neg(output_file, main_dir, out_name, threshold=0.5, start=0, length=4970, max_nr=12255):
+def check_for_neg(output_file, main_dir, out_name):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -34,6 +34,7 @@ def check_for_neg(output_file, main_dir, out_name, threshold=0.5, start=0, lengt
     
     n_bases = 0    # is a check
     
+    total_length = 0
     search_read = True
     with open(output_file, "r") as source:
         for line in source:
@@ -46,32 +47,18 @@ def check_for_neg(output_file, main_dir, out_name, threshold=0.5, start=0, lengt
                     predicted_labels = list_predicted(line, types="predicted_scores")
                     if predicted_labels != None:
                         confidences = predicted_labels
-                        predicted_labels = class_from_threshold(predicted_labels, threshold)
+                        c_len = len(confidences)
+                        print(c_len)
+                        total_length += c_len
                 if true_labels == None:    
                     true_labels = list_predicted(line, types="true_labels")
-                elif predicted_labels != None and true_labels != None:
-                    bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
-                    bases = bases[start: start + length]
-                    new = new[start: start + length]
-                    count_basen = [1 for w in new if w == "n"]           # TODO!
-                    n_bases += sum(count_basen)
-                    
-                    #~ # generate heatmap
-                    #~ generate_heatmap([predicted_labels, true_labels, confidences], ["predicted", "truth", "confidences"],
-                                        #~ "Comparison_{}".format(read_name))
-
-                    #~ generate_heatmap([correct_short(predicted_labels), true_labels, confidences], ["predicted", "truth", "confidences"],
-                                        #~ "Comparison_{}_corrected".format(read_name))                    
-                    
-                    # save information to dict
-                    predicted_hp = hp_loc_dict(predicted_labels)
-                    true_hp = hp_loc_dict(true_labels)
-                    detected_from_true(predicted_hp, true_hp)
-                    predicted_vs_true(predicted_labels, true_labels, read_name)
-                    
+                elif predicted_labels != None and true_labels != None:  
+                    read_counter += 1                 
                     search_read = True
                     predicted_labels = None
                     true_labels = None
+    print("total length: ", total_length)
+    print("average length: ", total_length / read_counter)
 
 
 def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
@@ -1131,11 +1118,10 @@ if __name__ == "__main__":
         #~ max_seq_length = int(argv[6])
     #~ if len(argv) >= 8:
         #~ start = int(argv[7])
-    print("start at: ", start)
+    # ~ print("start at: ", start)
     tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
                           threshold, start, max_number)
 
-    #~ check_for_neg(read_file, main_fast5_dir, main_npz_dir, output_name, 
-                          #~ threshold, start, max_seq_length, max_number)
+    # ~ check_for_neg(read_file, main_fast5_dir, output_name)
                           
 

@@ -5,6 +5,7 @@ Created on Mon Oct 22 13:37:40 2018
 @author: thijs030
 """
 import numpy as np
+import os
 from sys import argv
 
 def load_npz(npz_file):
@@ -51,5 +52,9 @@ def load_npz_raw(npz_file):
 
 
 if __name__ == "__main__":
+    input_dir = argv[1]
+    files = os.listdir(input_dir)
+    for f in files:
+        print(len(load_npz_labels("{}/{}".format(input_dir, f))))
     #~ print(len(list(load_npz_labels(argv[1])))) #399937 #[6982: 7034]
-    print(list(load_npz_labels(argv[1])[10250:10379])) #[117300: 117792]
+    # ~ print(list(load_npz_labels(argv[1])[10250:10379])) #[117300: 117792]

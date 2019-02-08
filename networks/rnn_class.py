@@ -224,6 +224,8 @@ class RNN(object):
         # get predicted values:
         #~ test_x, padding_size = padding(test_x, network.window, network.n_inputs)
         #~ test_y, _ = padding(test_y, network.window, network.n_inputs)
+        print("Threshold is on 0.8!")
+        threshold=0.8
         
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
 

@@ -34,11 +34,10 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     if not (len(raw) / window_size).is_integer():
         # pad
         padding_size = window_size - (len(raw) - (len(raw) // window_size * window_size))
-        padding = np.array(padding_size * [0])
-        raw = np.hstack((raw, padding))
     else:
-        raw = np.concatenate((raw, [0]), axis=0)
-        padding_size = 1
+        padding_size = 35
+    padding = np.array(padding_size * [0])
+    raw = np.hstack((raw, padding))        
     
     # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
     N_INPUT = 1

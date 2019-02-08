@@ -11,12 +11,12 @@ import os
 import yaml
 from sys import argv
 
-def read_quality(read, ref_fasta, output, result_dict={'nb_mappings': [],
-                                                        'matches': 0,
-                                                        'mismatches': 0,
-                                                        'deletions': 0,
-                                                        'insertions': 0,
-                                                        'mapping_quality': []}):
+def read_quality(read, ref_fasta, result_dict={'nb_mappings': [],
+                                                'matches': 0,
+                                                'mismatches': 0,
+                                                'deletions': 0,
+                                                'insertions': 0,
+                                                'mapping_quality': []}):
     """
     Saves read quality of FASTQ/A reads to file.
     
@@ -30,7 +30,7 @@ def read_quality(read, ref_fasta, output, result_dict={'nb_mappings': [],
     aligner = mp.Aligner(ref_fasta)                                             # constructor that indexes reference
 
     for name, seq, qual in mp.fastx_read(read):                                # generator that open FASTA/Q and yiels name, seq, qual
-        print(name)
+        # ~ print(name)
         
         nb_hits = 0
         for hit in aligner.map(seq):                                            # aligns seq against index (generates Alignment object that describe alignment)
@@ -47,12 +47,12 @@ def read_quality(read, ref_fasta, output, result_dict={'nb_mappings': [],
     return result_dict
 
 
-def save_RQ(result_dict1, result_dict2, output):
+def save_RQ(result_dict, output):
    
     if os.path.isfile(os.path.abspath(output)):
-        print("ATTENTION - read quality file exists already.")
+        raise IOError("ATTENTION - read quality file exists already.")
     
-    with open(output, 'a+') as outfile:
+    with open(output, 'w') as outfile:
         yaml.dump(result_dict, outfile)
 
 
@@ -70,4 +70,6 @@ if __name__ == "__main__":
 
     read_list = os.listdir(reads)
     for r in read_list:
-        result_dict = read_quality("{}/{}".format(reads, r), ref_fasta, output, result_dict)
+        result_dict = read_quality("{}/{}".format(reads, r), ref_fasta, result_dict)
+    save_RQ(result_dict, output)
+    print("Finished writing results on read quality to {}".format(output))

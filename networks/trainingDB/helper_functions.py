@@ -8,7 +8,7 @@ import shutil
 import h5py
 from math import nan
 from statistics import median
-from ExampleDb import ExampleDb
+from trainingDB.ExampleDb import ExampleDb
 
 
 def parse_input_path(location):

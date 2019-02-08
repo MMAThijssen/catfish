@@ -52,6 +52,7 @@ if __name__ == "__main__":
                          "\n\t-path to training db\n\t-number of training reads" + 
                          "\n\t-path to validation db\n\t-max length of validation reads" + 
                          "\nOPTIONAL:\n\t-only validation, no training")
+    print("THRESHOLD ON 0.8!")
     
     network_type = argv[1]
     network_path = argv[2]
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         saving = False
         print("Only validating now, NO training")
     validation_start = "random"  #"complete" #0 #30000
-    max_number = 856 #12255            
+    max_number = 12255  #856          
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     #~ # 1a. Restore model
     hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
     model = build_model(network_type, save=saving, **hpm_dict)
-    #~ model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
+    model.restore_network("{}/checkpoints".format(network_path), ckpnt="ckpnt-{}".format(checkpoint))
     
     # 1b. Extend RNN model
     #~ hpm_dict = retrieve_hyperparams("{}.txt".format(network_path))
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     #~ hpm_dict["layer_size_res"] = resnet_dict["layer_size_res"]
     #~ hpm_dict["n_layers_res"] = resnet_dict["n_layers_res"]
     #~ model = build_model(network_type, save=True, **hpm_dict)
-    model.initialize_network() 
+    # ~ model.initialize_network() 
 
  
     # 2. Train model

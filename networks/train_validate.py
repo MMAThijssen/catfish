@@ -214,8 +214,7 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
     #~ with open(file_path + "_training.txt", "a+") as dest:                    # for saving start pos
     for squig in squiggles:
         data_sq, labels_sq = reader.load_npz(squig)
-        
-        #~ # TEMP!
+
         if validation_start == "complete":
             total_length += len(data_sq)
         else:
@@ -235,7 +234,6 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
             data_sq = data_sq[start_val: start_val + max_seq_length]
             #~ dest.write("\nStart validation at point: {}".format(start_val))
             total_length += max_seq_length
-
         
         read_name = os.path.basename(squig).split(".npz")[0]
         valid_reads += 1
@@ -246,7 +244,7 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
         #~ set_x = reshape_input(data, network.window, network.n_inputs)
         #~ set_y = reshape_input(labels, network.window, network.n_outputs)
 
-        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path, padding_size)
+        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path, padding_size, threshold=0.8)
         
         if valid_reads >= max_number:
             break
