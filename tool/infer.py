@@ -5,6 +5,7 @@ import numpy as np
 import os
 from models.resnet_class import ResNetRNN
 from models.rnn_class import RNN
+import reader        # only for testing on "perfect" set
 from sys import argv
 
 # Inference
@@ -18,7 +19,7 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
         network_type -- str, type of network [default: ResNetRNN]
         window_size -- int, size of window used to train network
     
-    Returns: list of classes
+    Returns: dict of homopolymer positions, length of read
     """      
     # open FAST5
     if not os.path.exists(fast5_file):
@@ -26,9 +27,6 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     with h5py.File(fast5_file, "r") as fast5:
         # process signal
         raw = process_signal(fast5)
-        ##~ print("Length of raw signal: ", len(raw))
-        ##~ raw = raw[: 36]                                                         # VERANDEREN!                                              
-        ##~ print(len(raw))
         
     # pad if needed
     if not (len(raw) / window_size).is_integer():
@@ -48,11 +46,33 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     # cut padding
     scores = scores[: -padding_size]
     labels = correct_short(class_from_threshold(scores))
-    predicted_hps = hp_in_pred(labels, label)
+    predicted_hps = hp_in_pred(labels)
     
     return predicted_hps, len(labels)
 
+# use npzs
+def infer_class_from_npz(npz_file, model, label=1, window_size=35):
+    """
+    Retrieve classes from labels saved in NPZ files.
+    
+    Args:
+        fast5_file -- str, path to FAST5 file
+        model -- RNN object, network model
+        network_type -- str, type of network [default: ResNetRNN]
+        window_size -- int, size of window used to train network
+    
+    Returns: dict of homopolymer positions, length of read
+    """      
+    # open FAST5
+    if not os.path.exists(npz_file):
+        raise ValueError("path to NPZ is not correct.")
+    labels = reader.load_npz_labels(fast5_file)
 
+    predicted_hps = hp_in_pred(labels, 0, 0)
+    
+    return predicted_hps, len(labels)
+    
+    
 # Raw signal
 def process_signal(fast5_file, normalization="median"):
     """

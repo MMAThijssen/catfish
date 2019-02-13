@@ -22,24 +22,13 @@ Main script to run tool from
 #~ parser.add_argument("input", help="path to input file in FAST5 format")
 #~ args = parser.parse_args()
 
-# 1. Get input from user:
-#       * fast5 file
-#       * output file name
-#       * specify some options?
-#       * specify some output?
 
-# 2. Infer signal
-
-# 3. Save to file
-
-# 4. Give output message
-
-# TODO: change in infer length of raw!!
 @click.command()
 @click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
 @click.option("--output-file", "-o", help="Name of read quality output file")
 @click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
 @click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
+@click.option("--perfect", "-p", help="FOR TESTING PURPOSES ONLY: evaluates performance on labeled test set", default=False)
 def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_path="/home/thijs030/thesis/scripts/tool/ResNetRNN", network_type="ResNetRNN"):
     """
     A tool with a neural network as basis to predict the presence of 
@@ -71,8 +60,14 @@ def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_pa
     print("Checking for homopolymers in raw signal..")
     t2 = datetime.datetime.now()
     for fast5_file in input_files:
-        hp_positions, len_read = infer.infer_class_from_signal("{}/{}".format(input_dir, fast5_file), model, label=1)
-
+        if not perfect:
+            hp_positions, len_read = infer.infer_class_from_signal("{}/{}".format(input_dir, fast5_file), model, label=1)
+        
+        # ! input_dir should point to dir containing NPZs; fst5_file is .npz file
+        if perfect:
+            print("FOR TESTING PURPOSES: evaluation of tool on perfect set")
+            hp_positions, len_read = infer_class_from_npz("{}/{}".format(input_dir, fast5_file), model)
+        
     # TODO: catch short reads (<1000) and no_hppositions
 
         merged_positions = [hp_positions[0]]
