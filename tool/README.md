@@ -16,9 +16,11 @@ pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
 Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
 (? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
+`pip install click` <br />
 `pip install h5py`  <br />
 `pip install matplotlib`  <br />
 `pip install numpy`  <br />
+`pip install scikit-learn` <br />
 `pip install seaborn`  <br />
 `pip install --upgrade tensorflow`
 
@@ -53,7 +55,7 @@ Options:
 Marijke-tool outputs a FASTQ file of all basecalled reads.
 
 ### Example usage
-`Marijke-tool -i fast5_directory -o name_failed_reads_file -s basecalled -c 1000`
+`Marijke-tool -i <fast5_directory> -o <name_failed_reads_file> -s <basecalled> -c <size_of_homopolymer_chunks>`
 
 ## Test
 Maybe include test to check if installation went well
@@ -68,4 +70,6 @@ add network checkpoint to folder data
 
 take parts from metrics that you need, move others to reduce dependencies
 
-make requirements file
+make requirements file (pip install -r requirements.txt)
+
+Add the tool to PATH for your convenience (Chiron)

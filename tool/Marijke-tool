@@ -40,24 +40,22 @@ Main script to run tool from
 @click.option("--output-file", "-o", help="Name of read quality output file")
 @click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
 @click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
-def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_33", network_type="ResNetRNN"):
+def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_path="/home/thijs030/thesis/scripts/tool/ResNetRNN", network_type="ResNetRNN"):
     """
     A tool with a neural network as basis to predict the presence of 
     homopolymers in the raw signal from a MinION sequencer. 
     """
-    #~ EXTENSION_LEFT = 11
-    #~ EXTENSION_RIGHT = 16
-    hp_dict = {}
-    nonhp_dict = {}
-    files_hp = []
-    files_nonhp = []
-    temp_dir = "{}/TEMP".format(os.path.abspath(save_dir))
-    temp_dir_hp = "{}/HP".format(os.path.abspath(temp_dir))
-    temp_dir_nonhp = "{}/nonHP".format(os.path.abspath(temp_dir))
-    os.makedirs(temp_dir_hp)
-    os.mkdir(temp_dir_nonhp)
-    save_dir_hp = save_dir + "_HP"
-    save_dir_nonhp = save_dir + "_nonHP"
+    #~ hp_dict = {}
+    #~ nonhp_dict = {}
+    #~ files_hp = []
+    #~ files_nonhp = []
+    #~ temp_dir = "{}/TEMP".format(os.path.abspath(save_dir))
+    #~ temp_dir_hp = "{}/HP".format(os.path.abspath(temp_dir))
+    #~ temp_dir_nonhp = "{}/nonHP".format(os.path.abspath(temp_dir))
+    #~ os.makedirs(temp_dir_hp)
+    #~ os.mkdir(temp_dir_nonhp)
+    #~ save_dir_hp = save_dir + "_HP"
+    #~ save_dir_nonhp = save_dir + "_nonHP"
 
     # 0. Load model
     t1 = datetime.datetime.now()
