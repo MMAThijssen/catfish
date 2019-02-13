@@ -16,11 +16,11 @@ pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
 Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
 (? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
-pip install h5py
+`pip install h5py
 pip install matplotlib
 pip install numpy
 pip install seaborn
-pip install --upgrade tensorflow
+pip install --upgrade tensorflow`
 
 Additionally, Albacore installed in a conda environment called *basecall* is a prequisite. Albacore v2.3.3
 was used in the research, but other version might work as well.
@@ -28,18 +28,14 @@ was used in the research, but other version might work as well.
 2. Albacore v2.3.3
 
 ### Build a virtual environment for basecalling with Albacore
-conda create -n basecall python=[python version compatible with Albacore]
+`conda create -n basecall python=[python version compatible with Albacore]
 source activate basecall
 pip install ont_albacore-[version]
-source deactivate
+source deactivate`
 
-@click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
-@click.option("--output-file", "-o", help="Name of read quality output file")
-@click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
-@click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
 
 ## Usage
-Marijke-tool [-h] [--input-file] [--output-file]
+`Marijke-tool [-h] [--input-file] [--output-file]
 
 Required arguments:
     -i, --input-dir         Path to input directory of FAST5 files
@@ -48,14 +44,14 @@ Required arguments:
 Options:
     -c, --chunk-size        Length of chunks containing homopolymers for basecalling
     -h                      Shows help message and exit
-    -o, --output-file       Name of output file for failed reads
+    -o, --output-file       Name of output file for failed reads`
 
 
 ## Output 
 Marijke-tool outputs a FASTQ file of all basecalled reads.
 
-### Examples
-Marijke-tool -i fast5_directory -o name_failed_reads_file -s basecalled -c 1000
+### Example usage
+`Marijke-tool -i fast5_directory -o name_failed_reads_file -s basecalled -c 1000`
 
 ## Test
 Maybe include test to check if installation went well
