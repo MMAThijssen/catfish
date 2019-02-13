@@ -70,24 +70,4 @@ def split_signal(input_file, splits_hp, splits_nonhp, temp_dir, temp_dir_nonhp):
         
         nonhp_list.append(read_name)    
     
-    return hp_list, nonhp_list
-
-    
-if __name__ == "__main__":
-    fast5 = argv[1]
-    splits = [(13000, 13200, 1)]
-    main_dir = "/mnt/scratch/thijs030/wrongread/findwrongout"
-    print(split_signal(fast5, splits, main_dir))
-    
-    
-    
-    ### OUTPUTS ###
-    # list(source.keys()) > ['Analyses', 'Raw', 'UniqueGlobalKey']
-    # raw_group.shape, raw_group.dtype > 'Group' object has no attribute 'shape', 'dtype'
-    # list(raw_group.keys()) > ['Reads']
-    # source["Raw"]["Reads"] > ['Read_3141']
-    # signal_dset.shape, signal_dset.dtype > ((226716,), dtype('int16'))
-
-
-
-
+    return hp_list, nonhp_list   
