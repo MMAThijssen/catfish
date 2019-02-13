@@ -16,10 +16,10 @@ pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
 Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
 (? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
-`pip install h5py
-pip install matplotlib
-pip install numpy
-pip install seaborn
+`pip install h5py  
+pip install matplotlib  
+pip install numpy  
+pip install seaborn  
 pip install --upgrade tensorflow`
 
 Additionally, Albacore installed in a conda environment called *basecall* is a prequisite. Albacore v2.3.3
@@ -28,9 +28,9 @@ was used in the research, but other version might work as well.
 2. Albacore v2.3.3
 
 ### Build a virtual environment for basecalling with Albacore
-`conda create -n basecall python=[python version compatible with Albacore]
-source activate basecall
-pip install ont_albacore-[version]
+`conda create -n basecall python=[python version compatible with Albacore]  
+source activate basecall  
+pip install ont_albacore-[version]  
 source deactivate`
 
 
@@ -46,7 +46,7 @@ Options:
     -c, --chunk-size        Length of chunks containing homopolymers for basecalling
     -h                      Shows help message and exit
     -o, --output-file       Name of output file for failed reads
-```
+``ῢ`
 
 
 ## Output 
