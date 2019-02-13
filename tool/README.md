@@ -1,7 +1,9 @@
 # Title
 -------------------------------------------------------------------------------
 Tool with neural network as basis, designed to predict the presence of homopolymers
-in the raw signal from a MinION sequencer. 
+in the raw signal of a MinION sequencer, to select stretches with homopolymers for
+basecalling with a specialized basecaller while keeping fast basecalling with Albacore for
+general reads.
 
 Tool is designed as part of MSc thesis "Calling homopolymers in nanopore sequencing data"
 by Marijke Thijssen.
@@ -11,7 +13,7 @@ by Marijke Thijssen.
 pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
 
 ## Dependencies
-Marijke-tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
+Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
 (? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
 pip install h5py
@@ -20,22 +22,40 @@ pip install numpy
 pip install seaborn
 pip install --upgrade tensorflow
 
+Additionally, Albacore installed in a conda environment called *basecall* is a prequisite. Albacore v2.3.3
+was used in the research, but other version might work as well.
+1. Anacoda or Miniconda, available at https://conda.io/miniconda.html
+2. Albacore v2.3.3
+
+### Build a virtual environment for basecalling with Albacore
+conda create -n basecall python=[python version compatible with Albacore]
+source activate basecall
+pip install ont_albacore-[version]
+source deactivate
+
+@click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
+@click.option("--output-file", "-o", help="Name of read quality output file")
+@click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
+@click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
 
 ## Usage
 Marijke-tool [-h] [--input-file] [--output-file]
 
 Required arguments:
-    -i, --input-file        Path to input file in FAST5 format
-    -o, --output-file       Name of output file
+    -i, --input-dir         Path to input directory of FAST5 files
+    -s, --save-dir          Path to directory for saving basecalls in FASTQ format
     
 Options:
+    -c, --chunk-size        Length of chunks containing homopolymers for basecalling
     -h                      Shows help message and exit
+    -o, --output-file       Name of output file for failed reads
+
 
 ## Output 
-Marijke-tool outputs file with predicted scores for each measurement in the raw signal.
+Marijke-tool outputs a FASTQ file of all basecalled reads.
 
 ### Examples
-Marijke-tool -i fast5_input -o output_name
+Marijke-tool -i fast5_directory -o name_failed_reads_file -s basecalled -c 1000
 
 ## Test
 Maybe include test to check if installation went well
@@ -48,6 +68,6 @@ Maybe include test to check if installation went well
 ###### to do:
 add network checkpoint to folder data
 
-maybe remove dependence of metrics or take only those parts that you need
+take parts from metrics that you need, move others to reduce dependencies
 
-ask as input: path_to_network - or get abs path yourself. > create dirs like that in tool
+make requirements file

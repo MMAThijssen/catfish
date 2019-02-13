@@ -39,18 +39,30 @@ Main script to run tool from
 @click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
 @click.option("--output-file", "-o", help="Name of read quality output file")
 @click.option("--save-dir", "-s", help="Directory to save basecalled reads to")
-def main(input_dir, output_file, save_dir, threshold=0.9, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_33", network_type="ResNetRNN"):
+@click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
+def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_path="/mnt/scratch/thijs030/actualnetworks/ResNet-RNN_33", network_type="ResNetRNN"):
     """
     A tool with a neural network as basis to predict the presence of 
     homopolymers in the raw signal from a MinION sequencer. 
     """
     #~ EXTENSION_LEFT = 11
     #~ EXTENSION_RIGHT = 16
-    CHUNK_SIZE = 1000  
+    hp_dict = {}
+    nonhp_dict = {}
+    files_hp = []
+    files_nonhp = []
+    temp_dir = "{}/TEMP".format(os.path.abspath(save_dir))
+    temp_dir_hp = "{}/HP".format(os.path.abspath(temp_dir))
+    temp_dir_nonhp = "{}/nonHP".format(os.path.abspath(temp_dir))
+    os.makedirs(temp_dir_hp)
+    os.mkdir(temp_dir_nonhp)
+    save_dir_hp = save_dir + "_HP"
+    save_dir_nonhp = save_dir + "_nonHP"
+
     # 0. Load model
-    #~ t1 = datetime.datetime.now()
+    t1 = datetime.datetime.now()
     model = neural_network.load_network(network_type, network_path, checkpoint=30000)
-    #~ print("Loaded model in {}".format(datetime.datetime.now() - t1))
+    print("Loaded model in {}".format(datetime.datetime.now() - t1))
     
     # 1. Load files in directory
     input_dir = os.path.abspath(input_dir)
@@ -60,8 +72,6 @@ def main(input_dir, output_file, save_dir, threshold=0.9, network_path="/mnt/scr
     # 2. Get predicted HPs for every read
     print("Checking for homopolymers in raw signal..")
     t2 = datetime.datetime.now()
-    hp_dict = {}
-    #~ t2 = datetime.datetime.now()
     for fast5_file in input_files:
         hp_positions, len_read = infer.infer_class_from_signal("{}/{}".format(input_dir, fast5_file), model, label=1)
 
@@ -69,69 +79,79 @@ def main(input_dir, output_file, save_dir, threshold=0.9, network_path="/mnt/scr
 
         merged_positions = [hp_positions[0]]
         for i in range(len(hp_positions)):
-            if hp_positions[i][1] >= CHUNK_SIZE + merged_positions[-1][0]:
+            if hp_positions[i][1] >= chunk_size + merged_positions[-1][0]:
                 merged_positions[-1][-1] = hp_positions[i - 1][1]
-                center_hp(merged_positions, len_read)
+                center_hp(merged_positions, len_read, chunk_size)
                 merged_positions.append(hp_positions[i])
-        center_hp(merged_positions, len_read)
+        center_hp(merged_positions, len_read, chunk_size)
         
-        number_hp = len(hp_positions))
+        number_hp = len(hp_positions)
         number_hpstretches = len(merged_positions)
+        #~ print(number_hp, number_hpstretches)
         
-        # 2c. Make non-HP dict OR NOT NECESSARY? just cut between the HPs?
-        
-        # 2d. Add to dict:
+        # 2a. Add to dict:
         hp_dict[fast5_file] = merged_positions
+        # 2b. Add non-homopolymers to separate dict
+        m_start = 0
+        nonhp_dict[fast5_file] = []
+        for m in range(len(merged_positions)):
+            if merged_positions[m][0] > m_start:
+                m_end = merged_positions[m][0] - 1
+                nonhp_dict[fast5_file].append([m_start, m_end])
+            m_start = merged_positions[m][1]
+        if merged_positions[-1][1] != len_read:
+            nonhp_dict[fast5_file].append([merged_positions[-1][1], len_read])
 
     print("Finished determining possible HP stretches in {}".format(datetime.datetime.now() - t2))
-
     
-    #~ # 3. Split FAST5 in multiple FAST5s
-        #~ # a. Save which files belong to group HP and to group non-HP
-    #~ temp_dir = "{}/TEMP".format(os.path.abspath(input_dir))
-    #~ temp_dir_hp = "{}/HP".format(os.path.abspath(temp_dir))
-    #~ temp_dir_nonhp = "{}/nonHP".format(os.path.abspath(temp_dir))
-    #~ os.makedirs(temp_dir_hp)
-    #os.mkdir(temp_dir_nonhp)
-    #~ files_hp = []
-    #~ files_nonhp = []        # for non-HPs: get positions inbetween splits
     
-    #~ print("Splitting reads...")
-    #~ t3 = datetime.datetime.now()
-    #~ for read in hp_dict:
-        #~ print(hp_dict[read])
-        #~ hp_files, nonhp_files = split_f5.split_signal("{}/{}".format(input_dir, read), hp_dict[read], temp_dir_hp)
-        #~ files_hp.extend(hp_files)                                               # HP files are absolute paths
-        #~ files_nonhp.extend(nonhp_files)
-    #~ print("Finished splitting the signal in {}".format(datetime.datetime.now() - t3))
+    # 3. Split FAST5 in multiple FAST5s
+    print("Splitting reads...")
+    t3 = datetime.datetime.now()
+    hp_files, nonhp_files = [split_f5.split_signal("{}/{}".format(input_dir, read), hp_dict[read], nonhp_dict[read], temp_dir_hp, temp_dir_nonhp)
+                             for read in hp_dict]
+    files_hp.extend(hp_files)                                               # HP files are absolute paths
+    files_nonhp.extend(nonhp_files)
+    print("Finished splitting the raw signals in {}".format(datetime.datetime.now() - t3))
     
     #~ print("Number of files containing HPs after split: ", len(files_hp))
     #~ print("Number of files containing non-HPs after split: ", len(files_nonhp))
     #~ ## TODO: change later to not return anything. Is not necessary.
 
-    #~ # 4. Process each FAST5 belong to HP or non-HP group
-    #~ print("Basecalling with Albacore v2.3.3  ..")
-    #~ # ~ #save_dir_hp = save_dir + "_HP"
-    #~ # ~ #save_dir_nonhp = save_dir + "_nonHP"
-    #~ THREADS = 4
-    #~ CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"                 # TODO: adjust!
-    #~ FLOW = "FLO-MIN106"
-    #~ KIT = "SQK-RAD002"            
-    #~ OUTPUT = "fastq"                                                            # can be FAST5 or FASTQ or both ; this for testing - maybe make variable?
-    #~ subprocess.run("source activate basecall", shell=True)
-        #~ # a. Register number of failed and number of passes (in total and per group)
-    #~ subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
-                    #~ temp_dir_hp, THREADS, save_dir, OUTPUT, FLOW, KIT), shell=True)
-    #~ # close conda env
-    #~ subprocess.run("source deactivate", shell=True) 
+    # 4. Process each FAST5 belong to HP or non-HP group
+    print("Basecalling with Albacore v2.3.3  ..")
+    t4 = datetime.datetime.now()
+    THREADS = 4
+    CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"                 # TODO: adjust!
+    FLOW = "FLO-MIN106"
+    KIT = "SQK-RAD002"            
+    OUTPUT = "fastq"                                                            # can be FAST5 or FASTQ or both ; this for testing - maybe make variable?
+    subprocess.run("source activate basecall", shell=True)
+        #TODO: a. Register number of failed and number of passes (in total and per group)
+        # maybe use fast5seek or better: sequencing_summary.txt on passes_filtering?
+    subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
+                    temp_dir_nonhp, THREADS, save_dir_nonhp, OUTPUT, FLOW, KIT), shell=True)
+    subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {} --basecaller.homopolymer_correct=1".format(
+                    temp_dir_hp, THREADS, save_dir_hp, OUTPUT, FLOW, KIT), shell=True)
+    # close conda env
+    subprocess.run("source deactivate", shell=True) 
+    print("Finished basecalling in {}".format(datetime.datetime.now() - t4))
            
-        #~ # b. Remove split files
-    #~ shutil.rmtree(temp_dir, ignore_errors=True)
-    #~ print("Removed TEMP directory.") # works :)
+        # b. Remove split files
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    print("Removed TEMP directory.") # works :)
         
-    #~ # 5. Extract FASTAs from FASTQs in passed dir / Concatenate reads
-        #~ # a. Solve problem that multiple reads can be in one file - Is this a problem or should reads be longer?
-        #~ # cat ~/workdir/1D_basecall/workspace/pass/*.fastq > ~/workdir/1D_basecall.fastq
+    # 5. Extract FASTAs from FASTQs in passed dir / Concatenate reads
+    subprocess.run("cat {}/workspace/pass/*.fastq > {}/homopolymer.fastq".format(save_dir_hp, save_dir))
+    subprocess.run("cat {}/workspace/pass/*.fastq > {}/nonhomopolymer.fastq".format(save_dir_nonhp, save_dir))
+    subprocess.run("cat {}/*.fastq > basecalled.fastq".format(save_dir))
+    #~ os.remove("{}/homopolymer.fastq".format(save_dir))
+    #~ os.remove("{}/nonhomopolymer.fastq".format(save_dir))
+    
+    #~ shutil.rmtree(save_dir_hp, ignore_errors=True)
+    #~ shutil.rmtree(save_dir_nonhp, ignore_errors=True)
+    
+    print("Finished basecalling. FASTQ containing all reads can be found at {}.".format(os.path.abspath(save_dir)))
         
         #~ # maybe use fast5seek
         #~ # does albacore use duration? (or start time?) because I just copy this to all subfiles
