@@ -16,11 +16,11 @@ pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
 Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
 (? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
-`pip install h5py  <br />
-pip install matplotlib  <br />
-pip install numpy  <br />
-pip install seaborn  <br />
-pip install --upgrade tensorflow`
+`pip install h5py`  <br />
+`pip install matplotlib`  <br />
+`pip install numpy`  <br />
+`pip install seaborn`  <br />
+`pip install --upgrade tensorflow`
 
 Additionally, Albacore installed in a conda environment called *basecall* is a prequisite. Albacore v2.3.3
 was used in the research, but other version might work as well.
@@ -28,10 +28,10 @@ was used in the research, but other version might work as well.
 2. Albacore v2.3.3
 
 ### Build a virtual environment for basecalling with Albacore
-`conda create -n basecall python=[python version compatible with Albacore]  <br />
-source activate basecall <br />
-pip install ont_albacore-[version] <br />
-source deactivate`
+`conda create -n basecall python=[python version compatible with Albacore]`  <br />
+`source activate basecall` <br />
+`pip install ont_albacore-[version].whl` <br />
+`source deactivate`
 
 
 ## Usage
