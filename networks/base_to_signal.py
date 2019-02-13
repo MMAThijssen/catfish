@@ -109,13 +109,13 @@ def get_base_new_signal(fast5, use_tombo=True, new_base="n", same_base="-"):
         else:
             raise Exception("Not yet implemented for uncorrected reads")
             bases = None
-    start = 10250
-    end = 10379
-    fake_new = new[start : end]
-    fake_bases = bases[start: end]
-    seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
-    print("".join(seq))
-    print(len(bases))
+    #~ start = 10250
+    #~ end = 10379
+    #~ fake_new = new[start : end]
+    #~ fake_bases = bases[start: end]
+    #~ seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+    #~ print("".join(seq))
+    #~ print(len(bases))
     return bases, new
  
 

@@ -152,7 +152,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % network.saving_step == 0:                           # network.saving_step                                            
+            if step == n_batches or step % 1000 == 0:                           # network.saving_step                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))
@@ -244,7 +244,7 @@ def validate(network, squiggles, max_seq_length, file_path, validation_start="ra
         #~ set_x = reshape_input(data, network.window, network.n_inputs)
         #~ set_y = reshape_input(labels, network.window, network.n_outputs)
 
-        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path, padding_size, threshold=0.8)
+        sgl_acc, sgl_loss  = network.test_network(set_x, set_y, read_name, file_path, padding_size)
         
         if valid_reads >= max_number:
             break
@@ -331,7 +331,10 @@ if __name__ == "__main__":
     if not only_validation:
         # build model
         hpm_dict = generate_random_hyperparameters(network_type)
-        #~ hpm_dict = {"batch_size":128, "optimizer_choice": "Adam", "learning_rate":0.001, "layer_size":64, "n_layers":1, "keep_prob":0.3, "layer_size_res":128, "n_layers_res":11}
+        if network_type == "RNN":
+            hpm_dict = {"batch_size":512, "optimizer_choice": "Adam", "learning_rate":0.0001, "layer_size":256, "n_layers":5, "keep_prob":0.2}
+        else:
+            hpm_dict = {"batch_size":128, "optimizer_choice": "RMSProp", "learning_rate":0.001, "layer_size":256, "n_layers":2, "keep_prob":0.3, "layer_size_res":64, "n_layers_res":2}
         network = build_model(network_type, save=True, **hpm_dict)
         network.initialize_network()
         

@@ -67,8 +67,8 @@ if __name__ == "__main__":
         only_validation = True
         saving = False
         print("Only validating now, NO training")
-    validation_start = "random"  #"complete" #0 #30000
-    max_number = 12255  #856          
+    validation_start = "complete" #"random"  # #0 #30000
+    max_number = 12256  #856          
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())

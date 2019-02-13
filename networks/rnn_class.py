@@ -224,8 +224,9 @@ class RNN(object):
         # get predicted values:
         #~ test_x, padding_size = padding(test_x, network.window, network.n_inputs)
         #~ test_y, _ = padding(test_y, network.window, network.n_inputs)
-        print("Threshold is on 0.8!")
-        threshold=0.8
+        
+        #~ print("Threshold is on 0.8!")
+        #~ threshold=0.8
         
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
 
@@ -248,15 +249,15 @@ class RNN(object):
         self.tn += true_neg - padding_size
         self.fn += false_neg
 
-#        with open(file_path + "fullvalidation.txt", "a+") as dest:
-#            dest.write(read_name)
-#            dest.write("\n")
-#            dest.write("* {}".format(list(test_labels)))
-#            dest.write("\n")
-            ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
-            ##~ dest.write("\n")
-#            dest.write("@ {}".format(list(confidences)))                        # scores
-#            dest.write("\n")
+        #~ with open(file_path + "fullvalidation100-08.txt", "a+") as dest:
+            #~ dest.write(read_name)
+            #~ dest.write("\n")
+            #~ dest.write("* {}".format(list(test_labels)))
+            #~ dest.write("\n")
+            #~ ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
+            #~ ##~ dest.write("\n")
+            #~ dest.write("@ {}".format(list(confidences)))                        # scores
+            #~ dest.write("\n")
                     
         return test_acc, test_loss
 

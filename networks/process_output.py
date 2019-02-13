@@ -11,7 +11,7 @@ from reader import load_npz_labels
 from statistics import median
 from sys import argv
 
-def check_for_neg(output_file, main_dir, out_name):
+def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.8):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -34,32 +34,46 @@ def check_for_neg(output_file, main_dir, out_name):
     
     n_bases = 0    # is a check
     
-    total_length = 0
     search_read = True
     with open(output_file, "r") as source:
         for line in source:
             if search_read and not (line.startswith("#") or line.startswith("*") or line.startswith("@")):
                 read_name = line.strip()
                 search_read = False
+                print(read_name)
             elif not search_read: 
                 # get belonging predicted labels and true labels
                 if predicted_labels == None:
                     predicted_labels = list_predicted(line, types="predicted_scores")
                     if predicted_labels != None:
-                        confidences = predicted_labels
-                        c_len = len(confidences)
-                        print(c_len)
-                        total_length += c_len
+                        predicted_scores = predicted_labels
+                        predicted_labels = class_from_threshold(predicted_labels, threshold)
+                        length = len(predicted_labels)
                 if true_labels == None:    
-                    true_labels = list_predicted(line, types="true_labels")
-                elif predicted_labels != None and true_labels != None:  
-                    read_counter += 1                 
+                    #~ true_labels = list_predicted(line, types="true_labels")
+                    true_labels = list(load_npz_labels("{}/{}.npz".format(npz_dir, read_name)))
+                    #~ print(true_labels)
+                elif predicted_labels != None and true_labels != None:
+                    bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
+                    bases = bases[start: start + length]
+                    new = new[start: start + length]
+                    count_basen = [1 for w in new if w == "n"]
+                    n_bases += sum(count_basen) 
+
+                    true_labels = true_labels[start: start + length]
+                    #~ predicted_labels = list(correct_short(predicted_labels))
+                    
+                    #~ # generate heatmap
+                    if read_counter < 10:
+                        generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                        "Comparison_{}_corrected".format(read_name)) 
+                    
+                    read_counter += 1
+                    if read_counter == 10:
+                        break
                     search_read = True
                     predicted_labels = None
                     true_labels = None
-    print("total length: ", total_length)
-    print("average length: ", total_length / read_counter)
-
 
 def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
     """
@@ -159,12 +173,6 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                     true_labels = true_labels[start: start + length]
                     predicted_labels = list(correct_short(predicted_labels))
 
-                    st_hp = 6102
-                    end_hp = 6124
-                    print(true_labels[st_hp:end_hp])
-                    print(predicted_scores[st_hp: end_hp])  
-                    print(predicted_labels[st_hp : end_hp])
-                    
                     #~ # generate heatmap
                     #~ if read_counter == 1:
                         #~ generate_heatmap([predicted_labels, true_labels, predicted_scores], ["predicted", "truth", "confidences"],
@@ -221,16 +229,16 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                         if tp_truehp != 0:
                             [all_tppositions.extend(range(k[0], k[1] + 1)) for k in tp_truehp.values()]
                             count_tptrue, count_tpbasestrue, count_tpseqtrue = prediction_information(tp_truehp, bases, new)          # true positives
-                            for hp in tp_truehp:
-                                print(tp_truehp[hp])
-                                print(true_labels[tp_truehp[hp][0]: tp_truehp[hp][1] + 1])
-                                print(predicted_labels[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
-                                print(bases[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
-                                print(new[tp_truehp[hp][0] : tp_truehp[hp][1] +1])
-                                fake_new = new[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
-                                fake_bases = bases[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
-                                seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
-                                print("".join(seq))
+                            #~ for hp in tp_truehp:
+                                #~ print(tp_truehp[hp])
+                                #~ print(true_labels[tp_truehp[hp][0]: tp_truehp[hp][1] + 1])
+                                #~ print(predicted_labels[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
+                                #~ print(bases[tp_truehp[hp][0] : tp_truehp[hp][1] + 1])
+                                #~ print(new[tp_truehp[hp][0] : tp_truehp[hp][1] +1])
+                                #~ fake_new = new[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
+                                #~ fake_bases = bases[tp_truehp[hp][0] : tp_truehp[hp][1] +1]
+                                #~ seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
+                                #~ print("".join(seq))
                                     
                         if fn_truehp != 0:
                             [all_fnpositions.extend(range(k[0], k[1] + 1)) for k in fn_truehp.values()]                             # check positions
@@ -266,22 +274,6 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                                 #~ fake_bases = bases[st_hp : end_hp]
                                 #~ seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
                                 #~ print("".join(seq))
-                                #~ 3/0
-                            for hp in fp_truehp:
-                                fake_new = new[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
-                                fake_bases = bases[fp_truehp[hp][0] : fp_truehp[hp][1] +1]
-                                seq = [fake_bases[i] for i in range(len(fake_new)) if fake_new[i] == "n"]
-                                seq = "".join(seq)
-                                if ("TTTTT" or "CCCCC" or "AAAAA" or "GGGGG") in seq:
-                                    print("FOUND HP")
-                                    print(fp_truehp[hp])
-                                    print(seq)
-                                    print(true_labels[fp_truehp[hp][0]: fp_truehp[hp][1] + 1])
-                                    print(predicted_labels[fp_truehp[hp][0] : fp_truehp[hp][1] + 1])
-                                    3 / 0
-                                #~ #print("states: ", states)
-                                #~ #print("true: ", true_labels[st:ed])
-                                #~ #print("predicted: ", predicted_labels[st:ed])
                                 #~ 3/0
 
                         # add to dictionaries to make common:
@@ -430,8 +422,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                 dest.write("{}\n".format(all_count_tpbasestrue))
                 dest.write("\tTP composition\n")
                 dest.write("{}\n".format(all_count_tpseqtrue))
-                #~ dest.write("\tTP positions\n")
-                #~ dest.write("{}\n".format(all_count_tppositions))     
+                dest.write("\tTP positions\n")
+                dest.write("{}\n".format(all_count_tppositions))     
 
             if all_fppositions != []:
                 dest.write("\nFPs: {}\tFP measurements: {}\tFP bases: {}\n".format(fp, sum_dict(all_count_fptrue), sum_dict(all_count_fpbasestrue)))
@@ -452,8 +444,8 @@ def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_n
                 dest.write("{}\n".format(all_count_fnbasestrue))
                 dest.write("\tFN composition\n")
                 dest.write("{}\n".format(all_count_fnseqtrue))
-                #~ dest.write("\tFN positions\n")
-                #~ dest.write("{}\n".format(all_count_fnpositions))
+                dest.write("\tFN positions\n")
+                dest.write("{}\n".format(all_count_fnpositions))
 
         # part on all predictions
         dest.write("\nComparison on length and composition        (length / seq, count)\n")
@@ -1108,7 +1100,7 @@ if __name__ == "__main__":
     output_name = argv[3]
     threshold = float(argv[4])
     npz_dir = argv[5]
-    max_number = 12255
+    max_number = 12256
     #~ max_seq_length = 14980 #4970   #9975 
     start = 0  # 30000
     
@@ -1122,6 +1114,6 @@ if __name__ == "__main__":
     tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
                           threshold, start, max_number)
 
-    # ~ check_for_neg(read_file, main_fast5_dir, output_name)
+    #~ check_for_neg(read_file, main_fast5_dir, npz_dir, output_name)
                           
 

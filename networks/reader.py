@@ -54,7 +54,11 @@ def load_npz_raw(npz_file):
 if __name__ == "__main__":
     input_dir = argv[1]
     files = os.listdir(input_dir)
+    total_length = 0
     for f in files:
-        print(len(load_npz_labels("{}/{}".format(input_dir, f))))
+        c_len = len(load_npz_labels("{}/{}".format(input_dir, f)))
+        total_length += c_len
+    print("total length: ", total_length)
+    print("average length: ", total_length / len(files))
     #~ print(len(list(load_npz_labels(argv[1])))) #399937 #[6982: 7034]
     # ~ print(list(load_npz_labels(argv[1])[10250:10379])) #[117300: 117792]

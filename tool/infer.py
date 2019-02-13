@@ -19,7 +19,7 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
         window_size -- int, size of window used to train network
     
     Returns: list of classes
-    """           
+    """      
     # open FAST5
     if not os.path.exists(fast5_file):
         raise ValueError("path to FAST5 is not correct.")
@@ -50,7 +50,7 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     labels = correct_short(class_from_threshold(scores))
     predicted_hps = hp_in_pred(labels, label)
     
-    return predicted_hps
+    return predicted_hps, len(labels)
 
 
 # Raw signal
@@ -119,7 +119,7 @@ def class_from_threshold(predicted_scores, threshold=0.5):
     return [1 if y >= threshold else 0 for y in predicted_scores]
     
                          
-def hp_in_pred(predictions, label=1):
+def hp_in_pred(predictions, extension_left=11, extension_right=16, label=1):    # end_pos is exclusive                                          # , neg_label=0
     """
     Get start positions and length of positive label in predicted input.
     
@@ -127,7 +127,7 @@ def hp_in_pred(predictions, label=1):
         predictions -- list of int, predicted class labels
         label -- int, labeled positions to extract [default: 1]
     
-    Returns: list [(start position, end position, label)]
+    Returns: list [(start position, end position)]
     """
     compressed_predictions = [[predictions[0], 0, 0]]
 
@@ -140,10 +140,14 @@ def hp_in_pred(predictions, label=1):
     #~ positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1])  for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
     #~ positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1] # KEEP: can be use to calculate average distance between pos and neg
            
-    positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1], compressed_predictions[l][0]) 
+    positives = [[compressed_predictions[l][2] - extension_left, compressed_predictions[l][2] + compressed_predictions[l][1] + extension_right]        # removed label: , compressed_predictions[l][0]
                     for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == label]
-    
+
+    #~ negatives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1], compressed_predictions[l][0]) 
+                    #~ for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == neg_label]
+
     return positives
+    
     
 def get_positions(prediction_list):
     """

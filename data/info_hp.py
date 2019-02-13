@@ -90,11 +90,11 @@ def calc_hp_bases(hp_dict):
     
     Args:
         hp_dict -- dict {str (hp): list of tuples (loc)}
-        seq -- str, DNA sequence
     
     Returns: total HP bases (int)
     """
     total_hps = 0    
+    print(hp_dict)
     for hp in hp_dict:
         length = len(hp)
         number = len(hp_dict[hp])
@@ -162,8 +162,7 @@ def get_info(seq):
     different_hps = len(hp_loc_dict.keys())
     hp_count_tuple = get_hp_count(hp_loc_dict)
     
-    return total_hps, total_hp_stretches,
-                     hp_content, hp_lengths, different_hps, hp_count_tuple
+    return total_hps, total_hp_stretches, hp_content, hp_lengths, different_hps, hp_count_tuple
 
 
 def print_info(seq_file, total_hps, total_hp_stretches,
@@ -247,8 +246,8 @@ if __name__ == "__main__":
     if len(argv) == 3:
         if argv[2] == "False":
             extra = False
-        else:
-            extra = True
+    else:
+        extra = True
     main(fasta_file, extra)
     
 

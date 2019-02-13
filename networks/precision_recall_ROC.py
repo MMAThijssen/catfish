@@ -1,4 +1,4 @@
-import matplotlib; matplotlib.use('Agg')
+#~ import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from trainingDB.metrics import set_sns_style
 import numpy as np
@@ -56,11 +56,12 @@ def draw_precision_recall_threshold(precision, recall, thresholds, output_name, 
     plt.fill_between(recall, precision, step="post", alpha=0.2, color=colors[1])
     for t in range(len(ts)):
         #~ adjusted_predictions = class_from_threshold(predicted_scores, t)
-        close_point = np.argmin(np.abs(thresholds - ts[t]))
+        #~ close_point = np.argmin(np.abs(thresholds - ts[t]))
+        close_point = t
         plt.plot(recall[close_point], precision[close_point], marker=".", label=t, c=colors[t])
-    #~ plt.show()
-    plt.savefig("PR-t_{}.png".format(output_name), bbox_inches="tight")
-    plt.close()
+    plt.show()
+    #~ plt.savefig("PR-t_{}.png".format(output_name), bbox_inches="tight")
+    #~ plt.close()
     
     
 def plot_pr_threshold(precision, recall, thresholds, name_network):
@@ -123,7 +124,6 @@ def predictions_from_file(in_file):
                 preds = line.strip()[3:-1].split(", ")
                 preds = list(map(float, preds))
                 padding = len(labels) - len(preds)
-                print(padding)
                 predicted_scores.extend(preds)  
                 true_labels.extend(labels[: len(labels) - padding])
     
@@ -132,20 +132,22 @@ def predictions_from_file(in_file):
 
 if __name__ == "__main__":   
     # 0. Get input
-    input_file = argv[1]
-    output_name = argv[2]                   # usually choose network: eg RNN92
+    #~ input_file = argv[1]
+    #~ output_name = argv[2]                   # usually choose network: eg RNN92
     
-    # 1. Get labels and scores
-    labels, scores = predictions_from_file(input_file)
-    print("Length of labels combined: ", len(labels))
-    print("Length of scores combined: ", len(scores))
+    #~ # 1. Get labels and scores
+    #~ labels, scores = predictions_from_file(input_file)
+    #~ print("Length of labels combined: ", len(labels))
+    #~ print("Length of scores combined: ", len(scores))
     
-    # 2. Draw curves
-    draw_roc_curve(labels, scores, output_name)
-    precision, recall, thresholds = precision_recall_curve(labels, scores)
-    draw_precision_recall_curve(precision, recall, thresholds, output_name)
-    draw_precision_recall_threshold(precision, recall, thresholds, output_name)
-    plot_pr_threshold(precision, recall, thresholds, output_name)
+    #~ # 2. Draw curves
+    #~ draw_roc_curve(labels, scores, output_name)
+    #~ precision, recall, thresholds = precision_recall_curve(labels, scores)
+    #~ draw_precision_recall_curve(precision, recall, thresholds, output_name)
+    #~ draw_precision_recall_threshold(precision, recall, thresholds, output_name)
+    #~ plot_pr_threshold(precision, recall, thresholds, output_name)
     
-    # 3. Calculate F1 scores
-    print(compute_f1(labels, scores))
+    #~ # 3. Calculate F1 scores
+    #~ print(compute_f1(labels, scores))
+
+

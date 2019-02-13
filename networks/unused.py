@@ -1,3 +1,144 @@
+# no overlap method - extends to right
+        merged_positions = [hp_positions[0]]
+        for i in range(len(hp_positions)):
+            if hp_positions[i][1] >= CHUNK_SIZE + merged_positions[-1][0]:
+                merged_positions[-1][1] = hp_positions[i - 1][1]
+                len_hp = merged_positions[-1][1] - merged_positions[-1][0]
+                merged_positions[-1][1] = CHUNK_SIZE + merged_positions[-1][0]
+                merged_positions.append(hp_positions[i])
+        len_hp = merged_positions[-1][1] - merged_positions[-1][0]
+        if len_hp < CHUNK_SIZE:
+            right_padding = CHUNK_SIZE - len_hp
+            merged_positions[-1][1] = merged_positions[-1][1] + right_padding
+            if merged_positions[-1][1] > len_read:
+                merged_positions[-1][0] -= len_read - merged_positions[-1][1]     
+                merged_positions[-1][1] = len_read
+
+# possible overlap - hps in middle
+        merged_positions = [hp_positions[0]]
+        for i in range(len(hp_positions)):
+            if hp_positions[i][1] >= CHUNK_SIZE + merged_positions[-1][0]:
+                merged_positions[-1][-1] = hp_positions[i - 1][1]
+                #~ check_minimal_size(merged_positions, len_read)
+                merged_positions.append(hp_positions[i])
+        check_minimal_size(merged_positions, len_read)
+
+        merged_positions = [hp_positions[0]]
+        for i in range(len(hp_positions)):
+            if hp_positions[i][1] >= CHUNK_SIZE + merged_positions[-1][0]:
+                merged_positions[-1][1] = CHUNK_SIZE + merged_positions[-1][0]
+                merged_positions.append(hp_positions[i])
+        len_hp = merged_positions[-1][1] - merged_positions[-1][0]
+        if len_hp < CHUNK_SIZE:
+            right_padding = CHUNK_SIZE - len_hp
+            merged_positions[-1][1] = merged_positions[-1][1] + right_padding
+            if merged_positions[-1][1] > len_read:
+                merged_positions[-1][0] -= len_read - merged_positions[-1][1]     
+                merged_positions[-1][1] = len_read 
+
+         merged_positions = [hp_positions[0]]
+        for i in range(len(hp_positions)):
+            if hp_positions[i][1] >= CHUNK_SIZE + merged_positions[-1][0]:
+                end_pos = hp_positions[i - 1][1]
+                len_hp = end_pos - merged_positions[-1][0]
+                
+                merged_positions[-1][1] = CHUNK_SIZE + merged_positions[-1][0]
+                merged_positions.append(hp_positions[i])
+        len_hp = merged_positions[-1][1] - merged_positions[-1][0]
+        if len_hp < CHUNK_SIZE:
+            right_padding = CHUNK_SIZE - len_hp
+            merged_positions[-1][1] = merged_positions[-1][1] + right_padding
+            if merged_positions[-1][1] > len_read:
+                merged_positions[-1][0] -= len_read - merged_positions[-1][1]     
+                merged_positions[-1][1] = len_read 
+ 
+ #later:
+         print("hps: ", len(hp_positions))
+        hp_positions.append(hp_positions[-1])        
+        merged_positions = [hp_positions[0]]
+        
+        for i in range(0, len(hp_positions) - 1):
+            # a. Check for overlap right
+            if hp_positions[i][1] >= hp_positions[i + 1][0] - 1:
+                merged_positions[-1][1] = hp_positions[i + 1][1]  
+                has_overlap = True
+            else:
+                has_overlap = False
+            # b. Extend if shorter than given size
+            len_hp = merged_positions[-1][1] - merged_positions[-1][0]
+            if len_hp < CHUNK_SIZE:
+                left_padding = (CHUNK_SIZE - len_hp) // 2
+                right_padding = (CHUNK_SIZE - len_hp) - left_padding
+                merged_positions[-1][0] = merged_positions[-1][0] - left_padding
+                merged_positions[-1][1] = merged_positions[-1][1] + right_padding
+                if merged_positions[-1][0] < 0:
+                    merged_positions[-1][1] -= merged_positions[-1][0]
+                    merged_positions[-1][0] = 0
+                if merged_positions[-1][1] > len_read: 
+                    merged_positions[-1][0] -= len_read - merged_positions[-1][1]     
+                    merged_positions[-1][1] = len_read
+                smaller_than_size = True
+            else:
+                smaller_than_size = False
+            # c. Add new if no action was taken
+            if not has_overlap and not smaller_than_size:
+                merged_positions.append(hp_positions[i + 1]) 
+##############################3 
+ 
+       for i in range(0, len(hp_positions) - 1):
+            # a. Check for overlap right
+            if hp_positions[i][1] >= hp_positions[i + 1][0] - 1:
+                fused_positions[-1][1] = hp_positions[i + 1][1]  
+            # b. Check for overlap left
+            if hp_positions[i][0] >= hp_positions[i - 1][1]:
+                fused_positions[-1][0] = hp_positions[i][0]            
+            # c. Extend if shorter than given size
+            len_hp = fused_positions[-1][1] - fused_positions[-1][0]
+            if len_hp < CHUNK_SIZE:
+                left_padding = (CHUNK_SIZE - len_hp) // 2
+                right_padding = (CHUNK_SIZE - len_hp) - left_padding
+                fused_positions[-1][0] = fused_positions[-1][0] - left_padding
+                fused_positions[-1][1] = fused_positions[-1][1] + right_padding
+                if fused_positions[-1][0] < 0:
+                    fused_positions[-1][1] -= fused_positions[-1][0]
+                    fused_positions[-1][0] = 0
+                if fused_positions[-1][1] > len_read: 
+                    fused_positions[-1][0] -= len_read - fused_positions[-1][1]     
+                    fused_positions[-1][1] = len_read    
+    
+    
+        # 2a. Merge overlapping HPs AND HPs next to each other
+        fused_positions = [hp_positions[0]]
+        for i in range(0, len(hp_positions) - 1):
+            if hp_positions[i][1] >= hp_positions[i + 1][0] - 1:
+                fused_positions[-1][1] = hp_positions[i + 1][1]
+            else:
+                fused_positions.append(hp_positions[i + 1])
+        #~ print(fused_positions)
+        print(len(fused_positions))
+        # 2a. Extend hps to minimal chunksize
+        for hp in fused_positions:
+            len_hp = hp[1] - hp[0]
+            if len_hp < CHUNK_SIZE:
+                left_padding = (CHUNK_SIZE - len_hp) // 2
+                right_padding = (CHUNK_SIZE - len_hp) - left_padding
+                hp[0] = hp[0] - left_padding
+                hp[1] = hp[1] + right_padding
+                if hp[0] < 0:
+                    hp[1] -= hp[0]
+                    hp[0] = 0
+                if hp[1] > len_read: 
+                    hp[0] -= len_read - hp[1]     
+                    hp[1] = len_read
+        # 2b. Merge overlapping HPs AND HPs next to each other after extension
+        merged_positions = [hp_positions[0]]
+        for i in range(0, len(hp_positions) - 1):
+            if hp_positions[i][1] >= hp_positions[i + 1][0] - 1:
+                merged_positions[-1][1] = hp_positions[i + 1][1]
+            else:
+                merged_positions.append(hp_positions[i + 1])
+        #~ print(len(merged_positions))        
+
 def infer_class_from_signal2(fast5_file, model, hdf_path="Analyses/Basecall_1D_000", window_size=35):
     """
     Infers classes from raw MinION signal in FAST5.
