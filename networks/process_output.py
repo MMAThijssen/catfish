@@ -11,7 +11,7 @@ from reader import load_npz_labels
 from statistics import median
 from sys import argv
 
-def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.8):
+def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
     """
     Outputs information on all (true and false) positives in predicted output. 
     
@@ -49,6 +49,7 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.8):
                         predicted_scores = predicted_labels
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
                         length = len(predicted_labels)
+                        print(length)
                 if true_labels == None:    
                     #~ true_labels = list_predicted(line, types="true_labels")
                     true_labels = list(load_npz_labels("{}/{}.npz".format(npz_dir, read_name)))
@@ -1111,9 +1112,9 @@ if __name__ == "__main__":
     #~ if len(argv) >= 8:
         #~ start = int(argv[7])
     # ~ print("start at: ", start)
-    tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
-                          threshold, start, max_number)
+    #~ tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
+                          #~ threshold, start, max_number)
 
-    #~ check_for_neg(read_file, main_fast5_dir, npz_dir, output_name)
+    check_for_neg(read_file, main_fast5_dir, npz_dir, output_name, threshold)
                           
 
