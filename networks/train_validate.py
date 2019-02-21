@@ -152,7 +152,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % 1000 == 0:                           # network.saving_step                                            
+            if step == n_batches or step % 100000 == 0:                           # network.saving_step                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))

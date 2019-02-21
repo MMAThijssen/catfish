@@ -53,7 +53,7 @@ for i, files in enumerate(file_list):
                               clipped_bases=args.clipped_bases,
                               kmer_size=args.kmer_size,
                               use_tombo=args.use_tombo)
-            #~ db.add_training_read(training_read=tr)
+            db.add_training_read(training_read=tr)
         except ValueError as e:
             with open(error_fn, 'a') as efn:
                 efn.write('{fn}\t{err}\n'.format(err=e, fn=basename(files)))

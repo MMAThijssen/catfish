@@ -206,19 +206,10 @@ class TrainingRead(Persistent):
         Return event labels as specified by encoding_type.
         """
         kmers, _, _ = zip(*self.condensed_events)                               
-        print("Length kmers: ", len(kmers))
-        start = 13055 #6982
-        end = 13114 #7034
-        print(kmers[start:end])
-        print("".join([k[2] for k in kmers[start:end]]))
         try:
             class_numbers = [training_encodings.hp_class_number(km) for km in kmers]
-            print("Length class numbers: ", len(class_numbers))
-            print(class_numbers[start:end])
             extended_classes = training_encodings.extend_classification(class_numbers)
-            print(extended_classes[start:end])
             labels = self.label_raws(extended_classes)
-            print("Labels: ", labels[117300: 117792])
         except IndexError:
             print("IndexError: likely due to empty k-mer")
             return None    
@@ -229,12 +220,9 @@ class TrainingRead(Persistent):
         """
         Assign label to raw data points belonging to a classified event.
         """
-        print("summed ", sum([len(ev[2]) for ev in self.condensed_events[:13114]]))
         labels = [classified_events[ev] for ev in range(len(self.condensed_events)) for p in self.condensed_events[ev][2]]
-        print(len(labels))
         return labels
             
-
     def get_pos(self, width, nb=None):
         width_l = width // 2  # if width is odd, pick point RIGHT of middle
         width_r = width - width_l
@@ -244,10 +232,11 @@ class TrainingRead(Persistent):
         for ch in range(0, len(condensed_hits), self.lessen):
             start = condensed_hits[ch] - width_l
             end = condensed_hits[ch] + width_r + 1
-            raw_labels_out.append(self.classified[start : end])
-            raw_points_out.append(self.raw[start : end])
-            if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
-                print("positive with number ", ch, "has length of differing width")
+            if len(self.classified[start : end]) == self.classified[start : end].count(1):
+                raw_labels_out.append(self.classified[start : end])
+                raw_points_out.append(self.raw[start : end])
+                if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
+                    print("positive with number ", ch, "has length of differing width")
         return(raw_points_out, raw_labels_out)
 
 
@@ -259,9 +248,10 @@ class TrainingRead(Persistent):
         raw_labels_out = []
         for cur_idx in sample(idx_list, nb):
             start = cur_idx - width_l
-            end = cur_idx + width_r + 1 
-            raw_labels_out.append(self.classified[start : end])
-            raw_points_out.append(self.raw[start : end])  
-            if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
-                print("negative with number ", ch, "has length of differing width")
+            end = cur_idx + width_r + 1
+            if len(self.classified[start : end]) == self.classified[start : end].count(0): 
+                raw_labels_out.append(self.classified[start : end])
+                raw_points_out.append(self.raw[start : end])  
+                if len(self.classified[start : end]) != (width + 1) or len(self.raw[start : end]) != (width + 1):
+                    print("negative with number ", ch, "has length of differing width")
         return(raw_points_out, raw_labels_out)

@@ -22,8 +22,8 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     Returns: dict of homopolymer positions, length of read
     """      
     # open FAST5
-    if not os.path.exists(fast5_file):
-        raise ValueError("path to FAST5 is not correct.")
+    #~ if not os.path.exists(fast5_file):
+        #~ raise ValueError("path to FAST5 is not correct.")
     with h5py.File(fast5_file, "r") as fast5:
         # process signal
         raw = process_signal(fast5)

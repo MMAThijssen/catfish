@@ -19,10 +19,10 @@ def split_signal(input_file, splits_hp, splits_nonhp, temp_dir, temp_dir_nonhp):
     hp_list = []
     nonhp_list = []
     # get signal
-    try:
-        source = h5py.File(input_file, "r")
-    except IOError:
-        raise IOError("ERROR - could not open file, likely corrupted.")  
+    #~ try:
+    source = h5py.File(input_file, "r")
+    #~ except IOError:
+        #~ raise IOError("ERROR - could not open file, likely corrupted.")  
           
     try:
         read_name = list(source["Raw"]["Reads"])[0]

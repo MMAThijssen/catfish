@@ -63,6 +63,37 @@ def calculate_accuracy(true_pos, false_pos, true_neg, false_neg):
     return accuracy
     
 
+def calculate_auc(true_labels, predicted_scores, pos_label=1):
+    """
+    Calculates the area under the receiver operator curve
+    
+    Args:
+        true_labels -- list of ints (0 - neg, 1 - pos)
+        predicted_scores -- list of floats, confidence of predictions
+        pos_label -- int (0 or 1)
+        
+    Returns: TPR, NPR, AUC
+    """
+    # tpr is recall 
+    tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
+                                            y_score=predicted_scores,
+                                            pos_label=pos_label)
+    roc_auc = sklmet.auc(fpr, tpr)
+    return tpr, fpr, roc_auc
+    
+    
+def calculate_pr(true_labels, predicted_scores, pos_label=1):
+    precision, recall, thresholds = sklmet.precision_recall_curve(true_labels, 
+                                                                  predicted_scores,
+                                                                  pos_label)  
+    return precision, recall, thresholds
+    
+    
+def compute_auc(tpr, fpr):
+    # tpr and fpr should be arrays!
+    return sklmet.auc(fpr, tpr)
+    
+
 def class_from_threshold(predicted_scores, threshold):
     """
     Assigns classes on input based on given threshold.
@@ -91,7 +122,7 @@ def set_sns_style():
     
     return colors
     
-# OLD: replaced by f1()
+    
 def weighted_f1(precision, recall, n, N):
     """
     Calculates balanced  F1 score for a single class.
@@ -111,7 +142,6 @@ def weighted_f1(precision, recall, n, N):
         f1 = 0
     
     return f1
-#~ whole_f1 = metrics.weighted_f1(whole_precision, whole_recall, (network.tp + network.fn), valid_reads * max_seq_length)
     
     
 def f1(precision, recall):
@@ -134,6 +164,30 @@ def f1(precision, recall):
     
     return f1
 
+def parse_txt(cprofile, measure):
+    """
+    Parses cProfile text files to retrieve values per epoch.
+    
+    Args:
+        cProfile -- str, text file should have "Epoch" on same line as metric
+        measure -- str, either "Accuracy" or "Loss"
+        
+    Returns list
+    """
+    measure_list = []
+    with open(cprofile, "r") as source:
+        for line in source:
+            if line.startswith("Epoch"):
+                line = line.split()
+                for i in range(len(line)):
+                    if measure in line[i]:
+                        if line[i + 1][-1] == "%":
+                            line[i + 1] = line[i + 1][:-1]                   # -1 to lose the % sign
+                        measure_list.append(float(line[i + 1]))       
+        if len(measure_list) == 0:
+            raise ValueError("Given measure has not been found in file.") 
+    return measure_list
+
 
 def plot_squiggle(signal, title):
     plt.figure(figsize=(30, 10)) 
@@ -142,6 +196,7 @@ def plot_squiggle(signal, title):
     plt.xlim(left=0, right=len(signal))
     plt.savefig("{}.png".format(title))
     plt.close()
+    
     
     
 def plot_settings(measure):
@@ -214,157 +269,24 @@ def plot_networks_on_metric(network_list, metric):
 
 
 def generate_heatmap(predicted_list, label_list, title):
-    """
-    Args:
-        predicted_list -- list of lists, predicted values to depict, eg "predicted label", "true label"
-        label_list -- list of str, names of predicted lists
-        title -- str, name of plot
-    """
     sns.heatmap(predicted_list, vmin=0.0, vmax=1.0, cmap="GnBu",      # PiYG - YlGnBu
                  xticklabels=False, yticklabels=label_list, 
                  cbar_kws={"orientation": "horizontal"})
     #~ plt.show()
     plt.savefig("{}.png".format(title), bbox_inches="tight")
     plt.close()
+    
 
-
-### OLD - replaced by precision_recall_ROC.py ###
-def calculate_auc(true_labels, predicted_scores, pos_label=1):
-    """
-    Calculates the area under the receiver operator curve
-    
-    Args:
-        true_labels -- list of ints (0 - neg, 1 - pos)
-        predicted_scores -- list of floats, confidence of predictions
-        pos_label -- int (0 or 1)
-        
-    Returns: TPR, FPR, AUC
-    """
-    tpr, fpr, thresholds = sklmet.roc_curve(y_true=true_labels, 
-                                            y_score=predicted_scores,
-                                            pos_label=pos_label)
-    roc_auc = sklmet.auc(fpr, tpr)
-    return tpr, fpr, roc_auc
-    
-    
-def calculate_pr(true_labels, predicted_scores, pos_label=1):
-    precision, recall, thresholds = sklmet.precision_recall_curve(true_labels, 
-                                                                  predicted_scores,
-                                                                  pos_label)  
-    return precision, recall, thresholds
-    
-    
-def draw_roc_t(tpr, fpr, roc_auc, title, thresholds=[0.5]):
-    colors = set_sns_style()
-    
-    plt.title("Receiver Operator Characteristic")
-    for t in range(len(thresholds)):
-        plt.plot(fpr[t], tpr[t], "b", label="AUC {} = {:.2f}".format(thresholds[t], roc_auc[t]), c=colors[t])
-    plt.legend(loc="lower right")
-    plt.plot([0, 1], [0, 1],'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('True Positive Rate')
-    plt.xlabel('False Positive Rate')
-    plt.savefig("ROC_{}-t.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-    
-def draw_pr_t(precision, recall, title, thresholds=[0.5]):
-    """
-    Plots precision recall curve.
-    
-    Args:
-        precision -- list of floats, precision
-        recall -- list of floats, precision
-        title -- str, name of plot
-        thresholds -- list of floats, threshold for positive label [default: [0.5]]
-        
-    Returns: None
-    """
-    colors = set_sns_style()
-    
-    plt.title("Precision Recall Curve")
-    for t in range(len(thresholds)):
-        plt.plot(precision[t], recall[t], c=colors[t], label=thresholds[t])
-    plt.plot([0, 1], [0.5, 0.5], 'r--', c="r")
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.ylabel('Precision')
-    plt.xlabel('Recall')
-    plt.legend()
-    plt.savefig("PR_{}-t.png".format(title), bbox_inches="tight")
-#    plt.show()
-    plt.close()
-    
-    return None
-    
-def draw_roc_and_pr_from_file(predout_file, name_network, thresholds=[0.5]):
-    """
-    Args:
-        predout_file -- str, file outputted after validation
-        name_network -- str, name of network
-        thresholds -- list of floats, thresholds [default: 0.5]
-        
-    Returns: None
-    """
-    true_labels = []
-    predicted_scores = []
-    with open(predout_file, "r") as source1:
-        for line in source1:
-            if not line.strip():
-                continue
-            elif line.startswith("*"):
-                labels = line.strip()[3:-1].split(", ")
-                labels = list(map(int, labels))
-                true_labels.extend(labels)
-            elif line.startswith("@"):
-                preds = line.strip()[3:-1].split(", ")
-                preds = list(map(float, preds))
-                predicted_scores.extend(preds)  
-
-    tpr, fpr, auc = calculate_auc(true_labels, predicted_scores)
-    draw_roc(tpr, fpr, auc, name_network)
-    
-    prec, rec, thres = calculate_pr(true_labels, predicted_scores)
-    draw_pr(prec, rec, name_network)
-
-    plot_pr_threshold(prec, rec, thres, name_network)
-               
-    adjusted_scores = [class_from_threshold(predicted_scores, t) for t in thresholds]
-    tpr_list = []
-    fpr_list = []
-    auc_list = []
-    prec_list = []
-    rec_list = []
-    
-    for a in adjusted_scores:                    
-        tpr, fpr, auc = calculate_auc(true_labels, a)
-        tpr_list.append(tpr)
-        fpr_list.append(fpr)
-        auc_list.append(auc)
-        
-        prec, rec, thres = calculate_pr(true_labels, a)
-        prec_list.append(prec)
-        rec_list.append(rec)           
-    
-    draw_roc_t(tpr_list, fpr_list, auc_list, name_network, thresholds)
-    draw_pr_t(prec_list, rec_list, name_network, thresholds)
-    
-    return None
-    
-    
 if __name__ == "__main__":
-    #~ true_file = argv[1]
-    #~ pred_file = argv[2]
-    #~ threshold = float(argv[3])
-    #~ output_name = argv[4]
-    
-    input_file = argv[1]
-    output_name = argv[2]       # usually choose network: eg RNN92
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    draw_roc_and_pr_from_file(input_file, output_name, thresholds)
-
-    #~ predicted_labels = class_from_threshold(predicted_scores, threshold)
-    #~ generate_heatmap(predicted_labels, output_name)
+    true_file = argv[1]
+    pred_file = argv[2]
+    threshold = float(argv[3])
+    output_name = argv[4]
+    #~ output_name = argv[2]       # usually choose network: eg RNN92
+    #~ thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    #~ draw_roc_and_pr_from_file(input_file, output_name, thresholds)
+    #~ true_labels = 
+    #~ predicted_scores =
+    predicted_labels = class_from_threshold(predicted_scores, threshold)
+    generate_heatmap(predicted_labels, output_name)
 

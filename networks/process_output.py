@@ -49,28 +49,35 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
                         predicted_scores = predicted_labels
                         predicted_labels = class_from_threshold(predicted_labels, threshold)
                         length = len(predicted_labels)
-                        print(length)
                 if true_labels == None:    
                     #~ true_labels = list_predicted(line, types="true_labels")
                     true_labels = list(load_npz_labels("{}/{}.npz".format(npz_dir, read_name)))
                     #~ print(true_labels)
                 elif predicted_labels != None and true_labels != None:
                     bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
+                    start = 22835
+                    length = 200
                     bases = bases[start: start + length]
                     new = new[start: start + length]
                     count_basen = [1 for w in new if w == "n"]
                     n_bases += sum(count_basen) 
 
                     true_labels = true_labels[start: start + length]
-                    #~ predicted_labels = list(correct_short(predicted_labels))
+                    predicted_scores = predicted_scores[start: start + length]
+                    predicted_labels = list(correct_short(predicted_labels[start: start + length]))
+                    if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch335_read2372_strand":
+                        #~ true_hp = hp_loc_dict(true_labels)
+                        print(new)
+                        seq = [bases[i] for i in range(len(new)) if new[i] == "n"]
+                        print("".join(seq))
                     
-                    #~ # generate heatmap
-                    if read_counter < 10:
-                        generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
-                                        "Comparison_{}_corrected".format(read_name)) 
+                        #~ # generate heatmap
+                        if read_counter < 10:
+                            generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
+                                            "Comparison_{}_corrected".format(read_name)) 
                     
                     read_counter += 1
-                    if read_counter == 10:
+                    if read_counter == 8:
                         break
                     search_read = True
                     predicted_labels = None

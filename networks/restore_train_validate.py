@@ -52,7 +52,6 @@ if __name__ == "__main__":
                          "\n\t-path to training db\n\t-number of training reads" + 
                          "\n\t-path to validation db\n\t-max length of validation reads" + 
                          "\nOPTIONAL:\n\t-only validation, no training")
-    print("THRESHOLD ON 0.8!")
     
     network_type = argv[1]
     network_path = argv[2]
@@ -67,8 +66,8 @@ if __name__ == "__main__":
         only_validation = True
         saving = False
         print("Only validating now, NO training")
-    validation_start = "complete" #"random"  # #0 #30000
-    max_number = 12256  #856          
+    validation_start = "random" #"complete" #"random"  # #0 #30000
+    max_number = 856 #12256  #856          
     
     # Keep track of memory and time
     p = psutil.Process(os.getpid())
@@ -115,6 +114,3 @@ if __name__ == "__main__":
         validate(model, squiggles, max_seq_length, file_path, validation_start, max_number)  
         
     tf.reset_default_graph()
-
-
-

@@ -7,12 +7,7 @@ import os.path
 import tensorflow as tf
 
 class RNN(object):
-#    def __init__(self):
-    #~ def __init__(self, batch_size, layer_size, n_layers, 
-                   #~ optimizer_choice, n_epochs, learning_rate, keep_prob):
-    def __init__(self, save=True, **kwargs):
-
-        #~ tf.set_random_seed(16)
+    def __init__(self, save=False, **kwargs):
         
         # adjustable parameters
         self.batch_size = kwargs["batch_size"]
@@ -30,7 +25,6 @@ class RNN(object):
         self.n_inputs = 1        
         self.n_outputs = 1
         self.window = 35
-        self.max_seq_length = 5250  
         
         self.layer_sizes = [self.layer_size,] * self.n_layers                   # does this work when extended or shortened? maybe move to the network layer
         self.saving_step = 10000
@@ -105,7 +99,7 @@ class RNN(object):
     
     @model_path.setter
     def model_path(self, model_type):
-        cur_dir = "/mnt/scratch/thijs030/validatenetworks"
+        cur_dir = "/mnt/scratch/thijs030/networks/actualnetworks"
         #~ cur_dir = os.getcwd()               
             
         check_for_dir = True
@@ -185,7 +179,7 @@ class RNN(object):
         stacked_outputs = tf.layers.dense(stacked_rnn_output, self.n_outputs, name="final_fully_connected")
         
         final_output = tf.reshape(stacked_outputs, [-1, self.window, self.n_outputs]) 
-            
+        
         return final_output
         
     
@@ -225,15 +219,22 @@ class RNN(object):
         return(confidences)        
         
 
-    def test_network(self, test_x, test_y, read_nr, read_name, file_path):
+    def test_network(self, test_x, test_y, read_name, file_path, padding_size, threshold=0.5):
         # get predicted values:
+        #~ test_x, padding_size = padding(test_x, network.window, network.n_inputs)
+        #~ test_y, _ = padding(test_y, network.window, network.n_inputs)
+        
+        #~ print("Threshold is on 0.8!")
+        #~ threshold=0.8
+        
         feed_dict_pred = {self.x: test_x, self.p_dropout: self.keep_prob_test}
-        
-        pred_vals = self.sess.run(tf.round(self.predictions), feed_dict=feed_dict_pred)                  
-        pred_vals = np.reshape(pred_vals, (-1)).astype(int)  
-        
+
         confidences = self.sess.run(self.predictions, feed_dict=feed_dict_pred) 
         confidences = np.reshape(confidences, (-1)).astype(float)               # is necessary! 150 > 5250
+        
+        pred_vals = [1 if c >= threshold else 0 for c in confidences]
+        
+        confidences = confidences[: len(confidences) -padding_size]
         
         # get testing accuracy:
         feed_dict_test = {self.x: test_x, self.y: test_y, self.p_dropout: self.keep_prob_test}
@@ -241,25 +242,22 @@ class RNN(object):
     
         # evaluate performance:
         test_labels = test_y.reshape(-1)
-        true_pos, false_pos, true_neg, false_neg = metrics.confusion_matrix(test_labels, pred_vals)
+        true_pos, false_pos, true_neg, false_neg = trainingDB.metrics.confusion_matrix(test_labels, pred_vals)
         self.tp += true_pos
         self.fp += false_pos
-        self.tn += true_neg
+        self.tn += true_neg - padding_size
         self.fn += false_neg
 
-        with open(file_path + "_output.txt", "a+") as dest:
-            dest.write(read_name)
-            dest.write("\n")
-            dest.write("* {}".format(list(test_labels)))
-            dest.write("\n")
-            dest.write("# {}".format(list(pred_vals)))
-            dest.write("\n")
-            dest.write("@ {}".format(list(confidences)))
-            dest.write("\n")
+        #~ with open(file_path + "fullvalidation100-08.txt", "a+") as dest:
+            #~ dest.write(read_name)
+            #~ dest.write("\n")
+            #~ dest.write("* {}".format(list(test_labels)))
+            #~ dest.write("\n")
+            #~ ##~ dest.write("# {}".format(list(pred_vals)))                       # labels at threshold 0.5
+            #~ ##~ dest.write("\n")
+            #~ dest.write("@ {}".format(list(confidences)))                        # scores
+            #~ dest.write("\n")
                     
-        if read_nr % self.saving_step == 0:
-            metrics.generate_heatmap([pred_vals, confidences, test_labels], 
-                                     ["predictions", "confidences", "truth"], "Comparison_{}_{}".format(os.path.basename(self.model_path), read_nr))
         return test_acc, test_loss
 
     

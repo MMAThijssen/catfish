@@ -25,7 +25,6 @@ class RNN(object):
         self.n_inputs = 1        
         self.n_outputs = 1
         self.window = 35
-        self.max_seq_length = 5250  
         
         self.layer_sizes = [self.layer_size,] * self.n_layers                   # does this work when extended or shortened? maybe move to the network layer
         self.saving_step = 10000
@@ -100,7 +99,7 @@ class RNN(object):
     
     @model_path.setter
     def model_path(self, model_type):
-        cur_dir = "/mnt/scratch/thijs030/actualnetworks"
+        cur_dir = "/mnt/scratch/thijs030/networks/actualnetworks"
         #~ cur_dir = os.getcwd()               
             
         check_for_dir = True
