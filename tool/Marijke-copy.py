@@ -94,48 +94,48 @@ def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_pa
     #~ print("Number of files containing non-HPs after split: ", len(files_nonhp))
     #~ ## TODO: change later to not return anything. Is not necessary.
 
-        if counter % 10 == 0 or counter == len(input_files):
-            # 4. Process each FAST5 belong to HP or non-HP group
-            THREADS = 4
-            CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"                 # TODO: adjust!
-            FLOW = "FLO-MIN106"
-            KIT = "SQK-RAD002"            
-            OUTPUT = "fastq"                                                            # can be FAST5 or FASTQ or both ; this for testing - maybe make variable?
-            subprocess.run("source activate basecall", shell=True)
-                #TODO: a. Register number of failed and number of passes (in total and per group)
-                # maybe use fast5seek or better: sequencing_summary.txt on passes_filtering?
-            subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
-                            temp_dir_nonhp, THREADS, save_dir_nonhp, OUTPUT, FLOW, KIT), shell=True)
-            subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {} --basecaller.homopolymer_correct=1".format(
-                            temp_dir_hp, THREADS, save_dir_hp, OUTPUT, FLOW, KIT), shell=True)
-            # close conda env
-            subprocess.run("source deactivate", shell=True) 
+        #~ if counter % 10 == 0 or counter == len(input_files):
+            #~ # 4. Process each FAST5 belong to HP or non-HP group
+            #~ THREADS = 4
+            #~ CONFIG = "/mnt/nexenta/thijs030/data/r94_450bps_linear.cfg"                 # TODO: adjust!
+            #~ FLOW = "FLO-MIN106"
+            #~ KIT = "SQK-RAD002"            
+            #~ OUTPUT = "fastq"                                                            # can be FAST5 or FASTQ or both ; this for testing - maybe make variable?
+            #~ subprocess.run("source activate basecall", shell=True)
+                #~ #TODO: a. Register number of failed and number of passes (in total and per group)
+                #~ # maybe use fast5seek or better: sequencing_summary.txt on passes_filtering?
+            #~ subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {}".format(
+                            #~ temp_dir_nonhp, THREADS, save_dir_nonhp, OUTPUT, FLOW, KIT), shell=True)
+            #~ subprocess.run("read_fast5_basecaller.py -i {} -t {} -s {} -o {} -r -f {} -k {} --basecaller.homopolymer_correct=1".format(
+                            #~ temp_dir_hp, THREADS, save_dir_hp, OUTPUT, FLOW, KIT), shell=True)
+            #~ # close conda env
+            #~ subprocess.run("source deactivate", shell=True) 
                    
-                # b. Remove split files
-            shutil.rmtree(temp_dir_hp, ignore_errors=True)
-            shutil.rmtree(temp_dir_nonhp, ignore_errors=True)
+                #~ # b. Remove split files
+            #~ shutil.rmtree(temp_dir_hp, ignore_errors=True)
+            #~ shutil.rmtree(temp_dir_nonhp, ignore_errors=True)
             
-            if os.path.isdir(save_dir_hp + "/workspace/pass"):
-                subprocess.run("cat {}/workspace/pass/*.fastq > {}/homopolymer_{}.fastq".format(save_dir_hp, save_dir, counter))
-                shutil.rmtree(save_dir_hp, ignore_errors=True)
+            #~ if os.path.isdir(save_dir_hp + "/workspace/pass"):
+                #~ subprocess.run("cat {}/workspace/pass/*.fastq > {}/homopolymer_{}.fastq".format(save_dir_hp, save_dir, counter))
+                #~ shutil.rmtree(save_dir_hp, ignore_errors=True)
             
-            if os.path.isdir(save_dir_nonhp + "/workspace/pass"):
-                subprocess.run("cat {}/workspace/pass/*.fastq > {}/nonhomopolymer_{}.fastq".format(save_dir_nonhp, save_dir, counter))
-                shutil.rmtree(save_dir_nonhp, ignore_errors=True)
+            #~ if os.path.isdir(save_dir_nonhp + "/workspace/pass"):
+                #~ subprocess.run("cat {}/workspace/pass/*.fastq > {}/nonhomopolymer_{}.fastq".format(save_dir_nonhp, save_dir, counter))
+                #~ shutil.rmtree(save_dir_nonhp, ignore_errors=True)
             
-            os.mkdir(temp_dir_hp)
-            os.mkdir(temp_dir_nonhp)        
+            #~ os.mkdir(temp_dir_hp)
+            #~ os.mkdir(temp_dir_nonhp)        
             
-            counter += 1 
+            #~ counter += 1 
             
-            if counter % 100 == 0:
-                print("Basecalled {} reads".format(counter))
+            #~ if counter % 100 == 0:
+                #~ print("Basecalled {} reads".format(counter))
             
-            if counter >= 20:
-                break
+            #~ if counter >= 20:
+                #~ break
             
-    # 5. Extract FASTAs from FASTQs in passed dir / Concatenate reads
-    subprocess.run("cat {}/*.fastq > {}/basecalled.fastq".format(save_dir)) 
+    #~ # 5. Extract FASTAs from FASTQs in passed dir / Concatenate reads
+    #~ subprocess.run("cat {}/*.fastq > {}/basecalled.fastq".format(save_dir)) 
     #~ subprocess.run("cat {}/workspace/pass/*.fastq > {}/homopolymer.fastq".format(save_dir_hp, save_dir))
     #~ subprocess.run("cat {}/workspace/pass/*.fastq > {}/nonhomopolymer.fastq".format(save_dir_nonhp, save_dir))
     #~ subprocess.run("cat {}/*.fastq > {}/basecalled.fastq".format(save_dir))
@@ -146,10 +146,10 @@ def main(input_dir, output_file, save_dir, chunk_size, threshold=0.9, network_pa
     #~ shutil.rmtree(save_dir_hp, ignore_errors=True)
     #~ shutil.rmtree(save_dir_nonhp, ignore_errors=True)
 
-    shutil.rmtree(temp_dir_hp, ignore_errors=True)
-    shutil.rmtree(temp_dir_nonhp, ignore_errors=True)
+    #~ shutil.rmtree(temp_dir_hp, ignore_errors=True)
+    #~ shutil.rmtree(temp_dir_nonhp, ignore_errors=True)
     
-    print("Finished basecalling. FASTQ containing all reads can be found at {}.".format(os.path.abspath(save_dir)))
+    #~ print("Finished basecalling. FASTQ containing all reads can be found at {}.".format(os.path.abspath(save_dir)))
         
         #~ # maybe use fast5seek
         #~ # does albacore use duration? (or start time?) because I just copy this to all subfiles

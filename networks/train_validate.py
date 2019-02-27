@@ -4,7 +4,6 @@ import trainingDB.helper_functions
 import trainingDB.metrics
 import numpy as np
 import os
-import psutil
 import random
 import reader
 from resnet_class import ResNetRNN
@@ -152,7 +151,7 @@ def train_and_validate(network, db, training_nr, squiggles, max_seq_length, file
             network.train_network(set_x, set_y, step)
             
             # validate network:
-            if step == n_batches or step % 100000 == 0:                           # network.saving_step                                            
+            if step == n_batches or step % 10000 == 0:                           # network.saving_step                                            
                 network.saver.save(network.sess, network.model_path + "/checkpoints/ckpnt", global_step=step, write_meta_graph=True)            
                 print("Saved checkpoint at step {}\n".format(step))
                 dest.write("\nSaved checkpoint at step {}\n".format(step))
@@ -324,17 +323,13 @@ if __name__ == "__main__":
     if len(argv) == 10:
         only_validation = True
     
-    p = psutil.Process(os.getpid())
-    m1 = p.memory_full_info().pss
-    print("Memory use at start is", m1)
-    
     if not only_validation:
         # build model
         hpm_dict = generate_random_hyperparameters(network_type)
-        if network_type == "RNN":
-            hpm_dict = {"batch_size":512, "optimizer_choice": "Adam", "learning_rate":0.0001, "layer_size":256, "n_layers":5, "keep_prob":0.2}
-        else:
-            hpm_dict = {"batch_size":128, "optimizer_choice": "RMSProp", "learning_rate":0.001, "layer_size":256, "n_layers":2, "keep_prob":0.3, "layer_size_res":64, "n_layers_res":2}
+        #~ if network_type == "RNN":
+            #~ hpm_dict = {"batch_size":512, "optimizer_choice": "Adam", "learning_rate":0.0001, "layer_size":256, "n_layers":5, "keep_prob":0.2}
+        #~ else:
+            #~ hpm_dict = {"batch_size":256, "optimizer_choice": "RMSProp", "learning_rate":0.001, "layer_size":64, "n_layers":3, "keep_prob":0.8, "layer_size_res":32, "n_layers_res":2}
         network = build_model(network_type, save=True, **hpm_dict)
         network.initialize_network()
         
@@ -363,4 +358,3 @@ if __name__ == "__main__":
     
     t8 = datetime.datetime.now()
     print("Finished script at ", t8)
-    print("Memory use at end is ", p.memory_full_info().pss)

@@ -66,7 +66,7 @@ def infer_class_from_npz(npz_file, model, label=1, window_size=35):
     # open FAST5
     if not os.path.exists(npz_file):
         raise ValueError("path to NPZ is not correct.")
-    labels = reader.load_npz_labels(fast5_file)
+    labels = reader.load_npz_labels(npz_file)
 
     predicted_hps = hp_in_pred(labels, 0, 0)
     

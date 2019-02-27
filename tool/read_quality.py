@@ -30,7 +30,6 @@ def read_quality(read, ref_fasta, result_dict={'nb_mappings': [],
     aligner = mp.Aligner(ref_fasta)                                             # constructor that indexes reference
 
     for name, seq, qual in mp.fastx_read(read):                                # generator that open FASTA/Q and yiels name, seq, qual
-        # ~ print(name)
         
         nb_hits = 0
         for hit in aligner.map(seq):                                            # aligns seq against index (generates Alignment object that describe alignment)

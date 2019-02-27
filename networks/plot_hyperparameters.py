@@ -42,19 +42,23 @@ def scatterplot(x, y, clr, df, xlabel, ylabel, plot_name):
         data_key = mpatches.Patch(color=use_colors[lbl], label=lbl)
         patchList.append(data_key)
     plt.legend(handles=patchList, loc="center left", bbox_to_anchor=(1, 0.5))
-    #~ plt.show()
-    plt.savefig("{}.png".format(plot_name), bbox_inches="tight")
-    plt.close()   
+    plt.show()
+    #~ plt.savefig("{}.png".format(plot_name), bbox_inches="tight")
+    #~ plt.close()   
     
 
 if __name__ == "__main__":
     input_file = argv[1]
-    df = pd.read_csv(input_file, sep=",", header=0, index_col=1)
+    df = pd.read_csv(input_file, sep=".", header=0, index_col=0)
     
-    hyperparams = ["type", "batch_size", "optimizer", "learning_rate", "layer_size", 
-                   "keep_probability", "n_layers", "layer_size_res", "n_layers_res"]
+    #~ df["TPR"] = pd.to_numeric(df["TPR"].str.replace())
+    
+    print(df.dtypes)
+    
+    hyperparams = ["architecture", "batch_size", "optimiser", "learning_rate", "layer_size_RNN", 
+                   "keep_probability", "n_layers_RNN"]
                    
-    hps_res = ["layer_size_res", "n_layers_res"]
+    hps_res = ["layer_size_ResNet", "n_layers_ResNet"]
     
     #~ for hp in hyperparams:
         # hyperparams vs f1:
@@ -78,10 +82,10 @@ if __name__ == "__main__":
                     #~ xlabel="recall", ylabel="precision", 
                     #~ plot_name="precision_vs_recall_on_{}".format(hp)) 
     
-    #~ # optimizers:
-    scatterplot(x="type", y="F1", clr="optimizer", df=df,
-                xlabel="network architecture", ylabel="F1 score", 
-                plot_name="type_vs_F1_on_optimizer") 
+    # optimizers:
+    #~ scatterplot(x="type", y="F1", clr="optimizer", df=df,
+                #~ xlabel="network architecture", ylabel="F1 score", 
+                #~ plot_name="type_vs_F1_on_optimizer") 
     
     #~ # for layers + size:
     #~ scatterplot(x="n_layers", y="layer_size", clr="F1_corrected", df=df,

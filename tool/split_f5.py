@@ -26,7 +26,6 @@ def split_signal(input_file, splits_hp, splits_nonhp, temp_dir, temp_dir_nonhp):
           
     try:
         read_name = list(source["Raw"]["Reads"])[0]
-        read_attributes = list(source["Raw"]["Reads"][read_name].attrs)
         signal_dset = source["Raw"]["Reads"][read_name]["Signal"]
     except:
         raise RuntimeError("ERROR - no raw signal data was stored in file.")
@@ -46,6 +45,15 @@ def split_signal(input_file, splits_hp, splits_nonhp, temp_dir, temp_dir_nonhp):
         del dest["Raw"]["Reads"][read_name]["Signal"]
         raw_reads.create_dataset("Signal", data=new_signal, dtype="int16", 
                                  compression="gzip",compression_opts=9)
+        dest["Raw"]["Reads"]["duration"] = len(new_signal)
+        print(dest["Raw"]["Reads"]["read_id"])
+
+        # remove previous basecalls
+        if dest["Analyses"]["Basecall_1D_000"]:
+            del dest["Analyses"]["Basecall_1D_000"]
+        if dest["Analyses"]["RawGenomeCorrected_000"]:
+            del dest["Analyses"]["RawGenomeCorrected_000"]
+        
         dest.close()
         index += 1
         

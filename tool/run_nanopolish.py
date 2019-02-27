@@ -42,8 +42,10 @@ def compute_consensus(draft, preprocessed_fasta, sorted_bam, output_name="polish
 
 if __name__ == "__main__":
     main_dir = argv[1]
-    draft = argv[2]         # make in this script too?
+    albacore_fastq_output = argv[2]         # make in this script too?
+    canu_output = argv[3]
     
     fasta_reads = preprocess_data(main_dir)
+    draft = draft_canu(canu_output, albacore_fastq_output)
     sorted_bam_reads = align_to_draft(draft, fasta_reads)
     polished = compute_consensus(draft, fasta_reads, sorted_bam_reads)
