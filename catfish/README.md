@@ -56,10 +56,10 @@ a list of path to the split reads containing no homopolymers.
 `catfish -i <fast5_directory> -s <split_reads> -c <size_of_homopolymer_chunks>`
 
 
-#### Name
-The name is a reference to the fish as well as to the act of catfishing, in which it is 
-an art to recognise a fake identity from a genuine one, as it is the goal of the tool
-to recognise homopolymers from non-homopolymers.
+## Name
+The name is a reference to the fish as well as to the act of catfishing. 
+It is an art to recognise a fake identity from a genuine one in catfishing, which is similar to the goal of the tool:
+recognising true homopolymers from non-homopolymers.
 
 
 
