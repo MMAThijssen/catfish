@@ -22,8 +22,8 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     Returns: dict of homopolymer positions, length of read
     """      
     # open FAST5
-    #~ if not os.path.exists(fast5_file):
-        #~ raise ValueError("path to FAST5 is not correct.")
+    if not os.path.exists(fast5_file):
+        raise ValueError("path to FAST5 is not correct.")
     with h5py.File(fast5_file, "r") as fast5:
         # process signal
         raw = process_signal(fast5)
@@ -37,7 +37,7 @@ def infer_class_from_signal(fast5_file, model, label=1, window_size=35):
     padding = np.array(padding_size * [0])
     raw = np.hstack((raw, padding))        
     
-    # take per 35 from raw and predict scores       - IDEA: really take per 35 and immediately put through right basecaller
+    # take per 35 from raw and predict scores                                   # IDEA: really take per 35 and immediately put through right basecaller
     N_INPUT = 1
     n_batches = len(raw) // window_size
     raw_in = reshape_input(raw, window_size, N_INPUT)
@@ -97,7 +97,6 @@ def normalize_raw_signal(raw, norm_method):                                     
     """
     Normalize the raw DAC values. 
     """
-    # Median normalization, as done by nanoraw (see nanoraw_helper.py)
     if norm_method == 'median':
         shift = np.median(raw)
         scale = np.median(np.abs(raw - shift))
@@ -156,15 +155,9 @@ def hp_in_pred(predictions, extension_left=11, extension_right=16, label=1):    
             compressed_predictions[-1][1] += 1
         else:
             compressed_predictions.append([predictions[p], 1, p])
-    
-    #~ positives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1])  for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1]
-    #~ positives = [compressed_predictions[l][1:] for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == 1] # KEEP: can be use to calculate average distance between pos and neg
-           
+               
     positives = [[compressed_predictions[l][2] - extension_left, compressed_predictions[l][2] + compressed_predictions[l][1] + extension_right]        # removed label: , compressed_predictions[l][0]
                     for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == label]
-
-    #~ negatives = [(compressed_predictions[l][2], compressed_predictions[l][2] + compressed_predictions[l][1], compressed_predictions[l][0]) 
-                    #~ for l in range(len(compressed_predictions)) if compressed_predictions[l][0] == neg_label]
 
     return positives
     
@@ -201,8 +194,5 @@ def correct_short(predictions, threshold=15):                                   
             if pred_c[1] < threshold:
                 # remove predictions shorter than threshold
                 compressed_predictions[pred_ci][0] = 0
-            #~ else: 
-                #~ # extend predictions longer than threshold
-                #~ compressed_
             
     return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])    

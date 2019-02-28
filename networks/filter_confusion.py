@@ -6,6 +6,9 @@ import re
 from sys import argv
 
 def write_confusion_to_file(input_file, dest_file):
+    """
+    Create file with true positives, false positives, true negatives and false negatives
+    """
     with open(dest_file, "a+") as dest:
         with open(input_file, "r") as source:
             file_name = basename(input_file).split(".")[0]

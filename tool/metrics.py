@@ -2,7 +2,13 @@
 
 def confusion_matrix(true_labels, predicted_labels):
     """
-    Returns precision and recall
+    Returns precision and recall.
+    
+    Args:
+        true_labels -- list of ints, true labels
+        predicted_labels -- list of int, predicted labels
+        
+    Returns: number of true positives, false positives, true_negatives, false_negatives
     """
 
     if len(true_labels) != len(predicted_labels):

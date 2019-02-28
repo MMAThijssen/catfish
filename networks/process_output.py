@@ -9,19 +9,19 @@ from trainingDB.metrics import generate_heatmap
 import numpy as np
 from reader import load_npz_labels
 from statistics import median
+import seaborn as sns
 from sys import argv
 
-def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
+def check_for_false_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
     """
-    Outputs information on all (true and false) positives in predicted output. 
+    Computes average and median score for false negatives. Saves a boxplot as well. 
     
     Args:
         output_file -- str, file outputted by neural network validation
         main_dir -- str, path to main directory containing FAST5 files
         out_name -- str, name of file to write output to
-        start -- int, start position taken at validation
-        length -- int, length of stretch that was validated
-        max_nr -- int, maximum number of reads to use [default: 12255]
+        npz_dir -- str, name of directory to npzs
+        threshold -- float, threshold for classification labels [default: 0.9]
         
     Returns: None
     """
@@ -29,6 +29,28 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
     is_confusion = True
     predicted_labels = None
     true_labels = None
+    
+    states = []
+    false_states = []
+    neg_states = []
+
+    # initialize for FN
+    all_count_fntrue = Counter({})
+    all_count_fnbasestrue = Counter({})
+    all_count_fnseqtrue = Counter({})
+    all_fnpositions = []
+
+    # initialize for all predicted and true positives                           # TODO: do not calculate but take TP + FP together for this / TP + FN
+    all_count_predictions = Counter({})
+    all_count_basehp = Counter({})
+    all_count_truehp = Counter({})
+    all_count_basetrue = Counter({})
+    all_count_seq = Counter({})
+    all_count_seqtrue = Counter({})
+    all_truepositions = []
+    all_predictedpositions = []
+    
+    fn_scores = []
     
     read_counter = 0
     
@@ -55,8 +77,7 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
                     #~ print(true_labels)
                 elif predicted_labels != None and true_labels != None:
                     bases, new = get_base_new_signal("{}/{}.fast5".format(main_dir, read_name))
-                    start = 22835
-                    length = 200
+                    
                     bases = bases[start: start + length]
                     new = new[start: start + length]
                     count_basen = [1 for w in new if w == "n"]
@@ -64,24 +85,56 @@ def check_for_neg(output_file, main_dir, npz_dir, out_name, threshold=0.9):
 
                     true_labels = true_labels[start: start + length]
                     predicted_scores = predicted_scores[start: start + length]
-                    predicted_labels = list(correct_short(predicted_labels[start: start + length]))
-                    if read_name == "nanopore2_20170301_FNFAF09967_MN17024_sequencing_run_170301_MG1655_PC_RAD002_62645_ch335_read2372_strand":
-                        #~ true_hp = hp_loc_dict(true_labels)
-                        print(new)
-                        seq = [bases[i] for i in range(len(new)) if new[i] == "n"]
-                        print("".join(seq))
+                    #~ predicted_labels = list(correct_short(predicted_labels[start: start + length]))
+
+                    # save information to dict
+                    predicted_hp = hp_loc_dict(predicted_labels)
+                    true_hp = hp_loc_dict(true_labels)
+                    detected_from_true(predicted_hp, true_hp)
+                    predicted_vs_true(predicted_labels, true_labels, read_name)
                     
-                        #~ # generate heatmap
-                        if read_counter < 10:
-                            generate_heatmap([correct_short(predicted_labels), true_labels, predicted_scores], ["predicted", "truth", "confidences"],
-                                            "Comparison_{}_corrected".format(read_name)) 
+                    # check all positives:      real positives + predicted positives
+                    if true_hp:
+                        count_truehp, count_basetrue, count_seqtrue = prediction_information(true_hp, bases, new)       
+                        [all_truepositions.extend(range(k[0], k[1] + 1)) for k in true_hp.values()]
+                        all_count_truehp = all_count_truehp + count_truehp
+                        all_count_basetrue = all_count_basetrue + count_basetrue
+                        all_count_seqtrue = all_count_seqtrue + count_seqtrue  
+                    if predicted_hp:
+                        count_predictions, count_basehp, count_seq = prediction_information(predicted_hp, bases, new)        
+                        all_count_predictions = all_count_predictions + count_predictions
+                        all_count_basehp = all_count_basehp + count_basehp
+                        all_count_seq = all_count_seq + count_seq
+                        [all_predictedpositions.extend(range(k[0], k[1] + 1)) for k in predicted_hp.values()]
                     
+                    # check finding back true HP - gives TP and FP (+ partials)
+                    read_states = [check_hp(predicted_hp[hp], true_labels, hp) for hp in predicted_hp] 
+                    if read_states != []:
+                        states.extend(read_states)    
+                    
+                    # check all true negatives - gives FN and TN (+ partials)
+                    fake_states = [check_hp(true_hp[hp], predicted_labels, hp) for hp in true_hp] 
+                    if fake_states != []:
+                        neg_states.extend(fake_states) 
+                          
+                    fn_truehp = create_confdict(true_hp, fake_states, "fn")
+                    
+                    if fn_truehp != 0:
+                        for fn_hp in fn_truehp:
+                            fn_scores.extend(predicted_scores[fn_truehp[fn_hp][0]: fn_truehp[fn_hp][1] + 1])
+
                     read_counter += 1
-                    if read_counter == 8:
-                        break
+                    #~ if read_counter == 1:
+                        #~ break
                     search_read = True
                     predicted_labels = None
                     true_labels = None
+        
+        print("Average: ", sum(fn_scores) / len(fn_scores))
+        print("Median: ", median(fn_scores))
+        sns.boxplot(data=fn_scores)
+        plt.savefig("Boxplot.png", bbox_inches="tight")
+        #~ print(fn_scores)
 
 def main(output_file, main_dir, npz_dir, out_name, threshold=0.5, start=0, max_nr=12255):
     """
@@ -686,9 +739,7 @@ def get_bases(base_seq, new_seq, hp_start, hp_end):
         
     Returns: base sequence (str)
     """
-    #~ first_base = [base_seq[hp_start]]
     bases = [base_seq[i] for i in range(hp_start, hp_end + 1) if new_seq[i] == "n"]
-    #~ bases = first_base + bases
     
     return "".join(bases)
     
@@ -1070,29 +1121,7 @@ def correct_short(predictions, threshold=15):
                 #~ compressed_
             
     return np.concatenate([np.repeat(pred_c[0], pred_c[1]) for pred_c in compressed_predictions])    
-    
-    
-    
 
-def LATER():
-        # 7. Cluster HP compositions on raw measurements
-        # maybe also as measurement long base sequences..
-    # 7a. Get raw measurements for each predicted HP
-    #~ raw = load_npz_raw("{}/{}.npz".format(npz_dir, read_name))
-    # id in dicts is equal across dicts: so 1 in predicted is same part as 1 in base_dict
-    # Create dict or something else so raw measurements are plotted but you know what sequence is underneath
-    # 7b. K-means cluster
-        # on base A, G, T, C > make an [count A, count C, count G, count T] and cluster 
-        # or as A:1, C:2, T:3, G:4, nothing:0
-    #~ length_dict = {k: len(base_dict[k]) for k in base_dict}
-    #~ print(length_dict)
-    #~ kmc_labels = kmeans_clustering(x, 2)
-    #~ print(len(kmc_labels))
-        # on size
-        # on true HP and non HP
-        
-    # 7c. Hierarchical clustering
-    pass
 
     
 if __name__ == "__main__":   
@@ -1105,9 +1134,10 @@ if __name__ == "__main__":
     
     read_file = argv[1]
     main_fast5_dir = argv[2]
-    output_name = argv[3]
-    threshold = float(argv[4])
-    npz_dir = argv[5]
+    npz_dir = argv[3]
+    output_name = argv[4]
+    threshold = float(argv[5])
+    
     max_number = 12256
     #~ max_seq_length = 14980 #4970   #9975 
     start = 0  # 30000
@@ -1122,6 +1152,6 @@ if __name__ == "__main__":
     #~ tp, fp, fn, tn = main(read_file, main_fast5_dir, npz_dir, output_name, 
                           #~ threshold, start, max_number)
 
-    check_for_neg(read_file, main_fast5_dir, npz_dir, output_name, threshold)
+    check_for_false_neg(read_file, main_fast5_dir, npz_dir, output_name, threshold)
                           
 

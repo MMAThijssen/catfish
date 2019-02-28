@@ -24,9 +24,10 @@ def build_model(network_type, saving=False, **kwargs):
     
     
 def load_network(network_type, path_to_network, checkpoint):
-    hpm_dict = retrieve_hyperparams(path_to_network + "/ResNetRNN.txt")                # CHANGE later!
-    #~ hpm_dict = {"batch_size": 128, "optimizer_choice": "RMSProp", "learning_rate": 0.001, 
-                #~ "layer_size": 256, "n_layers": 4, "keep_prob": 0.2, "layer_size_res": 32, "n_layers_res": 4}
+    """
+    Load network from file.
+    """
+    hpm_dict = retrieve_hyperparams(path_to_network + "/ResNetRNN.txt")        
     model = build_model(network_type, **hpm_dict)    
     model.restore_network("{}/checkpoints".format(path_to_network), ckpnt="ckpnt-{}".format(checkpoint))
 
