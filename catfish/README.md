@@ -49,16 +49,17 @@ Options:
 
 
 ## Output 
-Marijke-tool outputs a list of paths to the split reads containing homopolymers and
+catfish outputs a list of paths to the split reads containing homopolymers and
 a list of path to the split reads containing no homopolymers.
 
 ### Example usage
-`Marijke-tool -i <fast5_directory> -s <split_reads> -c <size_of_homopolymer_chunks>`
+`catfish -i <fast5_directory> -s <split_reads> -c <size_of_homopolymer_chunks>`
 
 
-## Useful links
+#### Name
 The name is a reference to the fish as well as to the act of catfishing, in which it is 
-an art to recognise a 
+an art to recognise a fake identity from a genuine one, as it is the goal of the tool
+to recognise homopolymers from non-homopolymers.
 
 
 
