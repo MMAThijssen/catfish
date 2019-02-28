@@ -5,7 +5,7 @@ import numpy as np
 import os
 from models.resnet_class import ResNetRNN
 from models.rnn_class import RNN
-import reader        # only for testing on "perfect" set
+#~ import reader        # only for testing on "perfect" set
 from sys import argv
 
 # Inference
