@@ -1,27 +1,24 @@
-# Title
+# catfish
 -------------------------------------------------------------------------------
-Tool with neural network as basis, designed to predict the presence of homopolymers
-in the raw signal of a MinION sequencer, to select stretches with homopolymers for
-basecalling with a specialized basecaller while keeping fast basecalling with Albacore for
-general reads.
+Pre-processing tool with a neural network as basis, designed to predict the presence of homopolymers
+in the raw signal of a MinION sequencer, to select stretches with homopolymers and split
+the raw nanopore signal on those. The purpose is to basecall homopolymer containing stretches with
+a specialised basecaller while regularly processing reads containing no homopolymers, which would increase
+accuracy while saving computational power on the reads that do not need the extra care.
 
 Tool is designed as part of MSc thesis "Calling homopolymers in nanopore sequencing data"
 by Marijke Thijssen.
 
 
 ## Installation
-pip install git+https://git.wur.nl/thijs030/thesis/tree/master/tool
+pip install git+https://git.wur.nl/thijs030/thesis/tree/master/catfish
 
 ## Dependencies
 Tool is dependent on the packages h5py, matplotlib, numpy, seaborn and tensorflow.
-(? remove matplotlib and seaborn -- only needed for metrics, can be adjusted ?)
 
 `pip install click` <br />
 `pip install h5py`  <br />
-`pip install matplotlib`  <br />
 `pip install numpy`  <br />
-`pip install scikit-learn` <br />
-`pip install seaborn`  <br />
 `pip install --upgrade tensorflow`
 
 Additionally, Albacore installed in a conda environment called *basecall* is a prequisite. Albacore v2.3.3
@@ -37,39 +34,31 @@ was used in the research, but other version might work as well.
 
 
 ## Usage
+`cd catfish`
 ```
-Marijke-tool [-h] [--input-file] [--output-file]
+catfish [-h] [--input-dir] [--split-dir]
 
 Required arguments:
-    -i, --input-dir         Path to input directory of FAST5 files
-    -s, --save-dir          Path to directory for saving basecalls in FASTQ format
+    -i, --input-dir         Path to input directory of reads in FAST5 format
+    -s, --split-dir         Path to directory to save split reads to
     
 Options:
     -c, --chunk-size        Length of chunks containing homopolymers for basecalling
     -h                      Shows help message and exit
-    -o, --output-file       Name of output file for failed reads
 ```
 
 
 ## Output 
-Marijke-tool outputs a FASTQ file of all basecalled reads.
+Marijke-tool outputs a list of paths to the split reads containing homopolymers and
+a list of path to the split reads containing no homopolymers.
 
 ### Example usage
-`Marijke-tool -i <fast5_directory> -o <name_failed_reads_file> -s <basecalled> -c <size_of_homopolymer_chunks>`
+`Marijke-tool -i <fast5_directory> -s <split_reads> -c <size_of_homopolymer_chunks>`
 
-## Test
-Maybe include test to check if installation went well
 
 ## Useful links
-\ link to thesis \
+The name is a reference to the fish as well as to the act of catfishing, in which it is 
+an art to recognise a 
 
 
 
-###### to do:
-add network checkpoint to folder data
-
-take parts from metrics that you need, move others to reduce dependencies
-
-make requirements file (pip install -r requirements.txt)
-
-Add the tool to PATH for your convenience (Chiron)

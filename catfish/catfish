@@ -6,7 +6,7 @@ import infer
 import neural_network
 import os
 import os.path
-from run_albacore import run_albacore
+#~ from run_albacore import run_albacore
 import shutil
 import split_f5
 import subprocess
@@ -16,8 +16,8 @@ from sys import argv
 Main script to run tool from 
 """
 @click.command()
-@click.option("--input-dir", "-i", help="Path to input dir in FAST5 format")
-@click.option("--split-dir", "-s", help="Directory to save split reads to")
+@click.option("--input-dir", "-i", help="Path to input directory of reads in FAST5 format")
+@click.option("--split-dir", "-s", help="Path to directory to save split reads to")
 #~ @click.option("--save-dir", "-s", help="Directory to save basecalled reads to")  save_dir, 
 @click.option("--chunk-size", "-c", help="Chunk size for homopolymer containing stretches", default=1000, show_default=True)
 def main(input_dir, split_dir, chunk_size, threshold=0.9, network_path="ResNetRNN", network_type="ResNetRNN"):
